@@ -1,0 +1,2 @@
+
+${CMAKE_CURRENT_SOURCE_DIR}/win/7za.exe a -mx=9 -tzip ${PROJECT_BINARY_DIR}/lib${APN_LIB_NAME}-${APN_VERSION}-win32.zip ${APN_INSTALL_DIR}/*

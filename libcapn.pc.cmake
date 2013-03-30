@@ -1,0 +1,6 @@
+Name: lib${APN_LIB_NAME}
+Description: ${PROJECT_NAME}
+Version: ${APN_VERSION}
+Libs: -L${CMAKE_INSTALL_PREFIX}/${APN_INSTALL_PATH_LIB} -l${APN_LIB_NAME}
+Libs.private: -lopenssl
+Cflags: -I${CMAKE_INSTALL_PREFIX}/${APN_INSTALL_PATH_HEADERS}
