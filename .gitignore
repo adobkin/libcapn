@@ -16,3 +16,7 @@
 *.exe
 *.out
 *.app
+
+/docs/def
+/docs/html
+/docs/man

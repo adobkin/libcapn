@@ -48,6 +48,8 @@
 #include <sys/socket.h>
 #endif
 
+#include <openssl/err.h>
+
 #define DIAGNOSTIC_MAKE_STRING(x) #x
 #define DIAGNOSTIC_JOIN_STRING(x, y) DIAGNOSTIC_MAKE_STRING(x ## y)
 #define DIAGNOSTIC_DO_PRAGMA(p) _Pragma (#p)
