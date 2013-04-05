@@ -1,0 +1,115 @@
+/**
+@page install Compilation and Installation
+Compilation and Installation
+
+@tableofcontents
+
+@section unix Unix platform
+
+### Requirements ###
+
+- `GCC` or `Clang` compiler
+- `OpenSSL library` and `OpenSSL devel`
+- `CMake` >= 2.8
+- `make`
+- `libtool`
+
+### Build steps ###
+
+1) Download [source tarballs](http://libcapn.org/download) and unpack it (replace 0.9.0 with the correct version number):
+
+@code {.sh}
+wget http://libcapn.org/download/libcapn-0.9.0-src.tar.bz2
+tar xvjf libcapn-0.9.0-src.tar.bz2
+@endcode
+
+or clone git repository:
+
+@code {.sh}
+git clone git://github.com/adobkin/libcapn libcapn
+cd libcapn
+git submodule init
+git submodule update
+@endcode
+
+
+2) Go to the libcapn directory, and create a build directory there: 
+
+@code {.sh}
+cd libcapn
+mkdir build
+cd build
+@endcode
+
+
+3) Run CMake build system using the default options: 
+
+@code {.sh}
+cmake ../
+@endcode
+
+You can pass `-DCMAKE_INSTALL_PREFIX=/some/path` parameter to define where libcapn should be installed: 
+
+@code {.sh}
+cmake -DCMAKE_INSTALL_PREFIX=/usr ../
+@endcode
+
+Default install prefix is `/usr/local`
+
+
+4) Compile and install 
+
+@code {.sh}
+make
+sudo make install
+@endcode
+
+
+@section windows Windows platform
+
+### Requires ###
+
+- `Microsoft Visual Studio` >= 2008
+- `CMake` >= 2.8
+
+
+### Build steps ###
+
+1) Download the source archive from http://libcapn.org/download and unpack it on your disk, e.g. `C:\libcapn`
+
+2) Open command console (`Win-R` ==> `"cmd"` => `Enter`)
+
+3) Go to the libcapn directory, and create a build directory in there: 
+
+@code
+cd C:\libcapn
+mkdir build
+cd build
+@endcode
+
+
+4) Run CMake build system using the default options: 
+
+@code
+cmake ../
+@endcode
+
+
+5) Compile 
+
+@code
+nmake
+@endcode
+
+
+6) Library and header files
+
+@code
+nmake install 
+@endcode
+
+The command creates `libcapn-bin` subdirectory in the build directory and copies binary and header files in. 
+
+You can execute `nmake zip` to create a zip archive. Archive will be saved into the build directory with name `libcapn-<em>version</em>-win32.zip`
+
+*/
