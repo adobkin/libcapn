@@ -620,7 +620,7 @@ __apn_export__ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref paylo
  /**
  * Creates a new notification payload context
  *
- * This function allocates memory for connection context which should be freed - call ::apn_payload_free() function
+ * This function allocates memory for payload context which should be freed - call ::apn_payload_free() function
  * for it 
  *
  * @ingroup payload
