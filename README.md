@@ -13,8 +13,8 @@ The library is licensed under the [MIT](http://www.opensource.org/licenses/mit-l
 
 ##DOCUMENTATION##
 
-- <a href="/doc/html/index.html">View documentation</a>
-- <a href="/download/libcapn-0.9.0-doc.tar.bz2">Download documentation</a>
+- <a href="http://libcapn.org/doc/html/index.html">View documentation</a>
+- <a href="http://libcapn.org/download/libcapn-0.9.0-doc.tar.bz2">Download documentation</a>
 
 ##TODO##
 
