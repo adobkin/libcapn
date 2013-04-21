@@ -1,0 +1,19 @@
+/** @page changelog ChangeLog 
+ ChangeLog
+ 
+### Version 1.0.0 beta ###
+
+- Added Feedback Service support:
+    - new functions apn_feedback_connect()
+    - new function apn_feedback()
+    - new function apn_feedback_tokens_array_free()
+- Now used enhanced format to transmission notifications to APNs
+- Added support for private key passphrase: 
+    - new argument `pass' to apn_set_private_key() 
+- Added classes of errors
+- Added new macro: 
+    - APN_ERR_IS_INTERNAL() 
+    - APN_ERR_IS_USER()
+    - APN_ERR_CODE_WITHOUT_CLASS()
+	
+*/	

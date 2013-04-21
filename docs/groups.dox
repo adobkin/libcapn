@@ -26,7 +26,7 @@
  * denial-of-service attack. Upon error, APNs closes the connection on which the error occurred.
  *
  * __Example:__
- * @include example.c
+ * @include send_push.c
  * 
  * @sa <a href="http://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html#//apple_ref/doc/uid/TP40008194-CH100-SW9">Apple Push Notification Service</a> for more information
  * @{
@@ -129,4 +129,7 @@
  * @{@}
  */
 
- 
+/**
+ * @example send_push.c Send Push Notification
+ * @example feedback.c  Feedback Service
+ */
