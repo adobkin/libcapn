@@ -15,6 +15,7 @@ cmake . -G "NMake Makefiles"
 nmake
 nmake install
 nmake zip
+goto :eof
 
 :missing
 echo "Microsoft Visual Studio 9 and Microsoft Visual Studio 10 not found"

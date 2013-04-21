@@ -26,6 +26,8 @@
 #include <string.h> 
 #include <stdlib.h> 
 
+#include <fcntl.h>
+
 #include "apn.h"
 
 #ifdef HAVE_UNISTD_H
@@ -93,7 +95,7 @@
 
 #define APN_PAYLOAD_SIZE  256
 
-#define APN_MESSAGE_SIZE (APN_PAYLOAD_SIZE + APN_TOKEN_BINARY_SIZE + sizeof(uint8_t) +  (sizeof(uint16_t) * 2))
+#define APN_MESSAGE_SIZE (APN_PAYLOAD_SIZE + APN_TOKEN_BINARY_SIZE + sizeof(uint8_t) + (sizeof(uint32_t) * 2) + (sizeof(uint16_t) * 2))
 
 #define APN_RETURN_SUCCESS return APN_SUCCESS
 
@@ -108,9 +110,22 @@
    } while(0);
 
 
+enum __apn_apns_errors {
+    APN_APNS_ERR_NO_ERRORS = 0,
+    APN_APNS_ERR_PROCESSING_ERROR = 1,
+    APN_APNS_ERR_MISSING_DEVICE_TOKEN,
+    APN_APNS_ERR_MISSING_TOPIC,
+    APN_APNS_ERR_MISSING_PAYLOAD,
+    APN_APNS_ERR_INVALID_TOKEN_SIZE,
+    APN_APNS_ERR_INVALID_TOPIC_SIZE,
+    APN_APNS_ERR_INVALID_PAYLOAD_SIZE,
+    APN_APNS_ERR_INVALID_TOKEN,
+    APN_APNS_ERR_NONE = 255        
+};
+
 static char *__apn_errors[APN_ERR_COUNT] = {
     "no memory", // APN_ERR_NOMEM
-    "connection context is not initialized", // APN_ERR_CTX_NOT_INITIALIZED
+    "connection context is not initialized. Expected poninter to initialize apn_ctx structure, passed NULL", // APN_ERR_CTX_NOT_INITIALIZED
     "no opened connection to Apple Push Notification Service",
     "no opened connection to Apple Feedback Service",
     "invalid argument", // APN_ERR_INVALID_ARGUMENT
@@ -118,22 +133,25 @@ static char *__apn_errors[APN_ERR_COUNT] = {
     "private key is not set", // APN_ERR_PRIVATE_KEY_IS_NOT_SET
     "notification payload is not set", // APN_ERR_PAYLOAD_IS_NOT_SET
     "no one device token is not set", // APN_ERR_TOKEN_IS_NOT_SET
+    "invalid device token", // APN_ERR_TOKEN_INVALID
     "too many device tokens",
-    "ssl: unable to use specified SSL certificate", // APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE
-    "ssl: unable to use specified private key", // APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY     
+    "unable to use specified SSL certificate", // APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE
+    "unable to use specified private key", // APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY     
     "could not reslove host", // APN_ERR_COULD_NOT_RESOLVE_HOST
     "could not create socket", // APN_ERR_COULD_NOT_CREATE_SOCKET
     "could not initialize connection", // APN_ERR_COULD_NOT_INITIALIZE_CONNECTION
-    "ssl: could not initialize ssl connection", // APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION
-    "ssl: SSL_write failed", // APN_ERR_SSL_WRITE_FAILED
+    "could not initialize ssl connection", // APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION
+    "SSL_write failed", // APN_ERR_SSL_WRITE_FAILED
+    "SSL_read failed", // APN_ERR_SSL_READ_FAILED
     "invalid notification payload size", // APN_ERR_INVALID_PAYLOAD_SIZE
-    "payload notification contex is not initialized", // APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+    "payload notification contex is not initialized, Expected poninter to initialize apn_payload_ctx, passed NULL", // APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
     "incorrect number to display as the badge on application icon", // APN_ERR_PAYLOAD_BADGE_INVALID_VALUE
     "too many custom properties, no more than 5", //APN_ERR_PAYLOAD_TOO_MANY_CUSTOM_PROPERTIES
     "specified custom property key is already used", // APN_ERR_PAYLOAD_CUSTOM_PROPERTY_KEY_IS_ALREADY_USED
     "could not create json document", // APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT
     "alert message text is not set", // APN_ERR_PAYLOAD_ALERT_IS_NOT_SET
     "non-UTF8 symbols detected in a string",
+    "processing error", // APN_ERR_PROCESSING_ERROR
     "unknown error" // APN_ERR_UNKNOWN
 };
 
@@ -149,24 +167,41 @@ struct __apn_appl_server __apn_appl_servers[4] = {
     {"feedback.push.apple.com", 2196}
 };
 
-static char * __token_hex_to_binary_copy(char *, uint16_t);
-
-static uint8_t __apn_payload_alert_init(apn_payload_alert_ref *alert, apn_error_ref error);
-static void __apn_payload_custom_property_free(apn_payload_custom_property_ref *property);
-static uint8_t __apn_payload_custom_key_is_already_used(apn_payload_ctx_ref payload_ctx, const char *property_key);
-static uint8_t __apn_payload_custom_property_init(apn_payload_ctx_ref payload_ctx, const char *property_key,
+static void *   __apn_realloc(void *ptr, size_t size);
+static char *   __token_hex_to_binary_copy(const char *, uint16_t);
+static char *   __token_binary_to_hex_copy(const char *binary_token, uint16_t token_length);
+static uint8_t  __apn_payload_alert_init(apn_payload_alert_ref *alert, apn_error_ref error);
+static void     __apn_payload_custom_property_free(apn_payload_custom_property_ref *property);
+static uint8_t  __apn_payload_custom_key_is_already_used(apn_payload_ctx_ref payload_ctx, const char *property_key);
+static uint8_t  __apn_payload_custom_property_init(apn_payload_ctx_ref payload_ctx, const char *property_key,
         apn_error_ref error);
-static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payload_ctx, apn_error_ref error);
+static char *   __apn_create_json_document_from_payload(apn_payload_ctx_ref payload_ctx, apn_error_ref error);
+static uint8_t  __apn_connect(const apn_ctx_ref, struct __apn_appl_server, apn_error_ref);
+static int      __ssl_read(const apn_ctx_ref ctx, char *buff, size_t buff_length, apn_error_ref error);
+static size_t   __ssl_write(const apn_ctx_ref ctx, const char *message, size_t length, apn_error_ref error);
 
-static uint8_t __apn_ssl_connect(const apn_ctx_ref, apn_error_ref);
-static uint8_t __apn_connect(const apn_ctx_ref, struct __apn_appl_server, apn_error_ref);
-static uint8_t __apn_send(const apn_ctx_ref, const char *, size_t, apn_error_ref);
-static void __apn_ssl_free(SSL **);
 
-static char * __token_hex_to_binary_copy(char *token, uint16_t token_length) {
+static void *__apn_realloc(void *ptr, size_t size) {
+    void *new_ptr = NULL;
+    if (ptr != NULL) {
+        if (size == 0) {
+            free(ptr);
+            return NULL;
+        } else {
+            new_ptr = realloc(ptr, size);
+            if (new_ptr == NULL) {
+                free(ptr);
+            }
+            return new_ptr;
+        }
+    }
+    return malloc(size);
+}
+
+static char * __token_hex_to_binary_copy(const char *token, uint16_t token_length) {
     uint16_t i = 0;
     uint16_t j = 0;
-    char *binary_token = malloc(APN_TOKEN_BINARY_SIZE + 1);
+    char *binary_token = malloc((token_length / 2) + 1);
     int binary = 0;
 
     if (!binary_token) {
@@ -175,7 +210,7 @@ static char * __token_hex_to_binary_copy(char *token, uint16_t token_length) {
 
     for (i = 0, j = 0; i < token_length; i += 2, j++) {
         char tmp[3] = {token[i], token[i + 1], '\0'};
-#ifdef WIN32
+#ifdef _WIN32
         sscanf_s(tmp, "%x", &binary);
 #else
         sscanf(tmp, "%x", &binary);
@@ -183,8 +218,28 @@ static char * __token_hex_to_binary_copy(char *token, uint16_t token_length) {
         binary_token[j] = binary;
     }
 
-    binary_token[j + 1] = '\0';
+    binary_token[j] = '\0';
     return binary_token;
+}
+
+static char * __token_binary_to_hex_copy(const char *binary_token, uint16_t token_length) {
+    uint16_t i = 0;
+    char *token = malloc((token_length * 2) + 1);
+    char *p = token;
+    
+    if (!token) {
+        return NULL;
+    }
+
+    for (i = 0; i < token_length; i++) {
+#ifdef _WIN32
+        sprintf_s(p, 3, "%02.2hhX", binary_token[i]);
+#else
+        snprintf(p, 3, "%02.2hhX", binary_token[i]);
+        p += 2;
+#endif
+    }
+    return token;
 }
 
 static uint8_t __apn_payload_alert_init(apn_payload_alert_ref *alert, apn_error_ref error) {
@@ -194,7 +249,7 @@ static uint8_t __apn_payload_alert_init(apn_payload_alert_ref *alert, apn_error_
 
     _alert = malloc(sizeof (apn_payload_alert));
     if (!_alert) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
@@ -217,9 +272,8 @@ static void __apn_payload_custom_property_free(apn_payload_custom_property_ref *
 
     if (property && *property) {
         _property = *property;
-        if (_property->key) {
-            free(_property->key);
-        }
+        free(_property->key);
+       
         switch (_property->value_type) {
             case APN_CUSTOM_PROPERTY_TYPE_STRING:
             {
@@ -271,28 +325,32 @@ static uint8_t __apn_payload_custom_property_init(apn_payload_ctx_ref payload_ct
     char *key = NULL;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
 
     if (payload_ctx->__custom_properties_count >= 5) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_TOO_MANY_CUSTOM_PROPERTIES, __apn_errors[APN_ERR_PAYLOAD_TOO_MANY_CUSTOM_PROPERTIES]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_TOO_MANY_CUSTOM_PROPERTIES | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_TOO_MANY_CUSTOM_PROPERTIES]);
         APN_RETURN_ERROR;
     }
 
     if (!property_key || strlen(property_key) == 0) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "key of custom property is NULL");
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "key of custom property is NULL");
         APN_RETURN_ERROR;
     }
 
     if (!apn_string_is_utf8(property_key)) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "key of custom property contains non-utf8 symbols");
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "key of custom property contains non-utf8 symbols");
         APN_RETURN_ERROR;
     }
-
-    key = apn_strndup(property_key, strlen(property_key));
+    
+    if((key = apn_strndup(property_key, strlen(property_key))) ==  NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }
+    
     if (__apn_payload_custom_key_is_already_used(payload_ctx, key)) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CUSTOM_PROPERTY_KEY_IS_ALREADY_USED, __apn_errors[APN_ERR_PAYLOAD_CUSTOM_PROPERTY_KEY_IS_ALREADY_USED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CUSTOM_PROPERTY_KEY_IS_ALREADY_USED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CUSTOM_PROPERTY_KEY_IS_ALREADY_USED]);
         free(key);
         APN_RETURN_ERROR;
     }
@@ -301,13 +359,13 @@ static uint8_t __apn_payload_custom_property_init(apn_payload_ctx_ref payload_ct
     if (payload_ctx->__custom_properties_count == 0) {
         payload_ctx->custom_properties = (apn_payload_custom_property_ref *) malloc(sizeof (apn_payload_custom_property_ref *));
         if (!payload_ctx->custom_properties) {
-            APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
             APN_RETURN_ERROR;
         }
     } else {
-        properties = (apn_payload_custom_property_ref *) realloc(payload_ctx->custom_properties, (payload_ctx->__custom_properties_count + 1) * sizeof (apn_payload_custom_property_ref));
+        properties = (apn_payload_custom_property_ref *) __apn_realloc(payload_ctx->custom_properties, (payload_ctx->__custom_properties_count + 1) * sizeof (apn_payload_custom_property_ref));
         if (!properties) {
-            APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
             APN_RETURN_ERROR;
         }
         payload_ctx->custom_properties = properties;
@@ -328,18 +386,18 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
 
     root = json_object();
     if (!root) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT, __apn_errors[APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT]);
         return NULL;
     }
 
     aps = json_object();
     if (!aps) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT, __apn_errors[APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT]);
         return NULL;
     }
 
     if (!payload_ctx->alert || !payload_ctx->alert->body) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_ALERT_IS_NOT_SET, __apn_errors[APN_ERR_PAYLOAD_ALERT_IS_NOT_SET]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_ALERT_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_ALERT_IS_NOT_SET]);
         return NULL;
     }
     
@@ -419,25 +477,38 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
     return json_document;
 }
 
-void apn_close(apn_ctx_ref ctx) {
-    if (ctx->sock > 0) {
-        CLOSE_SOCKET(ctx->sock);
-        ctx->sock = -1;
+static int __apn_password_cd(char *buf, int size, int rwflag, void *password) {
+    if (password == NULL) {
+        return 0;
     }
-    WSACleanup();
-    __apn_ssl_free(&ctx->ssl);
+    strncpy(buf, (char *) password, size);
+    buf[size - 1] = '\0';
+
+    return strlen(buf);
 }
+
+#if defined(__APPLE__) && defined(__MACH__)
+
+/* Apple deprecated SSL functions on Mac OS X >= 10.7.
+ * Disable deprecated warnings
+ */
+DIAGNOSTIC_OFF(deprecated-declarations)
+#endif
 
 static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server server, apn_error_ref error) {
     struct hostent * hostent = NULL;
     struct sockaddr_in socket_address;
-    int sock = -1;
-#ifdef WIN32
+    SOCKET sock = -1;
+    int sock_flags = 0;
+    SSL_CTX *ssl_ctx = NULL;
+    char *password = NULL;
+
+#ifdef _WIN32
     WSADATA wsa_data;
 #endif
-
+    
     if (ctx->sock == -1) {
-#ifdef WIN32
+#ifdef _WIN32
         if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
             APN_SET_ERROR(error, -100, "WSAStartup failed");
             APN_RETURN_ERROR;
@@ -447,7 +518,7 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
         hostent = gethostbyname(server.host);
 
         if (!hostent) {
-            APN_SET_ERROR(error, APN_ERR_COULD_NOT_RESOLVE_HOST, __apn_errors[APN_ERR_COULD_NOT_RESOLVE_HOST]);
+            APN_SET_ERROR(error, APN_ERR_COULD_NOT_RESOLVE_HOST | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_RESOLVE_HOST]);
             WSACleanup();
             APN_RETURN_ERROR;
         }
@@ -460,193 +531,318 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
         if (sock < 0) {
-            APN_SET_ERROR(error, APN_ERR_COULD_NOT_CREATE_SOCKET, __apn_errors[APN_ERR_COULD_NOT_CREATE_SOCKET]);
+            APN_SET_ERROR(error, APN_ERR_COULD_NOT_CREATE_SOCKET | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_CREATE_SOCKET]);
             WSACleanup();
             APN_RETURN_ERROR;
         }
-
+        
         if (connect(sock, (struct sockaddr *) &socket_address, sizeof (socket_address)) < 0) {
-            APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_CONNECTION, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_CONNECTION]);
+            APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_CONNECTION | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_CONNECTION]);
             WSACleanup();
             APN_RETURN_ERROR;
         }
-
+        
         ctx->sock = sock;
-
-
-        if (__apn_ssl_connect(ctx, error) == APN_ERROR) {
-            APN_RETURN_ERROR;
-        }
-    }
-
-    APN_RETURN_SUCCESS;
-}
-
-#if defined(__APPLE__) && defined(__MACH__)
-
-/* Apple deprecated SSL functions on Mac OS X >= 10.7.
- * Disable deprecated warnings
- */
-DIAGNOSTIC_OFF(deprecated-declarations)
-#endif
-
-static uint8_t __apn_ssl_connect(const apn_ctx_ref ctx, apn_error_ref error) {
-    SSL_CTX *ssl_ctx = NULL;
-    SSL *_ssl = NULL;
-
-    if (ctx->ssl == NULL) {
+        
         SSL_library_init();
         SSL_load_error_strings();
 
         ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-
+        
         if (!SSL_CTX_use_certificate_file(ssl_ctx, ctx->certificate_file, SSL_FILETYPE_PEM)) {
-            APN_SET_ERROR(error, APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE, __apn_errors[APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE]);
+            APN_SET_ERROR(error, APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE]);
             SSL_CTX_free(ssl_ctx);
             APN_RETURN_ERROR;
         }
+
+	SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_cd);            
+ 
+        if (ctx->private_key_pass) {
+            password = apn_strndup(ctx->private_key_pass, strlen(ctx->private_key_pass));
+            if (password == NULL) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                APN_RETURN_ERROR;
+            }
+            SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, password);
+        } else {
+	    SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, password);
+	}
 
         if (!SSL_CTX_use_PrivateKey_file(ssl_ctx, ctx->private_key_file, SSL_FILETYPE_PEM)) {
-            APN_SET_ERROR(error, APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY, __apn_errors[APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY]);
+            APN_SET_ERROR(error, APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY]);
             SSL_CTX_free(ssl_ctx);
+            free(password);
             APN_RETURN_ERROR;
         }
+
+        free(password);
 
         if (!SSL_CTX_check_private_key(ssl_ctx)) {
-            APN_SET_ERROR(error, APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY, __apn_errors[APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY]);
+            APN_SET_ERROR(error, APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY]);
             SSL_CTX_free(ssl_ctx);
             APN_RETURN_ERROR;
         }
 
-        _ssl = SSL_new(ssl_ctx);
+        ctx->ssl = SSL_new(ssl_ctx);
         SSL_CTX_free(ssl_ctx);
 
-        if (!_ssl) {
-            APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION]);
+        if (!ctx->ssl) {
+            APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION]);
             APN_RETURN_ERROR;
         }
 
-        if (SSL_set_fd(_ssl, ctx->sock) == -1) {
-            APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION]);
-            SSL_free(_ssl);
+        if (SSL_set_fd(ctx->ssl, ctx->sock) == -1) {
+            APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION]);
+            SSL_free(ctx->ssl);
             APN_RETURN_ERROR;
         }
 
-        if (SSL_connect(_ssl) < 1) {
-            APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION]);
-            SSL_free(_ssl);
+        if (SSL_connect(ctx->ssl) < 1) {
+            APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION]);
+            SSL_free(ctx->ssl);
             APN_RETURN_ERROR;
         }
-        ctx->ssl = _ssl;
+        
+#ifndef _WIN32
+        sock_flags = fcntl(ctx->sock, F_GETFL, 0);
+        fcntl(ctx->sock, F_SETFL, sock_flags | O_NONBLOCK);
+#else
+        sock_flags = 1;
+        ioctlsocket(ctx->sock, FIONBIO, (u_long *) &sock_flags);
+#endif
+
     }
+
     APN_RETURN_SUCCESS;
 }
 
-static void __apn_ssl_free(SSL **ssl) {
-    if (!ssl || !*ssl) {
-        return;
+void apn_close(apn_ctx_ref ctx) {
+    if (ctx) {
+        if (ctx->ssl) {
+            SSL_shutdown(ctx->ssl);
+            SSL_free(ctx->ssl);
+            ctx->ssl = NULL;
+        }
+
+        if (ctx->sock != -1) {
+            CLOSE_SOCKET(ctx->sock);
+            ctx->sock = -1;
+        }
+
+        WSACleanup();
     }
-    SSL_shutdown(*ssl);
-    SSL_free(*ssl);
-    *ssl = NULL;
 }
 
-static uint8_t __apn_send(const apn_ctx_ref ctx, const char *message, size_t message_len, apn_error_ref error) {
-    if (SSL_write(ctx->ssl, message, message_len) < 0) {
-        APN_SET_ERROR(error, APN_ERR_SSL_WRITE_FAILED, __apn_errors[APN_ERR_SSL_WRITE_FAILED]);
-        return APN_ERROR;
+static void __apn_parse_apns_error(const apn_ctx_ref ctx, char *apns_error, char **token, apn_error_ref error) {
+    uint8_t cmd = 0;
+    uint8_t error_code = 0;
+    uint32_t id = 0;
+    
+    if(token){
+        *token = NULL;
     }
-    return APN_SUCCESS;
+    
+    memcpy(&cmd, apns_error, sizeof(cmd));
+    apns_error++;
+    
+    if(cmd == 8) {
+        memcpy(&error_code, apns_error, sizeof(error_code));
+        apns_error++;
+        switch(error_code) {
+            case APN_APNS_ERR_PROCESSING_ERROR:
+                APN_SET_ERROR(error, APN_ERR_PROCESSING_ERROR | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_PROCESSING_ERROR]);
+                break;
+            case APN_APNS_ERR_INVALID_PAYLOAD_SIZE:
+                APN_SET_ERROR(error, APN_ERR_INVALID_PAYLOAD_SIZE | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_INVALID_PAYLOAD_SIZE]);
+                break;
+            case APN_APNS_ERR_INVALID_TOKEN:
+                memcpy(&id, apns_error, sizeof(id));
+                if(token){
+                    if(id <= ctx->__tokens_count) {
+                        *token = ctx->tokens[id];
+                    }
+                }
+                APN_SET_ERROR(error, APN_ERR_TOKEN_INVALID | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_TOKEN_INVALID]);
+                break;
+        }
+    }
 }
 
-uint32_t apn_feedback(const apn_ctx_ref ctx, const char ***tokens, apn_error_ref error) {
-    uint8_t buffer[38];
-    int read = 0;
-    uint8_t contnuie_loop = 1;
+static size_t __ssl_write(const apn_ctx_ref ctx, const char *message, size_t length, apn_error_ref error) {
+    int written = 0;
+    for(;;){
+        written = SSL_write(ctx->ssl, message, length);
+        if (written > 0) {
+            break;
+        }
 
-    if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, __apn_errors[APN_ERR_INVALID_ARGUMENT]);
-        APN_RETURN_ERROR;
-    }
-    if (!ctx->ssl || !ctx->feedback) {
-        APN_SET_ERROR(error, APN_ERR_NOT_CONNECTED_FEEDBACK, __apn_errors[APN_ERR_NOT_CONNECTED_FEEDBACK]);
-        APN_RETURN_ERROR;
-    }
-    if (!ctx->certificate_file) {
-        APN_SET_ERROR(error, APN_ERR_CERTIFICATE_IS_NOT_SET, __apn_errors[APN_ERR_CERTIFICATE_IS_NOT_SET]);
-        APN_RETURN_ERROR;
-    }
-    if (!ctx->private_key_file) {
-        APN_SET_ERROR(error, APN_ERR_PRIVATE_KEY_IS_NOT_SET, __apn_errors[APN_ERR_PRIVATE_KEY_IS_NOT_SET]);
-        APN_RETURN_ERROR;
+        switch (SSL_get_error(ctx->ssl, written)) {
+            case SSL_ERROR_WANT_WRITE:
+            case SSL_ERROR_WANT_READ:
+                continue;
+            case SSL_ERROR_ZERO_RETURN:
+                return 0;
+            default:
+                APN_SET_ERROR(error, APN_ERR_SSL_WRITE_FAILED | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_SSL_WRITE_FAILED]);
+                return -1;
+        }
     }
 
-    do {
-        read = SSL_read(ctx->ssl, buffer, 38);
+    return written;
+}
+
+static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t buff_length, apn_error_ref error) {
+    int read = -1;
+    for (;;) {
+        read = SSL_read(ctx->ssl, buff, buff_length);
         if (read > 0) {
             break;
         }
 
         switch (SSL_get_error(ctx->ssl, read)) {
-            case SSL_ERROR_NONE:
-            case SSL_ERROR_ZERO_RETURN: /* no more data */
-                contnuie_loop = 0; /* get out of loop */
-                printf("No more data \n");
-                break;
-            case SSL_ERROR_WANT_READ:
             case SSL_ERROR_WANT_WRITE:
-                printf("Pending data \n");
-                break;
+            case SSL_ERROR_WANT_READ:
+                continue;
+            case SSL_ERROR_ZERO_RETURN:
+                return 0;
+            default:
+                APN_SET_ERROR(error, APN_ERR_SSL_READ_FAILED | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_SSL_READ_FAILED]);
+                return -1;
+        }
+    }
+
+    return read;
+}
+
+uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count, apn_error_ref error) {
+    char buffer[38];
+    char *buffer_ref = buffer;
+    fd_set read_set;
+    struct timeval timeout = {3, 0};
+    uint16_t token_length = 0;
+    char binary_message[APN_TOKEN_BINARY_SIZE];
+    int read = 0;
+    char **tokens = NULL;
+    uint32_t tokens_count = 0;
+    char *token_hex = NULL;
+
+    if (!ctx) {
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_RETURN_ERROR;
+    }
+
+    if (!ctx->ssl || !ctx->feedback) {
+        APN_SET_ERROR(error, APN_ERR_NOT_CONNECTED_FEEDBACK | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_NOT_CONNECTED_FEEDBACK]);
+        APN_RETURN_ERROR;
+    }
+
+    if (!ctx->certificate_file) {
+        APN_SET_ERROR(error, APN_ERR_CERTIFICATE_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CERTIFICATE_IS_NOT_SET]);
+        APN_RETURN_ERROR;
+    }
+
+    if (!ctx->private_key_file) {
+        APN_SET_ERROR(error, APN_ERR_PRIVATE_KEY_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PRIVATE_KEY_IS_NOT_SET]);
+        APN_RETURN_ERROR;
+    }
+
+    for (;;) {
+        FD_ZERO(&read_set);
+        FD_SET(ctx->sock, &read_set);
+
+        if (select(ctx->sock + 1, &read_set, NULL, NULL, &timeout) <= 0) {
+            break;
         }
 
-    } while (contnuie_loop);
+        if (FD_ISSET(ctx->sock, &read_set)) {
+            read = __ssl_read(ctx, buffer, sizeof (buffer), error);
+            if (read > 0) {
+                buffer_ref += sizeof (uint32_t);
+
+                memcpy(&token_length, buffer_ref, sizeof (token_length));
+                buffer_ref += sizeof (token_length);
+
+                memcpy(&binary_message, buffer_ref, sizeof (binary_message));
+
+                token_hex = __token_binary_to_hex_copy(binary_message, token_length);
+                if (token_hex == NULL) {
+                    APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                    APN_RETURN_ERROR;
+                }
+
+                tokens = (char **) __apn_realloc(tokens, (tokens_count + 1) * sizeof (char *));
+                if (!tokens) {
+                    APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                    APN_RETURN_ERROR;
+                }
+                tokens[tokens_count] = token_hex;
+                tokens_count++;
+                break;
+            } else {
+                if (read < 0) {
+                    APN_RETURN_ERROR;
+                }
+                break;
+            }
+        }
+    }
+    
+    if(tokens_array != NULL && tokens_count > 0) {
+        *tokens_array = tokens;
+    }
+    
+    if(tokens_array_count != NULL) {
+        *tokens_array_count = tokens_count;
+    }
 
     APN_RETURN_SUCCESS;
 }
-
-#if defined(__APPLE__) && defined(__MACH__)
-DIAGNOSTIC_ON(deprecated - declarations)
-#endif
 
 uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_ref error) {
     char *json_payload = NULL;
     char binary_message[APN_MESSAGE_SIZE];
     char *binary_message_ref = NULL;
+    char *id_pos_ref = NULL;
+    char *token_pos_ref = NULL;
     char *token = NULL;
     char *binary_token = NULL;
-
+    char apple_error[6];
     size_t payload_size = 0;
     uint32_t i = 0;
     uint16_t token_length = 0;
     uint16_t payload_length = 0;
     size_t message_length = 0;
+    fd_set write_set, read_set;
+    struct timeval timeout = {10, 0};
+    uint8_t has_error = 0;
+    uint8_t loop_break = 0;
 
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, __apn_errors[APN_ERR_INVALID_ARGUMENT]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
 
     if (!ctx->ssl || ctx->feedback) {
-        APN_SET_ERROR(error, APN_ERR_NOT_CONNECTED, __apn_errors[APN_ERR_NOT_CONNECTED]);
+        APN_SET_ERROR(error, APN_ERR_NOT_CONNECTED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_NOT_CONNECTED]);
         APN_RETURN_ERROR;
     }
 
     if (!ctx->certificate_file) {
-        APN_SET_ERROR(error, APN_ERR_CERTIFICATE_IS_NOT_SET, __apn_errors[APN_ERR_CERTIFICATE_IS_NOT_SET]);
+        APN_SET_ERROR(error, APN_ERR_CERTIFICATE_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CERTIFICATE_IS_NOT_SET]);
         APN_RETURN_ERROR;
     }
     if (!ctx->private_key_file) {
-        APN_SET_ERROR(error, APN_ERR_PRIVATE_KEY_IS_NOT_SET, __apn_errors[APN_ERR_PRIVATE_KEY_IS_NOT_SET]);
+        APN_SET_ERROR(error, APN_ERR_PRIVATE_KEY_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PRIVATE_KEY_IS_NOT_SET]);
         APN_RETURN_ERROR;
     }
-
+    
     if (ctx->__tokens_count == 0) {
-        APN_SET_ERROR(error, APN_ERR_TOKEN_IS_NOT_SET, __apn_errors[APN_ERR_TOKEN_IS_NOT_SET]);
+        APN_SET_ERROR(error, APN_ERR_TOKEN_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_TOKEN_IS_NOT_SET]);
         APN_RETURN_ERROR;
     }
 
     if (!payload) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_IS_NOT_SET, __apn_errors[APN_ERR_PAYLOAD_IS_NOT_SET]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_IS_NOT_SET]);
         APN_RETURN_ERROR;
     }
 
@@ -659,55 +855,120 @@ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_r
     payload_size = strlen(json_payload);
 
     if (payload_size > APN_PAYLOAD_SIZE) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_PAYLOAD_SIZE, __apn_errors[APN_ERR_INVALID_PAYLOAD_SIZE]);
+        APN_SET_ERROR(error, APN_ERR_INVALID_PAYLOAD_SIZE | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_INVALID_PAYLOAD_SIZE]);
         free(json_payload);
         APN_RETURN_ERROR;
     }
 
-    for (i = 0; i < ctx->__tokens_count; i++) {
-        binary_message_ref = binary_message;
-        token_length = htons(APN_TOKEN_BINARY_SIZE);
-        payload_length = htons(payload_size);
+    binary_message_ref = binary_message;
+    token_length = htons(APN_TOKEN_BINARY_SIZE);
+    payload_length = htons(payload_size);
 
-        token = ctx->tokens[i];
-        binary_token = __token_hex_to_binary_copy(token, strlen(token));
+    *binary_message_ref++ = 1;
+    id_pos_ref = binary_message_ref;
+    binary_message_ref += sizeof (i);
 
-        if (!binary_token) {
-            APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
-            APN_RETURN_ERROR;
+    memcpy(binary_message_ref, &ctx->expiry, sizeof (ctx->expiry));
+    binary_message_ref += sizeof (ctx->expiry);
+
+    memcpy(binary_message_ref, &token_length, sizeof (token_length));
+    binary_message_ref += sizeof (token_length);
+
+    token_pos_ref = binary_message_ref;
+    binary_message_ref += APN_TOKEN_BINARY_SIZE;
+
+    memcpy(binary_message_ref, &payload_length, sizeof (payload_length));
+    binary_message_ref += sizeof (payload_length);
+
+    memcpy(binary_message_ref, json_payload, payload_size);
+    binary_message_ref += payload_size;
+
+    free(json_payload);
+
+    while (!loop_break) {
+        if (i == ctx->__tokens_count - 1) {
+            break;
         }
 
-        *binary_message_ref++ = 0;
+        FD_ZERO(&write_set);
+        FD_ZERO(&read_set);
+        FD_SET(ctx->sock, &write_set);
+        FD_SET(ctx->sock, &read_set);
 
-        memcpy(binary_message_ref, &token_length, sizeof (token_length));
-        binary_message_ref += sizeof (token_length);
+        if (select(ctx->sock + 1, &read_set, &write_set, NULL, &timeout) <= 0) {
+            break;
+        }
 
-        memcpy(binary_message_ref, binary_token, APN_TOKEN_BINARY_SIZE);
-        binary_message_ref += APN_TOKEN_BINARY_SIZE;
+        if (FD_ISSET(ctx->sock, &read_set)) {
+            if (__ssl_read(ctx, apple_error, sizeof (apple_error), error) > 0) {
+                loop_break = 1;
+                has_error = 1;
+            }
+        }
 
-        memcpy(binary_message_ref, &payload_length, sizeof (payload_length));
-        binary_message_ref += sizeof (payload_length);
+        if (!has_error && FD_ISSET(ctx->sock, &write_set)) {
+            token = ctx->tokens[i];
+            if (!(binary_token = __token_hex_to_binary_copy(token, strlen(token)))) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                APN_RETURN_ERROR;
+            }
 
-        memcpy(binary_message_ref, json_payload, payload_size);
-        binary_message_ref += payload_size;
+            memcpy(id_pos_ref, &i, sizeof (i));
+            memcpy(token_pos_ref, binary_token, APN_TOKEN_BINARY_SIZE);
+            message_length = (binary_message_ref - binary_message);
 
-        message_length = (binary_message_ref - binary_message);
+            free(binary_token);
 
-        if (__apn_send(ctx, binary_message, message_length, error) != APN_SUCCESS) {
-            free(json_payload);
-            APN_RETURN_ERROR;
+            if (__ssl_write(ctx, binary_message, message_length, error) > 0) {
+                if((i % 50) == 0) {
+#ifdef _WIN32
+                    Sleep(400);
+#else
+                    usleep(400000);
+#endif                    
+                }
+                i++;
+            }
         }
     }
 
-    free(json_payload);
+    if (!has_error) {
+        for (;;) {
+            FD_ZERO(&read_set);
+            FD_SET(ctx->sock, &read_set);
+
+            if (select(ctx->sock + 1, &read_set, NULL, NULL, &timeout) <= 0) {
+                break;
+            }
+
+            if (FD_ISSET(ctx->sock, &read_set)) {
+                if (__ssl_read(ctx, apple_error, sizeof (apple_error), error) > 0) {
+                    has_error = 1;
+                    break;
+                } 
+            }
+        }
+    }
+
+    if (has_error) {
+        char *idd = NULL;
+        __apn_parse_apns_error(ctx, apple_error, &idd, error);
+        APN_RETURN_ERROR;
+    }
+
+
     APN_RETURN_SUCCESS;
 }
+
+#if defined(__APPLE__) && defined(__MACH__)
+DIAGNOSTIC_ON(deprecated - declarations)
+#endif
 
 uint8_t apn_init(apn_ctx_ref *ctx, apn_error_ref error) {
     apn_ctx_ref _ctx = NULL;
 
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, __apn_errors[APN_ERR_INVALID_ARGUMENT]);
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "invalid argument ctx. Expected pointer to pointer to apn_ctx struct, passed NULL");
         APN_RETURN_ERROR;
     }
 
@@ -715,7 +976,7 @@ uint8_t apn_init(apn_ctx_ref *ctx, apn_error_ref error) {
     _ctx = malloc(sizeof (apn_ctx));
 
     if (!_ctx) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
@@ -726,6 +987,8 @@ uint8_t apn_init(apn_ctx_ref *ctx, apn_error_ref error) {
     _ctx->private_key_file = NULL;
     _ctx->tokens = NULL;
     _ctx->feedback = 0;
+    _ctx->expiry = 0;
+    _ctx->private_key_pass = NULL;
     *ctx = _ctx;
     APN_RETURN_SUCCESS;
 }
@@ -735,7 +998,7 @@ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) {
     uint16_t i = 0;
 
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         return NULL;
     }
 
@@ -744,38 +1007,69 @@ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) {
     }
 
     if (ctx->certificate_file) {
-        _ctx->certificate_file = apn_strndup(ctx->certificate_file, strlen(ctx->certificate_file));
+        if ((_ctx->certificate_file = apn_strndup(ctx->certificate_file, strlen(ctx->certificate_file))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            return NULL;;
+        }
+
     }
+
     if (_ctx->private_key_file) {
-        _ctx->private_key_file = apn_strndup(ctx->private_key_file, strlen(ctx->private_key_file));
+        if ((_ctx->private_key_file = apn_strndup(ctx->private_key_file, strlen(ctx->private_key_file))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            return NULL;;
+        }
     }
+
+    if (_ctx->private_key_pass) {
+
+        if ((_ctx->private_key_pass = apn_strndup(ctx->private_key_pass, strlen(ctx->private_key_pass))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            return NULL;;
+        }
+    }
+
+    _ctx->expiry = ctx->expiry;
 
     if (ctx->__tokens_count > 0 && ctx->tokens) {
         _ctx->tokens = (char **) malloc((ctx->__tokens_count) * sizeof (char *));
         if (!_ctx->tokens) {
             apn_free(&_ctx, NULL);
-            APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
             return NULL;
         }
 
         for (i = 0; i < ctx->__tokens_count; i++) {
             _ctx->tokens[i] = apn_strndup(_ctx->tokens[i], strlen(_ctx->tokens[i]));
+            if (_ctx->tokens[i] == NULL) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                return NULL;
+            }
             _ctx->__tokens_count++;
         }
     }
+    
+    _ctx->feedback = ctx->feedback;
+    _ctx->sock = ctx->sock;
+    _ctx->ssl = ctx->ssl;
+    
     return _ctx;
 }
 
 uint8_t apn_free(apn_ctx_ref *ctx, apn_error_ref error) {
     apn_ctx_ref _ctx = NULL;
-    uint16_t i = 0;
+    uint32_t i = 0;
 
     if (!ctx || !(*ctx)) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
 
     _ctx = *ctx;
+    
+    if(_ctx) {
+        apn_close(_ctx);
+    }
 
     if (_ctx->certificate_file) {
         free(_ctx->certificate_file);
@@ -785,6 +1079,10 @@ uint8_t apn_free(apn_ctx_ref *ctx, apn_error_ref error) {
         free(_ctx->private_key_file);
     }
 
+    if (_ctx->private_key_pass) {
+        free(_ctx->private_key_pass);
+    }
+
     if (_ctx->tokens && _ctx->__tokens_count > 0) {
         for (i = 0; i < _ctx->__tokens_count; i++) {
             char *token = *(_ctx->tokens + i);
@@ -792,6 +1090,7 @@ uint8_t apn_free(apn_ctx_ref *ctx, apn_error_ref error) {
         }
         free(_ctx->tokens);
     }
+   
     free(_ctx);
     *ctx = NULL;
     APN_RETURN_SUCCESS;
@@ -808,7 +1107,7 @@ uint8_t apn_connect(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_ref error)
     return __apn_connect(ctx, server, error);
 }
 
-uint8_t apn_connect_feedback(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_ref error) {
+uint8_t apn_feedback_connect(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_ref error) {
     struct __apn_appl_server server;
     if (sandbox) {
         server = __apn_appl_servers[2];
@@ -820,68 +1119,97 @@ uint8_t apn_connect_feedback(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_r
     return __apn_connect(ctx, server, error);
 }
 
+uint8_t apn_set_expiry(apn_ctx_ref ctx, uint32_t expiry, apn_error_ref error) {
+    if (!ctx) {
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_RETURN_ERROR;
+    }
+    
+    ctx->expiry = expiry;
+
+    APN_RETURN_SUCCESS;
+}
+
 uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref error) {
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     if (ctx->certificate_file) {
         free(ctx->certificate_file);
     }
     if (cert) {
-        ctx->certificate_file = apn_strndup(cert, strlen(cert));
+        if ((ctx->certificate_file = apn_strndup(cert, strlen(cert))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            APN_RETURN_ERROR;
+        }
     }
 
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, apn_error_ref error) {
+uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, apn_error_ref error) {
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     if (ctx->private_key_file) {
         free(ctx->private_key_file);
     }
     if (key) {
-        ctx->private_key_file = apn_strndup(key, strlen(key));
+        if ((ctx->private_key_file = apn_strndup(key, strlen(key))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            APN_RETURN_ERROR;
+        }
+    }
+    if (ctx->private_key_pass) {
+        free(ctx->private_key_pass);
+    }
+    if (pass) {
+        if ((ctx->private_key_pass = apn_strndup(pass, strlen(pass))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            APN_RETURN_ERROR;
+        }
     }
     APN_RETURN_SUCCESS;
 }
 
 uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref error) {
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
 
     if (ctx->__tokens_count >= UINT32_MAX) {
-        APN_SET_ERROR(error, APN_ERR_TOKEN_TOO_MANY, __apn_errors[APN_ERR_TOKEN_TOO_MANY]);
+        APN_SET_ERROR(error, APN_ERR_TOKEN_TOO_MANY | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_TOKEN_TOO_MANY]);
         APN_RETURN_ERROR;
     }
 
     if (!token) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "invalid value of token. Expected string, passed NULL");
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "invalid value of token. Expected string, passed NULL");
         APN_RETURN_ERROR;
     }
 
     if (ctx->__tokens_count == 0) {
         ctx->tokens = malloc(sizeof (char *));
         if (!ctx->tokens) {
-            APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
             APN_RETURN_ERROR;
         }
     } else {
-        char **tokens = (char **) realloc(ctx->tokens, (ctx->__tokens_count + 1) * sizeof (char *));
+        char **tokens = (char **) __apn_realloc(ctx->tokens, (ctx->__tokens_count + 1) * sizeof (char *));
         if (!tokens) {
-            APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
             APN_RETURN_ERROR;
         }
         ctx->tokens = tokens;
     }
-    ctx->tokens[ctx->__tokens_count] = apn_strndup(token, strlen(token));
+    if ((ctx->tokens[ctx->__tokens_count] = apn_strndup(token, strlen(token))) == NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }
     ctx->__tokens_count++;
-
+    
     APN_RETURN_SUCCESS;
 }
 
@@ -889,7 +1217,7 @@ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref error) {
     char *ret_value = NULL;
 
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         return NULL;
     }
     if (ctx->certificate_file) {
@@ -902,7 +1230,7 @@ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref error) {
     char *ret_value = NULL;
 
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         return NULL;
     }
 
@@ -912,10 +1240,19 @@ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref error) {
     return ret_value;
 }
 
+uint32_t apn_expiry(apn_ctx_ref ctx, apn_error_ref error) {
+    if (!ctx) {
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        return 0;
+    }
+    
+    return ctx->expiry;
+}
+
 uint32_t apn_tokens(const apn_ctx_ref ctx, char ***tokens, apn_error_ref error) {
     *tokens = NULL;
     if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         return 0;
     }
     if (ctx->tokens && ctx->__tokens_count) {
@@ -931,7 +1268,7 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
     uint16_t i = 0;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return NULL;
     }
 
@@ -943,31 +1280,54 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
 
     if (payload_ctx->sound) {
         _payload->sound = apn_strndup(payload_ctx->sound, strlen(payload_ctx->sound));
+        if (_payload->sound == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            return NULL;
+        }
     }
 
     if (payload_ctx->alert) {
         if (payload_ctx->alert->action_loc_key) {
-            _payload->alert->action_loc_key = apn_strndup(payload_ctx->alert->action_loc_key, strlen(payload_ctx->alert->action_loc_key));
+            if ((_payload->alert->action_loc_key = apn_strndup(payload_ctx->alert->action_loc_key, strlen(payload_ctx->alert->action_loc_key))) == NULL) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                return NULL;
+            }
         }
         if (payload_ctx->alert->body) {
-            _payload->alert->body = apn_strndup(payload_ctx->alert->body, strlen(payload_ctx->alert->body));
+            if ((_payload->alert->body = apn_strndup(payload_ctx->alert->body, strlen(payload_ctx->alert->body))) == NULL) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                return NULL;
+            }
         }
         if (payload_ctx->alert->launch_image) {
-            _payload->alert->launch_image = apn_strndup(payload_ctx->alert->launch_image, strlen(payload_ctx->alert->launch_image));
+
+            if ((_payload->alert->launch_image = apn_strndup(payload_ctx->alert->launch_image, strlen(payload_ctx->alert->launch_image))) == NULL) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                return NULL;
+            }
         }
         if (payload_ctx->alert->loc_key) {
-            _payload->alert->loc_key = apn_strndup(payload_ctx->alert->loc_key, strlen(payload_ctx->alert->loc_key));
+            if ((_payload->alert->loc_key = apn_strndup(payload_ctx->alert->loc_key, strlen(payload_ctx->alert->loc_key))) == NULL) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                return NULL;
+            }
         }
         if (payload_ctx->alert->__loc_args_count > 0 && payload_ctx->alert->loc_args) {
             _payload->alert->loc_args = (char **) malloc((payload_ctx->alert->__loc_args_count) * sizeof (char *));
             if (!_payload->alert->loc_args) {
                 apn_payload_free(&_payload, NULL);
-                APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
                 return NULL;
             }
 
             for (i = 0; i < payload_ctx->alert->__loc_args_count; i++) {
                 _payload->alert->loc_args[i] = apn_strndup(payload_ctx->alert->loc_args[i], strlen(payload_ctx->alert->loc_args[i]));
+
+                if (_payload->alert->loc_args[i] == NULL) {
+                    APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                    return NULL;
+                }
+
                 _payload->alert->__loc_args_count++;
             }
         }
@@ -979,7 +1339,7 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
         _payload->custom_properties = (apn_payload_custom_property_ref *) malloc(payload_ctx->__custom_properties_count * sizeof (apn_payload_custom_property_ref));
         if (!_payload->custom_properties) {
             apn_payload_free(&_payload, NULL);
-            APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
             return NULL;
         }
         _payload->__custom_properties_count = 0;
@@ -987,12 +1347,17 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
             apn_payload_custom_property_ref property = (apn_payload_custom_property_ref) malloc(sizeof (apn_payload_custom_property));
             if (!property) {
                 apn_payload_free(&_payload, NULL);
-                APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
                 return NULL;
             }
 
             property->value_type = (*(payload_ctx->custom_properties + i))->value_type;
             property->key = apn_strndup((*(payload_ctx->custom_properties + i))->key, strlen((*(payload_ctx->custom_properties + i))->key));
+
+            if (property->key == NULL) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                return NULL;
+            }
 
             switch (property->value_type) {
                 case APN_CUSTOM_PROPERTY_TYPE_BOOL:
@@ -1009,6 +1374,10 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
                 case APN_CUSTOM_PROPERTY_TYPE_STRING:
                 {
                     property->value.string_value.value = apn_strndup((*(payload_ctx->custom_properties + i))->value.string_value.value, strlen((*(payload_ctx->custom_properties + i))->value.string_value.value));
+                    if (property->value.string_value.value == NULL) {
+                        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                        return NULL;
+                    }
                     property->value.string_value.length = (*(payload_ctx->custom_properties + i))->value.string_value.length;
                 }
                     break;
@@ -1019,12 +1388,18 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
                     if (!property->value.array_value.array) {
                         apn_payload_free(&_payload, NULL);
                         __apn_payload_custom_property_free(&property);
-                        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+                        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
                         return NULL;
                     }
                     property->value.array_value.array_size = 0;
                     for (j = 0; j < (*(payload_ctx->custom_properties + i))->value.array_value.array_size; j++) {
                         char *array_item = apn_strndup((*(payload_ctx->custom_properties + i))->value.array_value.array[j], strlen((*(payload_ctx->custom_properties + i))->value.array_value.array[j]));
+
+                        if (array_item == NULL) {
+                            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                            return NULL;
+                            }
+                        
                         property->value.array_value.array[j] = array_item;
                         property->value.array_value.array_size++;
                     }
@@ -1042,19 +1417,19 @@ uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref error) 
     apn_payload_ctx_ref _payload = NULL;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, __apn_errors[APN_ERR_INVALID_ARGUMENT]);
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "invalid payload_ctx. Expected pointer to tointer to apn_payload_ctx structure, passed NULL");
         APN_RETURN_ERROR;
     }
     *payload_ctx = NULL;
     _payload = malloc(sizeof (apn_payload_ctx));
     if (!_payload) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
     if (__apn_payload_alert_init(&_payload->alert, error)) {
         free(_payload);
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
@@ -1071,7 +1446,7 @@ uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref error) 
 uint8_t apn_payload_free(apn_payload_ctx_ref *payload_ctx, apn_error_ref error) {
     apn_payload_ctx_ref _payload_ctx = NULL;
     if (!payload_ctx || !(*payload_ctx)) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     _payload_ctx = *payload_ctx;
@@ -1120,11 +1495,11 @@ uint8_t apn_payload_free(apn_payload_ctx_ref *payload_ctx, apn_error_ref error) 
 
 uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, uint16_t badge, apn_error_ref error) {
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     if (badge < 0 || badge > UINT16_MAX) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_BADGE_INVALID_VALUE, __apn_errors[APN_ERR_PAYLOAD_BADGE_INVALID_VALUE]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_BADGE_INVALID_VALUE | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_BADGE_INVALID_VALUE]);
         APN_RETURN_ERROR;
     }
 
@@ -1134,15 +1509,15 @@ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, uint16_t badge, a
 
 uint16_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
-        return -1;
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        return 0;
     }
     return payload_ctx->badge;
 }
 
 uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound, apn_error_ref error) {
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     if (payload_ctx->sound) {
@@ -1150,7 +1525,10 @@ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound
         payload_ctx->sound = NULL;
     }
     if (sound) {
-        payload_ctx->sound = apn_strndup(sound, strlen(sound));
+        if ((payload_ctx->sound = apn_strndup(sound, strlen(sound))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            APN_RETURN_ERROR;
+        }
     }
     APN_RETURN_SUCCESS;
 }
@@ -1159,7 +1537,7 @@ const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_r
     char *ret_value = NULL;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return NULL;
     }
 
@@ -1171,7 +1549,7 @@ const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_r
 
 uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, apn_error_ref error) {
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     if (payload_ctx->alert->body) {
@@ -1180,17 +1558,21 @@ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, 
     }
     if (body) {
         if (!apn_string_is_utf8(body)) {
-            APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "body contains non-utf8 symbols");
+            APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "body contains non-utf8 symbols");
             APN_RETURN_ERROR;
         }
-        payload_ctx->alert->body = apn_strndup(body, strlen(body));
+     
+        if ((payload_ctx->alert->body = apn_strndup(body, strlen(body))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            APN_RETURN_ERROR;
+        }
     }
     APN_RETURN_SUCCESS;
 }
 
 uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, const char *key, apn_error_ref error) {
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     if (payload_ctx->alert->action_loc_key) {
@@ -1198,14 +1580,17 @@ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, co
         payload_ctx->alert->action_loc_key = NULL;
     }
     if (key) {
-        payload_ctx->alert->action_loc_key = apn_strndup(key, strlen(key));
+        if ((payload_ctx->alert->action_loc_key = apn_strndup(key, strlen(key))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            APN_RETURN_ERROR;
+        }
     }
     APN_RETURN_SUCCESS;
 }
 
 uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char *image, apn_error_ref error) {
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     if (payload_ctx->alert->action_loc_key) {
@@ -1213,7 +1598,10 @@ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char
         payload_ctx->alert->action_loc_key = NULL;
     }
     if (image) {
-        payload_ctx->alert->launch_image = apn_strndup(image, strlen(image));
+        if ((payload_ctx->alert->launch_image = apn_strndup(image, strlen(image))) == NULL) {
+            APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+            APN_RETURN_ERROR;
+        }
     }
     APN_RETURN_SUCCESS;
 }
@@ -1224,7 +1612,7 @@ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const cha
     uint16_t args_i = 0;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
     }
     if (payload_ctx->alert->loc_key) {
@@ -1246,13 +1634,18 @@ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const cha
 
         if (args && args_count > 0) {
             payload_ctx->alert->loc_args = (char **) malloc((args_count) * sizeof (char *));
+            
             if (!payload_ctx->alert->loc_args) {
-                APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
                 APN_RETURN_ERROR;
             }
 
             for (args_i = 0; args_i < args_count; args_i++) {
-                payload_ctx->alert->loc_args[args_i] = apn_strndup(args[args_i], strlen(args[args_i]));
+                if ((payload_ctx->alert->loc_args[args_i] = apn_strndup(args[args_i], strlen(args[args_i]))) == NULL) {
+                    APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                    APN_RETURN_ERROR;
+                }
+                
                 payload_ctx->alert->__loc_args_count++;
             }
         }
@@ -1264,7 +1657,7 @@ const char *apn_payload_launch_image(const apn_payload_ctx_ref payload_ctx, apn_
     char *ret_value = NULL;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return NULL;
     }
 
@@ -1278,7 +1671,7 @@ const char *apn_payload_localized_action_key(const apn_payload_ctx_ref payload_c
     char *ret_value = NULL;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return NULL;
     }
 
@@ -1292,7 +1685,7 @@ const char *apn_payload_body(const apn_payload_ctx_ref payload_ctx, apn_error_re
     char *ret_value = NULL;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return NULL;
     }
 
@@ -1306,7 +1699,7 @@ const char *apn_payload_localized_key(const apn_payload_ctx_ref payload_ctx, apn
     char *ret_value = NULL;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return NULL;
     }
 
@@ -1320,7 +1713,7 @@ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref payload_ctx, c
     *args = NULL;
 
     if (!payload_ctx) {
-        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return 0;
     }
     if (payload_ctx->alert->loc_args && payload_ctx->alert->__loc_args_count) {
@@ -1337,7 +1730,7 @@ uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_ref payload_ctx,
     apn_payload_custom_property_ref property = NULL;
 
     if (!property_value) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "value of custom property is NULL");
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value of custom property is NULL");
         APN_RETURN_ERROR;
     }
 
@@ -1348,11 +1741,15 @@ uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_ref payload_ctx,
     property = malloc(sizeof (apn_payload_custom_property));
 
     if (!property) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
-    property->key = apn_strndup(property_key, strlen(property_key));
+    if((property->key = apn_strndup(property_key, strlen(property_key))) ==  NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }
+    
     property->value_type = APN_CUSTOM_PROPERTY_TYPE_NUMERIC;
     property->value.numeric_value = property_value;
     payload_ctx->custom_properties[payload_ctx->__custom_properties_count] = property;
@@ -1374,12 +1771,17 @@ uint8_t apn_payload_add_custom_property_double(apn_payload_ctx_ref payload_ctx, 
     property = malloc(sizeof (apn_payload_custom_property));
 
     if (!property) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
     property->value_type = APN_CUSTOM_PROPERTY_TYPE_DOUBLE;
-    property->key = apn_strndup(property_key, strlen(property_key));
+    
+    if((property->key = apn_strndup(property_key, strlen(property_key))) ==  NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }
+    
     property->value.double_value = property_value;
 
     payload_ctx->custom_properties[payload_ctx->__custom_properties_count] = property;
@@ -1395,7 +1797,7 @@ uint8_t apn_payload_add_custom_property_bool(apn_payload_ctx_ref payload_ctx, co
     apn_payload_custom_property_ref property = NULL;
 
     if (!property_value) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "value of custom property is NULL");
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value of custom property is NULL");
         APN_RETURN_ERROR;
     }
 
@@ -1406,12 +1808,17 @@ uint8_t apn_payload_add_custom_property_bool(apn_payload_ctx_ref payload_ctx, co
     property = malloc(sizeof (apn_payload_custom_property));
 
     if (!property) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
     property->value_type = APN_CUSTOM_PROPERTY_TYPE_BOOL;
-    property->key = apn_strndup(property_key, strlen(property_key));
+    
+    if((property->key = apn_strndup(property_key, strlen(property_key))) ==  NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }
+    
     property->value.bool_value = (property_value == 0) ? 0 : 1;
 
     payload_ctx->custom_properties[payload_ctx->__custom_properties_count] = property;
@@ -1430,12 +1837,18 @@ uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref payload_ctx, co
     property = malloc(sizeof (apn_payload_custom_property));
 
     if (!property) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
     property->value_type = APN_CUSTOM_PROPERTY_TYPE_NULL;
-    property->key = apn_strndup(property_key, strlen(property_key));
+    
+    if((property->key = apn_strndup(property_key, strlen(property_key))) ==  NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }    
+    
+    
     property->value.string_value.value = NULL;
     property->value.string_value.length = 0;
 
@@ -1452,7 +1865,7 @@ uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_ref payload_ctx, 
     apn_payload_custom_property_ref property = NULL;
 
     if (!property_value) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "value of custom property is NULL");
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value of custom property is NULL");
         APN_RETURN_ERROR;
     }
 
@@ -1461,20 +1874,28 @@ uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_ref payload_ctx, 
     }
 
     if (!apn_string_is_utf8(property_value)) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "value contains non-utf8 symbols");
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value contains non-utf8 symbols");
         APN_RETURN_ERROR;
     }
 
     property = malloc(sizeof (apn_payload_custom_property));
     if (!property) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
     property->value_type = APN_CUSTOM_PROPERTY_TYPE_STRING;
-    property->key = apn_strndup(property_key, strlen(property_key));
+    
+    if((property->key = apn_strndup(property_key, strlen(property_key))) ==  NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }
 
-    property->value.string_value.value = apn_strndup(property_value, strlen(property_value));
+    if ((property->value.string_value.value = apn_strndup(property_value, strlen(property_value))) == NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }
+    
     property->value.string_value.length = strlen(property_value);
 
     payload_ctx->custom_properties[payload_ctx->__custom_properties_count] = property;
@@ -1493,7 +1914,7 @@ uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref payload_ctx, c
     uint8_t _array_size = 0;
 
     if (!array) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT, "value of custom property is NULL");
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value of custom property is NULL");
         APN_RETURN_ERROR;
     }
 
@@ -1503,12 +1924,16 @@ uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref payload_ctx, c
 
     property = malloc(sizeof (apn_payload_custom_property));
     if (!property) {
-        APN_SET_ERROR(error, APN_ERR_NOMEM, __apn_errors[APN_ERR_NOMEM]);
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }
 
     property->value_type = APN_CUSTOM_PROPERTY_TYPE_ARRAY;
-    property->key = apn_strndup(property_key, strlen(property_key));
+    
+    if((property->key = apn_strndup(property_key, strlen(property_key))) ==  NULL) {
+        APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+        APN_RETURN_ERROR;
+    }
 
     if (array_size) {
         _array = (char **) malloc(sizeof (char *) * array_size);
@@ -1519,7 +1944,10 @@ uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref payload_ctx, c
 
         _array_size = (array_size > 6) ? 6 : array_size;
         for (i = 0; i < _array_size; i++) {
-            _array[i] = apn_strndup(array[i], strlen(array[i]));
+            if ((_array[i] = apn_strndup(_array[i], strlen(_array[i]))) == NULL) {
+                APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
+                APN_RETURN_ERROR;
+            }
         }
         property->value.array_value.array = _array;
         property->value.array_value.array_size = _array_size;
@@ -1537,4 +1965,16 @@ uint apn_version() {
 
 const char * apn_version_string() {
     return APN_VERSION_STRING;
+}
+
+void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_count) {
+    uint32_t i = 0;
+    
+    if (tokens_array != NULL && tokens_array_count > 0) {
+        for (i = 0; i < tokens_array_count; i++) {
+            char *token = *(tokens_array + i);
+            free(token);
+        }
+        free(tokens_array);
+    }
 }

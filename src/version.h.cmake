@@ -23,10 +23,36 @@
 #ifndef __APN_VERSION_H__
 #define	__APN_VERSION_H__
 
+/**
+ * Library version as string
+ * @ingroup version
+ */
 #define APN_VERSION_STRING "${APN_VERSION_MAJOR}.${APN_VERSION_MINOR}.${APN_VERSION_PATCH}"
+
+/**
+ * Major part of the library version
+ * @ingroup version
+ */
 #define APN_VERSION_MAJOR  ${APN_VERSION_MAJOR}
+
+/**
+ * Minor part of the library version
+ * @ingroup version
+ */
 #define APN_VERSION_MINOR  ${APN_VERSION_MINOR}
+
+/**
+ * Patch part of the library version
+ * @ingroup version
+ */
 #define APN_VERSION_PATCH  ${APN_VERSION_PATCH}
+
+/**
+ * Library version as 3-byte hexadecimal.
+ *
+ * E.g. 0x010000 for version 1.0.0, 0x010100 for version 1.1.0
+ * @ingroup version
+ */
 #define APN_VERSION_NUM  ((APN_VERSION_MAJOR  << 16) | (APN_VERSION_MINOR << 8) | (APN_VERSION_PATCH << 0))
 
 #endif	/* __APN_VERSION_H__ */

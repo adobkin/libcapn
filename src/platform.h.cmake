@@ -45,7 +45,6 @@
 #cmakedefine HAVE_SYS_SOCKET_H
 #endif
 
-
 #if defined(__OpenBSD__)
 #undef HAVE_MALLOC_H
 #endif
@@ -99,12 +98,13 @@
 #define __apn_attribute_warn_unused_result__
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #define CLOSE_SOCKET(__socket) closesocket(__socket)
 #else
 #define CLOSE_SOCKET(__socket) close(__socket)
 #define WSACleanup()
+typedef int SOCKET;
 #endif
 
 #ifdef HAVE_MALLOC_H

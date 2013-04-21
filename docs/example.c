@@ -12,16 +12,22 @@ int main() {
     const char *token = "04C11AF19F8535381BC30D1F875EF9A0C626466932571C2AA2296B8C562D397C";
 
     if(apn_init(&ctx, &error) == APN_ERROR){
-        printf("%s: %d\n", error.message, error.code);
+        printf("%s: %d\n", error.message,  APN_ERR_CODE_WITHOUT_CLASS(error.code));
         return 1;
     }
 
     apn_set_certificate(ctx, cert_path, NULL);
+    
+#if APN_VERSION_NUM >= 0x010000
+    apn_set_private_key(ctx, key_path, NULL, NULL);
+#else
     apn_set_private_key(ctx, key_path, NULL);
+#endif
+    
     apn_add_token(ctx, token, NULL);
 
     if(apn_payload_init(&payload_ctx, &error) == APN_ERROR) {
-        printf("%s: %d\n", error.message, error.code);
+        printf("%s: %d\n", error.message, APN_ERR_CODE_WITHOUT_CLASS(error.code));
         apn_free(&ctx, NULL);
         return 1;
     }
@@ -39,7 +45,7 @@ int main() {
     }
 
     if(apn_send(ctx, payload_ctx, &error) == APN_ERROR) {
-       printf("Could not sent push: %s (%d)\n", error.message, error.code);
+       printf("Could not sent push: %s (%d)\n", error.message,  APN_ERR_CODE_WITHOUT_CLASS(error.code));
        apn_close(ctx);
        apn_payload_free(&payload_ctx, NULL);
        apn_free(&ctx, NULL);

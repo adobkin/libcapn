@@ -34,47 +34,38 @@ extern "C" {
 #define APN_ERROR 1
 
 /**
- * @example example.c 
- * Send Push Notification
- */
- 
-/** 
- * @defgroup errors Error Handling
- * Error Handling
- * @{
- * 
- * @details libcapn uses an ::apn_error structure to pass error information to the caller. 
- * 
- * If the call succeeded, the contents of error are generally left unspecified.  The normal use 
- * of apn_error is to allocate it on the stack, and pass the pointer to a function.
- * 
- * 
- * Example code:
- * 
- * @code{.c}
- * int main() {
- *     apn_error error;
- *     apn_ctx_ref ctx = NULL;
- * 
- *     ...
- * 
- *     if(apn_init(&ctx, &error) == APN_ERROR){
- *       printf("%s: %d\n", error.message, error.code);
- *       return 1;
- *     }
- * 
- *     ...
- * }
- * @endcode
- */
-
-/**
  * Maximum size of error message
+ * @ingroup errors
  */
 #define APN_ERROR_MESSAGE_MAX_SIZE 128
-    
+  
+/**
+ * @ingroup errors
+ */
+enum __apn_errors_class {
+    APN_ERR_CLASS_USER = 0x20000000,
+    APN_ERR_CLASS_INTERNAL = 0x40000000
+};
+
+/**
+ * @ingroup errors
+ */
+#define APN_ERR_IS_INTERNAL(__errcode) (__errcode & APN_ERR_CLASS_INTERNAL)
+
+/**
+ * @ingroup errors
+ */
+#define APN_ERR_IS_USER(__errcode) (__errcode & APN_ERR_CLASS_USER)
+
+/**
+ * @ingroup errors
+ */
+#define APN_ERR_CODE_WITHOUT_CLASS(__errcode) (__errcode & ~(APN_ERR_CLASS_USER | APN_ERR_CLASS_INTERNAL))
+
 /**
  * Error codes
+ * 
+ * @ingroup errors
  */
 enum __apn_errors {
     /** No free memory */
@@ -103,6 +94,9 @@ enum __apn_errors {
     /** Device token is not set */
     APN_ERR_TOKEN_IS_NOT_SET,
     
+    /** Invalid device token */
+    APN_ERR_TOKEN_INVALID,
+    
     /** Added too many device tokens */
     APN_ERR_TOKEN_TOO_MANY,
     
@@ -127,6 +121,9 @@ enum __apn_errors {
     /** SSL_write failed */
     APN_ERR_SSL_WRITE_FAILED,
     
+    /** SSL_read failed */
+    APN_ERR_SSL_READ_FAILED,
+    
     /** Invalid size of notification payload */
     APN_ERR_INVALID_PAYLOAD_SIZE,
     
@@ -147,9 +144,12 @@ enum __apn_errors {
     
     /** Alert message text is not set */
     APN_ERR_PAYLOAD_ALERT_IS_NOT_SET,
-    
+        
     /** Non-UTF8 symbols detected in a string */
     APN_ERR_STRING_CONTAINS_NON_UTF8_CHARACTERS,
+    
+    /** Processing error */
+    APN_ERR_PROCESSING_ERROR,
     
     /** Unknown error */
     APN_ERR_UNKNOWN,    
@@ -158,10 +158,15 @@ enum __apn_errors {
     APN_ERR_COUNT 
 };
 
+/**
+ * @ingroup errors
+ */
 typedef enum __apn_errors apn_errors;
 
 /**
  * Uses to pass error information to the caller
+ * 
+ * @ingroup errors
  */
 struct __apn_error {
     /** 
@@ -169,7 +174,7 @@ struct __apn_error {
      * @sa apn_errors
      */
     
-    apn_errors code;
+    uint32_t code;
     
     /** 
      * Error message or an empty string if the message 
@@ -178,70 +183,18 @@ struct __apn_error {
     char message[APN_ERROR_MESSAGE_MAX_SIZE];
 };
 
+/**
+ * @ingroup errors
+ */
 typedef struct __apn_error* apn_error_ref;
+/**
+ * @ingroup errors
+ */
 typedef struct __apn_error apn_error;
 
-/**
- * @}
- */
 
 /**
- * @defgroup apn Apple Push Notification Service
- * Apple Push Notification Service
- * 
- * @details Apple Push Notification service (APNs for short) transports and routes a notification from a given provider to a given 
- * device. A notification is a short message consisting of two major pieces of data: the device token and the \ref payload "payload". 
- * 
- * The device token is analogous to a phone number; it contains information that enables APNs to locate the device on 
- * which the client application is installed. APNs also uses it to authenticate the routing of a notification. 
- * 
- * @attention The Apple is not guarantee delivery, you should not depend on the remote-notifications facility 
- * for delivering critical data to an application via the payload. And never include sensitive data in the payload. 
- * 
- * The payload specifies how the user of an application on a device is to 
- * be alerted.
- * 
- * To establish secure connection from APNs uses SSL certificate and private key. The SSL certificate required for these connections 
- * is provisioned through the iOS Provisioning Portal. 
- * 
- * @note To establish a TLS session with APNs, an Entrust Secure CA root certificate must be installed on the 
- * provider’s server. If on your systems the certificate is not available, you can download this certificate 
- * from the Entrust SSL Certificates  <a href="http://www.entrust.net">website</a>.
- * 
- * @attention You should also retain connections with APNs across multiple notifications. 
- * APNs may consider connections that are rapidly and repeatedly established and torn down as a 
- * denial-of-service attack. Upon error, APNs closes the connection on which the error occurred.
- * 
- * @sa <a href="http://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html#//apple_ref/doc/uid/TP40008194-CH100-SW9">Apple Push Notification Service</a> for more information
- * @{
- * 
- * @defgroup payload Notification Payload
- * Notification Payload
- * 
- * @details Each push notification carries with it a payload. The payload specifies how users are to be alerted to the 
- * data waiting to be downloaded to the client application. 
- * 
- * @attention The maximum size allowed for a notification payload 
- * is 256 bytes.
- * 
- * The payload contains one or more properties that specify the following actions:
- * - An alert message to display to the user
- * - A number to badge the application icon with
- * - A sound to play
- * - A custom properties
- * 
- * @attention The alert messsage is required.
- * 
- * You can specify custom payload values. You should not include customer information as custom payload data. Instead, 
- * use it for such purposes as setting context (for the user interface) or internal metrics.
- * 
- * 
- * @sa <a href="http://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html#//apple_ref/doc/uid/TP40008194-CH100-SW1">The Notification Payload</a> for more information
- *  
- * @{
- */
-
-/**
+ * @ingroup payload
  * Types of custom property of notification payload
  */
 enum __apn_payload_custom_property_types {
@@ -253,6 +206,9 @@ enum __apn_payload_custom_property_types {
     APN_CUSTOM_PROPERTY_TYPE_NULL
 };
 
+/**
+ * @ingroup payload
+ */
 union __apn_payload_custom_value {
     int64_t numeric_value;					
     double double_value;
@@ -272,6 +228,7 @@ union __apn_payload_custom_value {
  * 
  * Uses to store custom notification property
  * 
+ * @ingroup payload
  */
 struct __apn_payload_custom_property {
     /** Property name */
@@ -284,14 +241,22 @@ struct __apn_payload_custom_property {
     enum __apn_payload_custom_property_types value_type;
 };
 
+/**
+ * @ingroup payload
+ */
 typedef struct __apn_payload_custom_property  apn_payload_custom_property;
+/**
+ * @ingroup payload
+ */
 typedef struct __apn_payload_custom_property * apn_payload_custom_property_ref;
 
-
+ 
 /** 
  * Payload alert
  * 
  * Uses to store payload alert
+ * 
+ * @ingroup payload
  */
 struct __apn_payload_alert {
     /** Text of the alert message */
@@ -306,13 +271,21 @@ struct __apn_payload_alert {
     char *launch_image;
 };
 
+/**
+ * @ingroup payload
+ */
 typedef struct __apn_payload_alert * apn_payload_alert_ref;
+/**
+ * @ingroup payload
+ */
 typedef struct __apn_payload_alert  apn_payload_alert;
 
 /** 
  * Notification Payload
  * 
  * Uses to store notification payload
+ * 
+ * @ingroup payload
  */
 struct __apn_payload {
     /** Alert */
@@ -331,21 +304,25 @@ struct __apn_payload {
     uint8_t __custom_properties_count;
 };
 
-typedef struct __apn_payload * apn_payload_ctx_ref;
-typedef struct __apn_payload  apn_payload_ctx;
-
 /**
- * @}
+ * @ingroup payload
  */
-
+typedef struct __apn_payload * apn_payload_ctx_ref;
+/**
+ * @ingroup payload
+ */
+typedef struct __apn_payload  apn_payload_ctx;
 
 /** 
  * Connection context
  * 
  * Uses to store connection data for Apple Push Notification/Feedback Service
+ * 
+ * @ingroup apn
+ * @ingroup feedback
  */
 struct __apn_ctx {
-    int sock;
+    SOCKET sock;
     
     /**
      * Pointer to `SSL` structure. Is used to hold data 
@@ -357,6 +334,8 @@ struct __apn_ctx {
      * Device tokens count
      */
     uint32_t __tokens_count;
+    
+    uint32_t expiry;
     
     /** 
      * Path to an SSL certificate file
@@ -381,15 +360,24 @@ struct __apn_ctx {
      */
     char **tokens;
     
+    char *private_key_pass;
+    
     uint8_t feedback;
+    
 };
 
+/**
+ * @ingroup apn
+ * @ingroup feedback
+ */
 typedef struct __apn_ctx * apn_ctx_ref;
-typedef struct __apn_ctx  apn_ctx;
 
 /**
- * @} 
+ * @ingroup apn
+ * @ingroup feedback
  */
+typedef struct __apn_ctx  apn_ctx;
+
 
 /**
  * Returns a 3-byte hexadecimal representation of the 
@@ -433,10 +421,11 @@ __apn_export__ const char * apn_version_string();
  * Creates a new connection context which is needed to hold the data for a connection to
  * Apple Push Notification/Feedback Service
  *
- * This function allocates memory for a connection context which should be freed - call apn_free() function
+ * This function allocates memory for a connection context which should be freed - call ::apn_free() function
  * for it
  *
  * @sa apn_free()
+ * @ingroup feedback
  * @ingroup apn
  * 
  * @param[in, out] ctx - Double pointer to `::apn_ctx` structure. Used to return new connection context. Cannot be NULL
@@ -451,6 +440,7 @@ __apn_export__ uint8_t apn_init(apn_ctx_ref *ctx, apn_error_ref error) __apn_att
  * Frees memory allocated for a connection context
  * 
  * @ingroup apn
+ * @ingroup feedback
  * 
  * @param[in, out] ctx - Double pointer to `::apn_ctx` structure
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller.
@@ -474,21 +464,6 @@ __apn_export__ uint8_t apn_free(apn_ctx_ref *ctx, apn_error_ref error);
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
 __apn_export__ uint8_t apn_connect(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_ref error) __apn_attribute_warn_unused_result__;
-
-/**
- * Opens Apple Push Feedback Service connection
- * 
- * @sa apn_close()
- * @ingroup feedback
- * 
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
- * @param[in] sandbox - 1 to use "sandbox" server, 0 - not to use
- * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller. 
- * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
- * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
- */
-__apn_export__ uint8_t apn_connect_feedback(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_ref error) __apn_attribute_warn_unused_result__;
 
 /**
  * Closes Apple Push Notification/Feedback Service connection
@@ -517,6 +492,7 @@ __apn_export__ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) 
  * Sets path to an SSL certificate which will be used to establish secure connection
  * 
  * @ingroup apn
+ * @ingroup feedback
  * 
  * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
  * @param[in] cert - Path to a SSL certificate file. Must be a valid NULL-terminated string
@@ -531,15 +507,38 @@ __apn_export__ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, ap
  * Sets a path to a private key which will be used to establish secure connection
  * 
  * @ingroup apn
+ * @ingroup feedback
+ * @attention In version 1.0.0 added a new argument `pass`
  * 
  * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
  * @param[in] key - Path to a private key file. Must be a valid NULL-terminated string
+ * @param[in] pass - Private key passphrase. Can be NULL
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
  */
-__apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, apn_error_ref error);
+__apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, apn_error_ref error);
+
+/**
+ * Sets expiration time of notification 
+ *  
+ * Expiration time is a fixed UNIX epoch date expressed in seconds (UTC) that identifies when the notification 
+ * is no longer valid and can be discarded. You can specify zero or a value less than zero 
+ * to request that APNs not store the notification at all.
+ * Default value is 0.
+ * 
+ * @ingroup apn
+ * @since 1.1.0
+ * 
+ * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] expiry - Time in seconds
+ * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ *
+ * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
+ */
+uint8_t apn_set_expiry(apn_ctx_ref ctx, uint32_t expiry, apn_error_ref error);
 
 /**
  * Adds a new target device token
@@ -566,6 +565,7 @@ __apn_export__ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_err
  * Pass NULL as the apn_error pointer, if error information should not be returned to the caller
  * 
  * @ingroup apn
+ * @ingroup feedback
  * 
  * @return Pointer to NULL-terminated string on success, or NULL on failure with error information stored 
  * in `error`. The retuned value is read-only and must not be modified or freed 
@@ -580,11 +580,29 @@ __apn_export__ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @ingroup apn
+ * @ingroup feedback
  * 
  * @return Pointer to NULL-terminated string on success, or NULL on failure with
  * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+
+/**
+ * Returns expiration time of notification
+ * 
+ * Expiration time is a fixed UNIX epoch date expressed in seconds (UTC) that identifies when the notification 
+ * is no longer valid and can be discarded.
+ * 
+ * @since 1.1.0
+ * @ingroup apn
+ * 
+ * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller.
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ *
+ * @return Unix timestamp
+ */
+uint32_t apn_expiry(apn_ctx_ref ctx, apn_error_ref error);
 
 /**
  * Returns an array of device tokens which should receive the notification
@@ -608,15 +626,56 @@ __apn_export__ uint32_t apn_tokens(const apn_ctx_ref ctx, char ***tokens, apn_er
  * 
  * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
  * @param[in] payload_ctx - Pointer to `::apn_payload_ctx` structure. Cannot be NULL
- * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller. 
+ * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return  ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error`
  */
 __apn_export__ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload_ctx, apn_error_ref error);
 
- __apn_export__ uint32_t apn_feedback(const apn_ctx_ref ctx, const char ***tokens, apn_error_ref error);
+/**
+ * Opens Apple Push Feedback Service connection
+ * 
+ * @sa apn_close()
+ * @ingroup feedback
+ * 
+ * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] sandbox - 1 to use "sandbox" server, 0 - not to use
+ * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller. 
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * 
+ * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ */
+__apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_ref error) __apn_attribute_warn_unused_result__;
 
+
+/**
+ * Returns array of device tokens which no longer exists
+ * 
+ * @ingroup feedback
+ * 
+ * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in, out] tokens_array - Pointer to a device tokens array. . The array  
+ * should be freed - call ::apn_feedback_tokens_array_free() function for it
+ * @param[in, out] tokens_array_count - Count tokens in `tokens_array`
+ * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller 
+ * 
+ * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error`
+ */
+ __apn_export__ uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count, apn_error_ref error);
+
+ /**
+  * Frees memory allocated for a tokens array, which returned ::apn_feedback()
+  * 
+  * @ingroup feedback
+  * 
+  * This function allocates memory for a connection context which 
+  * 
+  * @param[in] tokens_array - Pointer to a device tokens array
+  * @param[in] tokens_array_count - Count tokens in `tokens_array`
+  */
+ void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_count);
+ 
  /**
  * Creates a new notification payload context
  *
@@ -792,7 +851,7 @@ __apn_export__ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref
  * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return Number
+ * @return Number to display as the badge
  */
 __apn_export__ uint16_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
 
