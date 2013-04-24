@@ -47,6 +47,12 @@ enum __apn_errors_class {
     APN_ERR_CLASS_INTERNAL = 0x40000000
 };
 
+
+/**
+ * @ingroup errors
+ */
+#define APN_IS_ERROR(__error) (__error != NULL && __error->code > 0)
+
 /**
  * @ingroup errors
  */
@@ -293,6 +299,20 @@ struct __apn_payload {
     
     /** Name of a sound file in the application bundle */
     char *sound;
+
+    /** 
+     * Target devices tokens
+     *   
+     * The device token is an opaque identifier of a device that Apple Push Notification Service 
+     * gives to the device when it first connects with it. Device token is used to identify
+     * a target device which should receive the notification
+     */
+    char **tokens;
+
+    /**
+     * Device tokens count
+     */
+    uint32_t __tokens_count;
     
     /** Number to display as a badge on application icon */
     uint16_t badge;
@@ -547,7 +567,11 @@ uint8_t apn_set_expiry(apn_ctx_ref ctx, uint32_t expiry, apn_error_ref error);
  * which will receive the notification.
  * 
  * @ingroup apn
- * 
+ * @sa apn_payload_add_tokn()
+ *
+ * @warning If device tokens are added both to apn_ctx and to payload_ctx, tokens from payload_ctx will 
+ * be used when sending push notification 
+ *
  * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
  * @param[in] token - Device token. Must be a valid NULL-terminated string
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
@@ -603,21 +627,6 @@ __apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref 
  * @return Unix timestamp
  */
 uint32_t apn_expiry(apn_ctx_ref ctx, apn_error_ref error);
-
-/**
- * Returns an array of device tokens which should receive the notification
- * 
- * @ingroup apn
- * 
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
- * @param[in, out] tokens - Pointer to a device tokens array. Return NULL on failure with error information stored to `error`.
- * The return value must not be modified or freed
- * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller. 
- * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
- * 
- * @return Tokens count in `tokens` array
- */
-__apn_export__ uint32_t apn_tokens(const apn_ctx_ref ctx, char ***tokens, apn_error_ref error) __apn_attribute_warn_unused_result__;    
 
 /**
  * Sends push notification
@@ -718,6 +727,27 @@ __apn_export__ uint8_t apn_payload_free(apn_payload_ctx_ref *payload_ctx, apn_er
  * @return Pointer to new `::apn_payload_ctx` structure on success, or NULL on failure with error information stored to `error`
  */
 __apn_export__ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+
+/**
+ * Adds a new target device token to payload
+ * 
+ * Device token are used for identification of targets
+ * which will receive the notification.
+ * 
+ * @since 1.0.0.beta2 
+ * @ingroup payload
+ * @sa apn_add_token()
+ * @warning If device tokens are added both to apn_ctx and to payload_ctx, tokens from payload_ctx will 
+ * be used when sending push notification 
+ * 
+ * @param[in] payload_ctx - Pointer to an initialized `::apn_payload_ctx` structure. Cannot be NULL
+ * @param[in] token - Device token. Must be a valid NULL-terminated string
+ * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * 
+ * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ */
+__apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token, apn_error_ref error);  
 
 /**
  * Sets a number to display as a badge on the application icon

@@ -1,6 +1,15 @@
 /** @page changelog ChangeLog 
  ChangeLog
  
+### Version 1.0.0 beta2 ###
+
+- Added ability to add device tokens for the payload
+    - new function apn_payload_add_token()
+- Fixed bug of copying apn_ctx structure
+- Removed apn_tokens() function
+- Added macro APN_IS_ERROR()
+- Now apn_ctx structure store devices tokens in binary format, not hex
+ 
 ### Version 1.0.0 beta ###
 
 - Added Feedback Service support:
@@ -16,4 +25,4 @@
     - APN_ERR_IS_USER()
     - APN_ERR_CODE_WITHOUT_CLASS()
 	
-*/	
+*/
