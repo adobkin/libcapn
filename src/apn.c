@@ -919,8 +919,8 @@ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_r
     id_pos_ref = binary_message_ref;
     binary_message_ref += sizeof (i);
 
-    memcpy(binary_message_ref, &ctx->expiry, sizeof (ctx->expiry));
-    binary_message_ref += sizeof (ctx->expiry);
+    memcpy(binary_message_ref, &payload->expiry, sizeof (payload->expiry));
+    binary_message_ref += sizeof (payload->expiry);
 
     memcpy(binary_message_ref, &token_length, sizeof (token_length));
     binary_message_ref += sizeof (token_length);
@@ -1032,7 +1032,6 @@ uint8_t apn_init(apn_ctx_ref *ctx, apn_error_ref error) {
     _ctx->private_key_file = NULL;
     _ctx->tokens = NULL;
     _ctx->feedback = 0;
-    _ctx->expiry = 0;
     _ctx->private_key_pass = NULL;
     *ctx = _ctx;
     APN_RETURN_SUCCESS;
@@ -1071,8 +1070,6 @@ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) {
             return NULL;
         }
     }
-
-    _ctx->expiry = ctx->expiry;
 
     _ctx->tokens = __apn_tokens_array_copy(ctx->tokens, ctx->__tokens_count, error);
     if(_ctx->tokens == NULL && APN_IS_ERROR(error)) {
@@ -1140,17 +1137,6 @@ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_r
 
     ctx->feedback = 1;
     return __apn_connect(ctx, server, error);
-}
-
-uint8_t apn_set_expiry(apn_ctx_ref ctx, uint32_t expiry, apn_error_ref error) {
-    if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
-        APN_RETURN_ERROR;
-    }
-    
-    ctx->expiry = expiry;
-
-    APN_RETURN_SUCCESS;
 }
 
 uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref error) {
@@ -1268,13 +1254,13 @@ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref error) {
     return ret_value;
 }
 
-uint32_t apn_expiry(apn_ctx_ref ctx, apn_error_ref error) {
-    if (!ctx) {
-        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+    if (!payload_ctx) {
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return 0;
     }
     
-    return ctx->expiry;
+    return payload_ctx->expiry;
 }
 
 apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
@@ -1346,6 +1332,8 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
             }
         }
     }
+
+    _payload->expiry = payload_ctx->expiry;
 
     _payload->tokens = __apn_tokens_array_copy(payload_ctx->tokens, payload_ctx->__tokens_count, error);
     if(_payload->tokens == NULL && APN_IS_ERROR(error)) {
@@ -1460,6 +1448,7 @@ uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref error) 
     _payload->custom_properties = NULL;
     _payload->__tokens_count = 0;
     _payload->tokens = NULL;
+    _payload->expiry = 0;
 
     *payload_ctx = _payload;
 
@@ -1515,6 +1504,17 @@ uint8_t apn_payload_free(apn_payload_ctx_ref *payload_ctx, apn_error_ref error) 
 
     free(_payload_ctx);
     *payload_ctx = NULL;
+    APN_RETURN_SUCCESS;
+}
+
+uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref error) {
+    if (!payload_ctx) {
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_RETURN_ERROR;
+    }
+    
+    payload_ctx->expiry = expiry;
+
     APN_RETURN_SUCCESS;
 }
 

@@ -309,6 +309,8 @@ struct __apn_payload {
      */
     char **tokens;
 
+    uint32_t expiry;
+
     /**
      * Device tokens count
      */
@@ -354,8 +356,6 @@ struct __apn_ctx {
      * Device tokens count
      */
     uint32_t __tokens_count;
-    
-    uint32_t expiry;
     
     /** 
      * Path to an SSL certificate file
@@ -540,25 +540,6 @@ __apn_export__ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, ap
  */
 __apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, apn_error_ref error);
 
-/**
- * Sets expiration time of notification 
- *  
- * Expiration time is a fixed UNIX epoch date expressed in seconds (UTC) that identifies when the notification 
- * is no longer valid and can be discarded. You can specify zero or a value less than zero 
- * to request that APNs not store the notification at all.
- * Default value is 0.
- * 
- * @ingroup apn
- * @since 1.1.0
- * 
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
- * @param[in] expiry - Time in seconds
- * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
- * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
- *
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
- */
-uint8_t apn_set_expiry(apn_ctx_ref ctx, uint32_t expiry, apn_error_ref error);
 
 /**
  * Adds a new target device token
@@ -610,23 +591,6 @@ __apn_export__ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref 
  * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
-
-/**
- * Returns expiration time of notification
- * 
- * Expiration time is a fixed UNIX epoch date expressed in seconds (UTC) that identifies when the notification 
- * is no longer valid and can be discarded.
- * 
- * @since 1.1.0
- * @ingroup apn
- * 
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
- * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller.
- * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
- *
- * @return Unix timestamp
- */
-uint32_t apn_expiry(apn_ctx_ref ctx, apn_error_ref error);
 
 /**
  * Sends push notification
@@ -750,6 +714,26 @@ __apn_export__ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref pa
 __apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token, apn_error_ref error);  
 
 /**
+ * Sets expiration time of notification 
+ *  
+ * Expiration time is a fixed UNIX epoch date expressed in seconds (UTC) that identifies when the notification 
+ * is no longer valid and can be discarded. You can specify zero or a value less than zero 
+ * to request that APNs not store the notification at all.
+ * Default value is 0.
+ * 
+ * @ingroup payload
+ * @since 1.0.0
+ * 
+ * @param[in] payload_ctx - Pointer to an initialized `::apn_payload_ctx` structure. Cannot be NULL
+ * @param[in] expiry - Time in seconds
+ * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ *
+ * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
+ */
+uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref error);
+
+/**
  * Sets a number to display as a badge on the application icon
  * 
  * If this property is not set, previously set value is not changed. To remove the badge, 
@@ -855,6 +839,23 @@ __apn_export__ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
 __apn_export__ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const char *key, char **args, uint16_t args_count, apn_error_ref error);
+
+/**
+ * Returns expiration time of notification
+ * 
+ * Expiration time is a fixed UNIX epoch date expressed in seconds (UTC) that identifies when the notification 
+ * is no longer valid and can be discarded.
+ * 
+ * @since 1.0.0
+ * @ingroup payload
+ * 
+ * @param[in] payload_ctx - Pointer to an initialized `::apn_payload_ctx` structure. Cannot be NULL
+ * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller.
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ *
+ * @return Unix timestamp
+ */
+uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref error);
 
 /**
  * Returns an array of strings to appear in place of the format specifiers in localized alert-message string
