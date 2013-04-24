@@ -132,7 +132,7 @@ static char *__apn_errors[APN_ERR_COUNT] = {
     "certificate is not set", // APN_ERR_CERTIFICATE_IS_NOT_SET
     "private key is not set", // APN_ERR_PRIVATE_KEY_IS_NOT_SET
     "notification payload is not set", // APN_ERR_PAYLOAD_IS_NOT_SET
-    "no one device token is not set", // APN_ERR_TOKEN_IS_NOT_SET
+    "no device tokens given", // APN_ERR_TOKEN_IS_NOT_SET
     "invalid device token", // APN_ERR_TOKEN_INVALID
     "too many device tokens",
     "unable to use specified SSL certificate", // APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE
