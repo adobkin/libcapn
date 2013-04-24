@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <capn/apn.h>
+#include <capn/version.h>
 
 int main() {
     apn_payload_ctx_ref payload_ctx = NULL;
@@ -10,6 +11,7 @@ int main() {
     const char *cert_path = "apns-dev-cert.pem";
     const char *key_path = "apns-dev-key.pem";
     const char *token = "04C11AF19F8535381BC30D1F875EF9A0C626466932571C2AA2296B8C562D397C";
+    time_t time_now = 0;
 
     if(apn_init(&ctx, &error) == APN_ERROR){
         printf("%s: %d\n", error.message,  APN_ERR_CODE_WITHOUT_CLASS(error.code));
@@ -32,8 +34,11 @@ int main() {
         return 1;
     }
 
+    time(&time_now);
+    
     apn_payload_set_badge(payload_ctx, 10, NULL);
     apn_payload_set_body(payload_ctx, push_message, NULL);
+    apn_payload_set_expiry(payload_ctx, time_now + 3600, NULL);
     apn_payload_set_sound(payload_ctx, "default",  NULL);
     apn_payload_add_custom_property_integer(payload_ctx, "int_property", 20, NULL);
   
