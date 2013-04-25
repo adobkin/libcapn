@@ -433,7 +433,7 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
         return NULL;
     }
 
-    if (!payload_ctx->alert || !payload_ctx->alert->body) {
+    if (!payload_ctx->alert || (!payload_ctx->alert->loc_key && !payload_ctx->alert->body)) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_ALERT_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_ALERT_IS_NOT_SET]);
         return NULL;
     }
@@ -444,7 +444,10 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
         json_object_set_new(aps, "alert", json_string(payload_ctx->alert->body));
     } else {
         alert = json_object();
-        json_object_set_new(alert, "body", json_string(payload_ctx->alert->body));
+        
+        if(payload_ctx->alert->body) {
+            json_object_set_new(alert, "body", json_string(payload_ctx->alert->body));
+        }
 
         if (payload_ctx->alert->launch_image) {
             json_object_set_new(alert, "launch-image", json_string(payload_ctx->alert->launch_image));
