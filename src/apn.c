@@ -124,7 +124,7 @@ enum __apn_apns_errors {
 };
 
 static char *__apn_errors[APN_ERR_COUNT] = {
-    "no memory", // APN_ERR_NOMEM
+    "out of memory", // APN_ERR_NOMEM
     "connection context is not initialized. Expected poninter to initialize apn_ctx structure, passed NULL", // APN_ERR_CTX_NOT_INITIALIZED
     "no opened connection to Apple Push Notification Service",
     "no opened connection to Apple Feedback Service",
@@ -149,7 +149,7 @@ static char *__apn_errors[APN_ERR_COUNT] = {
     "too many custom properties, no more than 5", //APN_ERR_PAYLOAD_TOO_MANY_CUSTOM_PROPERTIES
     "specified custom property key is already used", // APN_ERR_PAYLOAD_CUSTOM_PROPERTY_KEY_IS_ALREADY_USED
     "could not create json document", // APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT
-    "alert message text is not set", // APN_ERR_PAYLOAD_ALERT_IS_NOT_SET
+    "alert message text and key used to get a localized alert-message string are not set", // APN_ERR_PAYLOAD_ALERT_IS_NOT_SET
     "non-UTF8 symbols detected in a string",
     "processing error", // APN_ERR_PROCESSING_ERROR
     "unknown error" // APN_ERR_UNKNOWN
