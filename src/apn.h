@@ -32,6 +32,11 @@ extern "C" {
     
 #define APN_SUCCESS 0
 #define APN_ERROR 1
+    
+enum __apn_mode {
+    APN_MODE_PRODUCTION = 0,
+    APN_MODE_SANDBOX = 1
+};
 
 /**
  * Maximum size of error message
@@ -384,6 +389,8 @@ struct __apn_ctx {
     
     uint8_t feedback;
     
+    uint8_t mode;
+    
 };
 
 /**
@@ -444,17 +451,25 @@ __apn_export__ const char * apn_version_string();
  * This function allocates memory for a connection context which should be freed - call ::apn_free() function
  * for it
  *
+ * @warning 
+ * 
  * @sa apn_free()
+ * @sa apn_set_private_key()
+ * @sa apn_set_certificate()
+ * 
  * @ingroup feedback
  * @ingroup apn
  * 
  * @param[in, out] ctx - Double pointer to `::apn_ctx` structure. Used to return new connection context. Cannot be NULL
+ * @param[in] cert - path to an SSL certificate which will be used to establish secure connection. Can be NULL
+ * @param[in] private_key - path to private key which used to establish secure connection. Can be NULL
+ * @param[in] private_key_pass - Private key passphrase. Can be NULL
  * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller.
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_init(apn_ctx_ref *ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, const char *private_key_pass, apn_error_ref error) __apn_attribute_warn_unused_result__;
 
 /**
  * Frees memory allocated for a connection context
@@ -462,13 +477,10 @@ __apn_export__ uint8_t apn_init(apn_ctx_ref *ctx, apn_error_ref error) __apn_att
  * @ingroup apn
  * @ingroup feedback
  * 
- * @param[in, out] ctx - Double pointer to `::apn_ctx` structure
- * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller.
- * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * @param[in, out] ctx - Pointer to pointer to `::apn_ctx` structure
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_free(apn_ctx_ref *ctx, apn_error_ref error);
+__apn_export__ void apn_free(apn_ctx_ref *ctx);
 
 /**
  * Opens Apple Push Notification Service connection
@@ -477,13 +489,12 @@ __apn_export__ uint8_t apn_free(apn_ctx_ref *ctx, apn_error_ref error);
  * @ingroup apn
  * 
  * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
- * @param[in] sandbox - 1 to use "sandbox" server, 0 - not to use
  * @param[in, out] error - Pointer to apn_error structure to return error information to the caller.
  * Pass NULL as the apn_error pointer, if information should not be returned to the caller
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_connect(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ uint8_t apn_connect(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
 
 /**
  * Closes Apple Push Notification/Feedback Service connection
@@ -507,6 +518,36 @@ __apn_export__ void apn_close(apn_ctx_ref ctx);
  * @return point to new `::apn_ctx` structure on success, or NULL on failure with error information stored in `error`
  */
 __apn_export__ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+
+/**
+ * Sets connection mode
+ * 
+ * Each connection limited to one of two modes, each with its own assigned IP address:
+ * 
+ * ::APN_MODE_PRODUCTION - Use the production mode when building the production version of the provider 
+ * application.  This mode uses gateway.push.apple.com, outbound TCP port 2195.
+ * 
+ * ::APN_MODE_SANDBOX -  Use the sandbox mode for initial development and testing of the provider 
+ * application. It provides the same set of services as the production mode. The sandbox mode also acts 
+ * as a virtual device, enabling simulated end-to-end testing. This mode uses 
+ * gateway.sandbox.push.apple.com, outbound TCP port 2195.
+ * 
+ * @attention You must get separate certificates for the sandbox mode and the production mode. 
+ * 
+ * Default mode is ::APN_MODE_PRODUCTION 
+ * 
+ * @ingroup apn
+ * @ingroup feedback
+ * @since 1.0.0.beta3
+ * 
+ * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] mode -  Mode, must be ::APN_MODE_SANDBOX, or ::APN_MODE_PRODUCTION. 
+ * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller.
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * 
+ * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ */
+__apn_export__ uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref error);
 
 /**
  * Sets path to an SSL certificate which will be used to establish secure connection
@@ -562,6 +603,22 @@ __apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, con
  */
 __apn_export__ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref error);   
 
+
+/**
+ * Returns the connection mode
+ * 
+ * @ingroup apn
+ * @ingroup feedback
+ * @since 1.0.0.beta3
+ * 
+ * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller. 
+ * Pass NULL as the apn_error pointer, if error information should not be returned to the caller
+ * 
+ * @return -1 on error with error information stored to `error`, or mode 
+ */
+__apn_export__ int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref error);
+
 /**
  * Returns a path to an SSL certificate used to establish secure connection
  *  
@@ -613,13 +670,12 @@ __apn_export__ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref paylo
  * @ingroup feedback
  * 
  * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
- * @param[in] sandbox - 1 to use "sandbox" server, 0 - not to use
  * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, uint8_t sandbox, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
 
 
 /**
@@ -672,12 +728,9 @@ __apn_export__ uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_er
  * @ingroup payload
  * 
  * @param[in, out] payload_ctx - Double pointer to `::apn_payload_ctx` structure
- * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller. 
- * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error`
  */
-__apn_export__ uint8_t apn_payload_free(apn_payload_ctx_ref *payload_ctx, apn_error_ref error);
+__apn_export__ void apn_payload_free(apn_payload_ctx_ref *payload_ctx);
 
 /**
  * Creates a deep copy of `::apn_payload_ctx` structure
