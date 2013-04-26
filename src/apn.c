@@ -223,12 +223,12 @@ static char **  __apn_tokens_array_copy(char * const *tokens, uint32_t count, ap
         }
 
         for (i = 0; i < count; i++) {
-            new_tokens[i] = malloc(APN_TOKEN_BINARY_SIZE + 1);
+            new_tokens[i] = malloc(APN_TOKEN_BINARY_SIZE);
             if (new_tokens[i] == NULL) {
                 APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
                 return NULL;
             }
-            memcpy(new_tokens[i], tokens[i], APN_TOKEN_BINARY_SIZE + 1);
+            memcpy(new_tokens[i], tokens[i], APN_TOKEN_BINARY_SIZE);
         }
     }
 
@@ -238,7 +238,7 @@ static char **  __apn_tokens_array_copy(char * const *tokens, uint32_t count, ap
 static char * __token_hex_to_binary_copy(const char *token, uint16_t token_length) {
     uint16_t i = 0;
     uint16_t j = 0;
-    char *binary_token = malloc(APN_TOKEN_BINARY_SIZE + 1);
+    char *binary_token = malloc(APN_TOKEN_BINARY_SIZE);
     int binary = 0;
 
     if (!binary_token) {
@@ -255,7 +255,6 @@ static char * __token_hex_to_binary_copy(const char *token, uint16_t token_lengt
         binary_token[j] = binary;
     }
 
-    binary_token[j] = '\0';
     return binary_token;
 }
 
@@ -276,6 +275,7 @@ static char * __token_binary_to_hex_copy(const char *binary_token, uint16_t toke
         p += 2;
 #endif
     }
+    *p = '\0';
     return token;
 }
 
@@ -764,7 +764,7 @@ uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *toke
     fd_set read_set;
     struct timeval timeout = {3, 0};
     uint16_t token_length = 0;
-    char binary_message[APN_TOKEN_BINARY_SIZE];
+    char binary_token[APN_TOKEN_BINARY_SIZE];
     int read = 0;
     char **tokens = NULL;
     uint32_t tokens_count = 0;
@@ -806,9 +806,9 @@ uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *toke
                 memcpy(&token_length, buffer_ref, sizeof (token_length));
                 buffer_ref += sizeof (token_length);
 
-                memcpy(&binary_message, buffer_ref, sizeof (binary_message));
+                memcpy(&binary_token, buffer_ref, sizeof (binary_token));
 
-                token_hex = __token_binary_to_hex_copy(binary_message, token_length);
+                token_hex = __token_binary_to_hex_copy(binary_token, token_length);
                 if (token_hex == NULL) {
                     APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
                     APN_RETURN_ERROR;
@@ -937,7 +937,7 @@ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_r
     memcpy(binary_message_ref, json_payload, payload_size);
     binary_message_ref += payload_size;
 
-    free(json_payload);
+    apn_strfree(&json_payload);
     
     while (!loop_break) {
         if (i == tokens_count) {
@@ -1169,7 +1169,7 @@ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref err
         APN_RETURN_ERROR;
     }
     if (ctx->certificate_file) {
-        free(ctx->certificate_file);
+        apn_strfree(&ctx->certificate_file);
     }
     if (cert && strlen(cert) > 0) {
         if ((ctx->certificate_file = apn_strndup(cert, strlen(cert))) == NULL) {
@@ -1187,7 +1187,7 @@ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, 
         APN_RETURN_ERROR;
     }
     if (ctx->private_key_file) {
-        free(ctx->private_key_file);
+        apn_strfree(&ctx->private_key_file);
     }
     if (key && strlen(key) > 0) {
         if ((ctx->private_key_file = apn_strndup(key, strlen(key))) == NULL) {
@@ -1196,7 +1196,7 @@ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, 
         }
     }
     if (ctx->private_key_pass) {
-        free(ctx->private_key_pass);
+        apn_strfree(&ctx->private_key_pass);
     }
     if (pass && strlen(pass) > 0) {
         if ((ctx->private_key_pass = apn_strndup(pass, strlen(pass))) == NULL) {
@@ -1601,7 +1601,7 @@ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, uint16_t badge, apn_error_ref error) {
+uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, int32_t badge, apn_error_ref error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1615,7 +1615,7 @@ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, uint16_t badge, a
     APN_RETURN_SUCCESS;
 }
 
-uint16_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return 0;
@@ -1629,8 +1629,7 @@ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound
         APN_RETURN_ERROR;
     }
     if (payload_ctx->sound) {
-        free(payload_ctx->sound);
-        payload_ctx->sound = NULL;
+        apn_strfree(&payload_ctx->sound);
     }
     if (sound && strlen(sound)) {
         if ((payload_ctx->sound = apn_strndup(sound, strlen(sound))) == NULL) {
@@ -1661,8 +1660,7 @@ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, 
         APN_RETURN_ERROR;
     }
     if (payload_ctx->alert->body) {
-        free(payload_ctx->alert->body);
-        payload_ctx->alert->body = NULL;
+        apn_strfree(&payload_ctx->alert->body);
     }
     if (body && strlen(body) > 0) {
         if (!apn_string_is_utf8(body)) {
@@ -1684,8 +1682,7 @@ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, co
         APN_RETURN_ERROR;
     }
     if (payload_ctx->alert->action_loc_key) {
-        free(payload_ctx->alert->action_loc_key);
-        payload_ctx->alert->action_loc_key = NULL;
+        apn_strfree(&payload_ctx->alert->action_loc_key);
     }
     if (key && strlen(key) > 0) {
         if ((payload_ctx->alert->action_loc_key = apn_strndup(key, strlen(key))) == NULL) {
@@ -1702,8 +1699,7 @@ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char
         APN_RETURN_ERROR;
     }
     if (payload_ctx->alert->action_loc_key) {
-        free(payload_ctx->alert->action_loc_key);
-        payload_ctx->alert->action_loc_key = NULL;
+        apn_strfree(&payload_ctx->alert->action_loc_key);
     }
     if (image && strlen(image)) {
         if ((payload_ctx->alert->launch_image = apn_strndup(image, strlen(image))) == NULL) {
@@ -1724,8 +1720,7 @@ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const cha
         APN_RETURN_ERROR;
     }
     if (payload_ctx->alert->loc_key) {
-        free(payload_ctx->alert->loc_key);
-        payload_ctx->alert->loc_key = NULL;
+        apn_strfree(&payload_ctx->alert->loc_key);
 
         if (payload_ctx->alert->loc_args && payload_ctx->alert->__loc_args_count) {
             for (i = 0; i < payload_ctx->alert->__loc_args_count; i++) {
@@ -1733,7 +1728,7 @@ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const cha
                 free(arg);
             }
             free(payload_ctx->alert->loc_args);
-            payload_ctx->alert->loc_args = NULL;
+    	    payload_ctx->alert->loc_args = NULL;
         }
     }
 

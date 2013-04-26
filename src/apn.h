@@ -322,7 +322,7 @@ struct __apn_payload {
     uint32_t __tokens_count;
     
     /** Number to display as a badge on application icon */
-    uint16_t badge;
+    int32_t badge;
     
     /** Custom payload properties*/
     struct __apn_payload_custom_property **custom_properties;
@@ -801,7 +801,7 @@ uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry,
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
-__apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, uint16_t badge, apn_error_ref error);
+__apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, int32_t badge, apn_error_ref error);
 
 /**
  * Sets a name of a sound file in the application bundle
@@ -937,7 +937,7 @@ __apn_export__ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref
  * 
  * @return Number to display as the badge
  */
-__apn_export__ uint16_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
 
 /**
  * Returns a name of a sound file in the application bundle which played as an alert

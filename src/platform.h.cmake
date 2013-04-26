@@ -132,9 +132,10 @@ typedef int SOCKET;
 #endif
 #define UINT16_MAX   _UI16_MAX
 #define UINT32_MAX   _UI32_MAX
-typedef unsigned __int64     uint64_t;
-typedef signed __int64       int64_t;
-typedef unsigned int uint;
+typedef unsigned    __int64     uint64_t;
+typedef signed      __int64     int64_t;
+typedef unsigned    int         uint;
+typedef signed      __int32     int32_t;
 #endif
 
 #endif	/* __APN_ATTRIBUTES_H__ */
