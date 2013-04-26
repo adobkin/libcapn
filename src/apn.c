@@ -270,18 +270,18 @@ static char * __token_binary_to_hex(const char *binary_token, uint16_t token_len
     uint16_t i = 0;
     char *token = malloc((token_length * 2) + 1);
     char *p = token;
-    
+        
     if (!token) {
         return NULL;
     }
 
     for (i = 0; i < token_length; i++) {
 #ifdef _WIN32
-        sprintf_s(p, 3, "%2.2hhX", binary_token[i]);
+        _snprintf(p, 3, "%2.2hhX", binary_token[i]);
 #else
         snprintf(p, 3, "%2.2hhX", binary_token[i]);
-        p += 2;
 #endif
+        p += 2;
     }
     return token;
 }
@@ -1270,6 +1270,7 @@ uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref *error) {
 
 uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref *error) {
     apn_binary_token_ref binary_token = NULL;
+    apn_binary_token_ref *tokens = NULL;
     
     if (!ctx) {
         APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
@@ -1291,7 +1292,7 @@ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref *error) 
         APN_RETURN_ERROR;
     }
 
-    apn_binary_token_ref *tokens = (apn_binary_token_ref *) __apn_realloc(ctx->tokens, (ctx->__tokens_count + 1) * sizeof (apn_binary_token_ref));
+    tokens = (apn_binary_token_ref *) __apn_realloc(ctx->tokens, (ctx->__tokens_count + 1) * sizeof (apn_binary_token_ref));
     if (!tokens) {
         APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
