@@ -1105,7 +1105,7 @@ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref *error) {
     }
 
     _ctx->tokens = __apn_tokens_array_copy(ctx->tokens, ctx->__tokens_count, error);
-    if(_ctx->tokens == NULL && APN_IS_ERROR((*error))) {
+    if(_ctx->tokens == NULL && apn_is_error((*error))) {
 	apn_free(&_ctx);
         return NULL;
     }
@@ -1392,7 +1392,7 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
     _payload->expiry = payload_ctx->expiry;
 
     _payload->tokens = __apn_tokens_array_copy(payload_ctx->tokens, payload_ctx->__tokens_count, error);
-    if(_payload->tokens == NULL && APN_IS_ERROR((*error))) {
+    if(_payload->tokens == NULL && apn_is_error((*error))) {
 	apn_payload_free(&_payload);
         return NULL;
     }
@@ -2103,4 +2103,25 @@ void apn_error_free(apn_error_ref *error) {
        free(_error);
        *error = NULL;
     }
+}
+
+const char *apn_error_message(const apn_error_ref error) {
+    if(!error) {
+        return NULL;
+    }
+    return error->message;
+}
+
+int32_t apn_error_code(const apn_error_ref error) {
+    if(!error) {
+        return 0;
+    }
+    return error->code;
+}
+
+uint8_t apn_is_error(const apn_error_ref error) {
+    if (error != NULL && error->code > 0) {
+        return 1;
+    }
+    return 0;
 }

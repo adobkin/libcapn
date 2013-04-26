@@ -52,12 +52,6 @@ enum __apn_errors_class {
     APN_ERR_CLASS_INTERNAL = 0x40000000
 };
 
-
-/**
- * @ingroup errors
- */
-#define APN_IS_ERROR(__error) (__error != NULL && __error->code > 0)
-
 /**
  * @ingroup errors
  */
@@ -185,7 +179,7 @@ struct __apn_error {
      * @sa apn_errors
      */
     
-    uint32_t code;
+    uint16_t code;
     
     /** 
      * Error message or an empty string if the message 
@@ -1106,6 +1100,33 @@ __apn_export__ uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref
  * @param error
  */
 __apn_export__ void apn_error_free(apn_error_ref *error);
+
+/**
+ * @ingroup errors
+ * @since 1.0.0 beta3
+ * 
+ * @param error
+ * @return 
+ */
+__apn_export__ const char *apn_error_message(const apn_error_ref error);
+
+/**
+ * @ingroup errors
+ * @since 1.0.0 beta3
+ * 
+ * @param error
+ * @return 
+ */
+__apn_export__ int32_t apn_error_code(const apn_error_ref error);
+
+/**
+ * @ingroup errors
+ * @since 1.0.0 beta3
+ * 
+ * @param error
+ * @return 
+ */
+__apn_export__ uint8_t apn_is_error(const apn_error_ref error);
 
 #ifdef __cplusplus
 }
