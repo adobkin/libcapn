@@ -707,7 +707,7 @@ __apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref
   * @param[in] tokens_array - Pointer to a device tokens array
   * @param[in] tokens_array_count - Count tokens in `tokens_array`
   */
- void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_count);
+ __apn_export__ void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_count);
  
  /**
  * Creates a new notification payload context
@@ -788,7 +788,7 @@ __apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, co
  *
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
  */
-uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref *error);
+__apn_export__ uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref *error);
 
 /**
  * Sets a number to display as a badge on the application icon
@@ -912,7 +912,7 @@ __apn_export__ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload
  *
  * @return Unix timestamp
  */
-uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
+__apn_export__ uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
 
 /**
  * Returns an array of strings to appear in place of the format specifiers in localized alert-message string
