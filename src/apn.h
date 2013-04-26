@@ -182,11 +182,15 @@ struct __apn_error {
     uint16_t code;
     
     /** 
-     * Error message or an empty string if the message 
+     * Error message or NULL if the message 
      * is not available 
      */
     char *message;
     
+    /**
+     * Invalid device token in HEX format.
+     * Field has value only when code == APN_ERR_TOKEN_INVALID, otherwise NULL
+     */
     char *invalid_token;
 };
 
@@ -1139,7 +1143,7 @@ __apn_export__ int32_t apn_error_code(const apn_error_ref error);
 /**
  * Returns invalid device token in hex format
  * 
- * If error code == APN_ERR_TOKEN_INVALID, an invalid token is set:
+ * If error code == ::APN_ERR_TOKEN_INVALID, an invalid token is set:
  * 
  * @code{.c}
  * if(APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error)) == APN_ERR_TOKEN_INVALID) {
