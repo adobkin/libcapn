@@ -102,13 +102,7 @@
 #define APN_RETURN_ERROR return APN_ERROR
 
 #define APN_SET_ERROR(__err, __err_code, __err_msg) \
-   do {\
-      if(__err){ \
-        __err->code = __err_code; \
-        apn_strcpy(__err->message, __err_msg, APN_ERROR_MESSAGE_MAX_SIZE);\
-      }\
-   } while(0);
-
+        __apn_error_set(__err, __err_code, __err_msg);
 
 enum __apn_apns_errors {
     APN_APNS_ERR_NO_ERRORS = 0,
@@ -167,20 +161,20 @@ struct __apn_appl_server __apn_appl_servers[4] = {
     {"feedback.push.apple.com", 2196}
 };
 
-static void *   __apn_realloc(void *ptr, size_t size);
+static void *   __apn_realloc(void *, size_t);
 static char *   __token_hex_to_binary_copy(const char *, uint16_t);
-static char *   __token_binary_to_hex_copy(const char *binary_token, uint16_t token_length);
-static uint8_t  __apn_payload_alert_init(apn_payload_alert_ref *alert, apn_error_ref error);
-static void     __apn_payload_custom_property_free(apn_payload_custom_property_ref *property);
-static uint8_t  __apn_payload_custom_key_is_already_used(apn_payload_ctx_ref payload_ctx, const char *property_key);
-static uint8_t  __apn_payload_custom_property_init(apn_payload_ctx_ref payload_ctx, const char *property_key,
-        apn_error_ref error);
-static char *   __apn_create_json_document_from_payload(apn_payload_ctx_ref payload_ctx, apn_error_ref error);
-static uint8_t  __apn_connect(const apn_ctx_ref, struct __apn_appl_server, apn_error_ref);
-static int      __ssl_read(const apn_ctx_ref ctx, char *buff, size_t buff_length, apn_error_ref error);
-static size_t   __ssl_write(const apn_ctx_ref ctx, const char *message, size_t length, apn_error_ref error);
-static void 	__apn_tokens_array_free(char **tokens, uint32_t count);
-static char **  __apn_tokens_array_copy(char * const *tokens, uint32_t count, apn_error_ref error);
+static char *   __token_binary_to_hex_copy(const char *, uint16_t);
+static uint8_t  __apn_payload_alert_init(apn_payload_alert_ref *, apn_error_ref *);
+static void     __apn_payload_custom_property_free(apn_payload_custom_property_ref *);
+static uint8_t  __apn_payload_custom_key_is_already_used(apn_payload_ctx_ref, const char *);
+static uint8_t  __apn_payload_custom_property_init(apn_payload_ctx_ref , const char *, apn_error_ref *);
+static char *   __apn_create_json_document_from_payload(apn_payload_ctx_ref, apn_error_ref *);
+static uint8_t  __apn_connect(const apn_ctx_ref, struct __apn_appl_server, apn_error_ref *);
+static int      __ssl_read(const apn_ctx_ref, char *, size_t, apn_error_ref *);
+static size_t   __ssl_write(const apn_ctx_ref, const char *, size_t, apn_error_ref *);
+static void 	__apn_tokens_array_free(char **, uint32_t);
+static char **  __apn_tokens_array_copy(char * const *, uint32_t, apn_error_ref *);
+static void     __apn_error_set(apn_error_ref *, uint32_t, char *);
 
 static void *__apn_realloc(void *ptr, size_t size) {
     void *new_ptr = NULL;
@@ -211,7 +205,7 @@ static void __apn_tokens_array_free(char **tokens, uint32_t count) {
     }
 }
 
-static char **  __apn_tokens_array_copy(char * const *tokens, uint32_t count, apn_error_ref error) {
+static char **  __apn_tokens_array_copy(char * const *tokens, uint32_t count, apn_error_ref *error) {
     char **new_tokens = NULL;
     uint32_t i = 0;
 
@@ -279,7 +273,21 @@ static char * __token_binary_to_hex_copy(const char *binary_token, uint16_t toke
     return token;
 }
 
-static uint8_t __apn_payload_alert_init(apn_payload_alert_ref *alert, apn_error_ref error) {
+static void __apn_error_set(apn_error_ref *error, uint32_t code, char *message) {
+    apn_error_ref _error = NULL;
+
+    if(error) {
+       _error = malloc(sizeof(apn_error));
+       if(!_error) {
+           return;
+       }
+       _error->code = code;
+       _error->message = apn_strndup(message, strlen(message));
+       *error = _error;
+    }
+}
+
+static uint8_t __apn_payload_alert_init(apn_payload_alert_ref *alert, apn_error_ref *error) {
     apn_payload_alert_ref _alert = NULL;
 
     *alert = NULL;
@@ -356,7 +364,7 @@ static uint8_t __apn_payload_custom_key_is_already_used(apn_payload_ctx_ref payl
 }
 
 static uint8_t __apn_payload_custom_property_init(apn_payload_ctx_ref payload_ctx, const char *property_key,
-        apn_error_ref error) {
+        apn_error_ref *error) {
 
     apn_payload_custom_property_ref *properties = NULL;
     char *key = NULL;
@@ -411,7 +419,7 @@ static uint8_t __apn_payload_custom_property_init(apn_payload_ctx_ref payload_ct
     APN_RETURN_SUCCESS;
 }
 
-static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     json_t *root = NULL;
     json_t *aps = NULL;
     json_t *alert = NULL;
@@ -535,7 +543,7 @@ static int __apn_password_cd(char *buf, int size, int rwflag, void *password) {
 DIAGNOSTIC_OFF(deprecated-declarations)
 #endif
 
-static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server server, apn_error_ref error) {
+static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server server, apn_error_ref *error) {
     struct hostent * hostent = NULL;
     struct sockaddr_in socket_address;
     SOCKET sock = -1;
@@ -677,7 +685,7 @@ void apn_close(apn_ctx_ref ctx) {
     }
 }
 
-static void __apn_parse_apns_error(const apn_ctx_ref ctx, char *apns_error, char **token, apn_error_ref error) {
+static void __apn_parse_apns_error(const apn_ctx_ref ctx, char *apns_error, char **token, apn_error_ref *error) {
     uint8_t cmd = 0;
     uint8_t error_code = 0;
     uint32_t id = 0;
@@ -712,7 +720,7 @@ static void __apn_parse_apns_error(const apn_ctx_ref ctx, char *apns_error, char
     }
 }
 
-static size_t __ssl_write(const apn_ctx_ref ctx, const char *message, size_t length, apn_error_ref error) {
+static size_t __ssl_write(const apn_ctx_ref ctx, const char *message, size_t length, apn_error_ref *error) {
     int written = 0;
     for(;;){
         written = SSL_write(ctx->ssl, message, length);
@@ -735,7 +743,7 @@ static size_t __ssl_write(const apn_ctx_ref ctx, const char *message, size_t len
     return written;
 }
 
-static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t buff_length, apn_error_ref error) {
+static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t buff_length, apn_error_ref *error) {
     int read = -1;
     for (;;) {
         read = SSL_read(ctx->ssl, buff, buff_length);
@@ -758,7 +766,7 @@ static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t buff_length, apn
     return read;
 }
 
-uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count, apn_error_ref error) {
+uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count, apn_error_ref *error) {
     char buffer[38];
     char *buffer_ref = buffer;
     fd_set read_set;
@@ -842,7 +850,7 @@ uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *toke
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_ref error) {
+uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_ref *error) {
     char *json_payload = NULL;
     char binary_message[APN_MESSAGE_SIZE];
     char *binary_message_ref = NULL;
@@ -1012,7 +1020,7 @@ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_r
 DIAGNOSTIC_ON(deprecated - declarations)
 #endif
 
-uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, const char *private_key_pass, apn_error_ref error) {
+uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, const char *private_key_pass, apn_error_ref *error) {
     apn_ctx_ref _ctx = NULL;
 
     if (!ctx) {
@@ -1063,7 +1071,7 @@ uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, co
     APN_RETURN_SUCCESS;
 }
 
-apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) {
+apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref *error) {
     apn_ctx_ref _ctx = NULL;
 
     if (!ctx) {
@@ -1097,7 +1105,7 @@ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) {
     }
 
     _ctx->tokens = __apn_tokens_array_copy(ctx->tokens, ctx->__tokens_count, error);
-    if(_ctx->tokens == NULL && APN_IS_ERROR(error)) {
+    if(_ctx->tokens == NULL && APN_IS_ERROR((*error))) {
 	apn_free(&_ctx);
         return NULL;
     }
@@ -1140,7 +1148,7 @@ void apn_free(apn_ctx_ref *ctx) {
     *ctx = NULL;
 }
 
-uint8_t apn_connect(const apn_ctx_ref ctx, apn_error_ref error) {
+uint8_t apn_connect(const apn_ctx_ref ctx, apn_error_ref *error) {
     struct __apn_appl_server server;
     if (ctx->mode == APN_MODE_SANDBOX) {
         server = __apn_appl_servers[0];
@@ -1151,7 +1159,7 @@ uint8_t apn_connect(const apn_ctx_ref ctx, apn_error_ref error) {
     return __apn_connect(ctx, server, error);
 }
 
-uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref error) {
+uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref *error) {
     struct __apn_appl_server server;
     if (ctx->mode == APN_MODE_SANDBOX) {
         server = __apn_appl_servers[2];
@@ -1163,7 +1171,7 @@ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref error) {
     return __apn_connect(ctx, server, error);
 }
 
-uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref error) {
+uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref *error) {
     if (!ctx) {
         APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1181,7 +1189,7 @@ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref err
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, apn_error_ref error) {
+uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, apn_error_ref *error) {
     if (!ctx) {
         APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1207,7 +1215,7 @@ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, 
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref error) {
+uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref *error) {
     if (!ctx) {
         APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1222,7 +1230,7 @@ uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref error) {
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref error) {
+uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref *error) {
     char *binary_token = NULL;
     
     if (!ctx) {
@@ -1266,7 +1274,7 @@ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref error) {
     APN_RETURN_SUCCESS;
 }
 
-const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref error) {
+const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref *error) {
     char *ret_value = NULL;
 
     if (!ctx) {
@@ -1279,7 +1287,7 @@ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref error) {
     return ret_value;
 }
 
-const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref error) {
+const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref *error) {
     char *ret_value = NULL;
 
     if (!ctx) {
@@ -1293,7 +1301,7 @@ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref error) {
     return ret_value;
 }
 
-int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref error) {
+int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref *error) {
     if (!ctx) {
         APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         return -1;
@@ -1302,7 +1310,7 @@ int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref error) {
     return ctx->mode;
 }
 
-uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return 0;
@@ -1311,7 +1319,7 @@ uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref error
     return payload_ctx->expiry;
 }
 
-apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     apn_payload_ctx_ref _payload = NULL;
     uint16_t i = 0;
 
@@ -1384,7 +1392,7 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
     _payload->expiry = payload_ctx->expiry;
 
     _payload->tokens = __apn_tokens_array_copy(payload_ctx->tokens, payload_ctx->__tokens_count, error);
-    if(_payload->tokens == NULL && APN_IS_ERROR(error)) {
+    if(_payload->tokens == NULL && APN_IS_ERROR((*error))) {
 	apn_payload_free(&_payload);
         return NULL;
     }
@@ -1470,7 +1478,7 @@ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_
     return _payload;
 }
 
-uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref error) {
+uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref *error) {
     apn_payload_ctx_ref _payload = NULL;
 
     if (!payload_ctx) {
@@ -1553,7 +1561,7 @@ void apn_payload_free(apn_payload_ctx_ref *payload_ctx) {
     *payload_ctx = NULL;
 }
 
-uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref error) {
+uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1564,7 +1572,7 @@ uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry,
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token, apn_error_ref error) {
+uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token, apn_error_ref *error) {
     char *binary_token = NULL;
     char **tokens = NULL;    
 
@@ -1601,7 +1609,7 @@ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, int32_t badge, apn_error_ref error) {
+uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, int32_t badge, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1615,7 +1623,7 @@ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, int32_t badge, ap
     APN_RETURN_SUCCESS;
 }
 
-int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         return 0;
@@ -1623,7 +1631,7 @@ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref e
     return payload_ctx->badge;
 }
 
-uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound, apn_error_ref error) {
+uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1640,7 +1648,7 @@ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound
     APN_RETURN_SUCCESS;
 }
 
-const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     char *ret_value = NULL;
 
     if (!payload_ctx) {
@@ -1654,7 +1662,7 @@ const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_r
     return ret_value;
 }
 
-uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, apn_error_ref error) {
+uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1676,7 +1684,7 @@ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, 
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, const char *key, apn_error_ref error) {
+uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, const char *key, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1693,7 +1701,7 @@ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, co
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char *image, apn_error_ref error) {
+uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char *image, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1710,7 +1718,7 @@ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const char *key, char **args, uint16_t args_count, apn_error_ref error) {
+uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const char *key, char **args, uint16_t args_count, apn_error_ref *error) {
     char *arg = NULL;
     uint16_t i = 0;
     uint16_t args_i = 0;
@@ -1756,7 +1764,7 @@ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const cha
     APN_RETURN_SUCCESS;
 }
 
-const char *apn_payload_launch_image(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+const char *apn_payload_launch_image(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     char *ret_value = NULL;
 
     if (!payload_ctx) {
@@ -1770,7 +1778,7 @@ const char *apn_payload_launch_image(const apn_payload_ctx_ref payload_ctx, apn_
     return ret_value;
 }
 
-const char *apn_payload_localized_action_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+const char *apn_payload_localized_action_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     char *ret_value = NULL;
 
     if (!payload_ctx) {
@@ -1784,7 +1792,7 @@ const char *apn_payload_localized_action_key(const apn_payload_ctx_ref payload_c
     return ret_value;
 }
 
-const char *apn_payload_body(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+const char *apn_payload_body(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     char *ret_value = NULL;
 
     if (!payload_ctx) {
@@ -1798,7 +1806,7 @@ const char *apn_payload_body(const apn_payload_ctx_ref payload_ctx, apn_error_re
     return ret_value;
 }
 
-const char *apn_payload_localized_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) {
+const char *apn_payload_localized_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     char *ret_value = NULL;
 
     if (!payload_ctx) {
@@ -1812,7 +1820,7 @@ const char *apn_payload_localized_key(const apn_payload_ctx_ref payload_ctx, apn
     return ret_value;
 }
 
-uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref payload_ctx, char ***args, apn_error_ref error) {
+uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref payload_ctx, char ***args, apn_error_ref *error) {
     *args = NULL;
 
     if (!payload_ctx) {
@@ -1828,7 +1836,7 @@ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref payload_ctx, c
 
 uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_ref payload_ctx, const char *property_key,
         int64_t property_value,
-        apn_error_ref error) {
+        apn_error_ref *error) {
 
     apn_payload_custom_property_ref property = NULL;
 
@@ -1863,7 +1871,7 @@ uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_ref payload_ctx,
 
 uint8_t apn_payload_add_custom_property_double(apn_payload_ctx_ref payload_ctx, const char *property_key,
         double property_value,
-        apn_error_ref error) {
+        apn_error_ref *error) {
 
     apn_payload_custom_property_ref property = NULL;
 
@@ -1895,7 +1903,7 @@ uint8_t apn_payload_add_custom_property_double(apn_payload_ctx_ref payload_ctx, 
 
 uint8_t apn_payload_add_custom_property_bool(apn_payload_ctx_ref payload_ctx, const char *property_key,
         unsigned char property_value,
-        apn_error_ref error) {
+        apn_error_ref *error) {
 
     apn_payload_custom_property_ref property = NULL;
 
@@ -1930,7 +1938,7 @@ uint8_t apn_payload_add_custom_property_bool(apn_payload_ctx_ref payload_ctx, co
     APN_RETURN_SUCCESS;
 }
 
-uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref payload_ctx, const char *property_key, apn_error_ref error) {
+uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref payload_ctx, const char *property_key, apn_error_ref *error) {
     apn_payload_custom_property_ref property = NULL;
 
     if (__apn_payload_custom_property_init(payload_ctx, property_key, error)) {
@@ -1963,7 +1971,7 @@ uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref payload_ctx, co
 
 uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_ref payload_ctx, const char *property_key,
         const char *property_value,
-        apn_error_ref error) {
+        apn_error_ref *error) {
 
     apn_payload_custom_property_ref property = NULL;
 
@@ -2009,7 +2017,7 @@ uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_ref payload_ctx, 
 
 uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref payload_ctx, const char *property_key,
         const char **array, uint8_t array_size,
-        apn_error_ref error) {
+        apn_error_ref *error) {
 
     char **_array = NULL;
     apn_payload_custom_property_ref property = NULL;
@@ -2079,5 +2087,20 @@ void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_c
             free(token);
         }
         free(tokens_array);
+    }
+}
+
+void apn_error_free(apn_error_ref *error) {
+    apn_error_ref _error = NULL;
+    if(error) {
+       _error = *error;
+       if(!_error) {
+           return;
+       }
+       if(_error->message) {
+           free(_error->message);
+       } 
+       free(_error);
+       *error = NULL;
     }
 }

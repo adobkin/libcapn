@@ -191,7 +191,7 @@ struct __apn_error {
      * Error message or an empty string if the message 
      * is not available 
      */
-    char message[APN_ERROR_MESSAGE_MAX_SIZE];
+    char *message;
 };
 
 /**
@@ -469,7 +469,7 @@ __apn_export__ const char * apn_version_string();
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, const char *private_key_pass, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, const char *private_key_pass, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Frees memory allocated for a connection context
@@ -494,7 +494,7 @@ __apn_export__ void apn_free(apn_ctx_ref *ctx);
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_connect(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ uint8_t apn_connect(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Closes Apple Push Notification/Feedback Service connection
@@ -517,7 +517,7 @@ __apn_export__ void apn_close(apn_ctx_ref ctx);
  * 
  * @return point to new `::apn_ctx` structure on success, or NULL on failure with error information stored in `error`
  */
-__apn_export__ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Sets connection mode
@@ -547,7 +547,7 @@ __apn_export__ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref error) 
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref error);
+__apn_export__ uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref *error);
 
 /**
  * Sets path to an SSL certificate which will be used to establish secure connection
@@ -562,7 +562,7 @@ __apn_export__ uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref error);
+__apn_export__ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref *error);
 
 /**
  * Sets a path to a private key which will be used to establish secure connection
@@ -579,7 +579,7 @@ __apn_export__ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, ap
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
  */
-__apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, apn_error_ref error);
+__apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, apn_error_ref *error);
 
 
 /**
@@ -601,7 +601,7 @@ __apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, con
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref error);   
+__apn_export__ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref *error);   
 
 
 /**
@@ -617,7 +617,7 @@ __apn_export__ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_err
  * 
  * @return -1 on error with error information stored to `error`, or mode 
  */
-__apn_export__ int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref error);
+__apn_export__ int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref *error);
 
 /**
  * Returns a path to an SSL certificate used to establish secure connection
@@ -632,7 +632,7 @@ __apn_export__ int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref error);
  * @return Pointer to NULL-terminated string on success, or NULL on failure with error information stored 
  * in `error`. The retuned value is read-only and must not be modified or freed 
  */
-__apn_export__ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Returns a path to private key which used to establish secure connection
@@ -647,7 +647,7 @@ __apn_export__ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref 
  * @return Pointer to NULL-terminated string on success, or NULL on failure with
  * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
  */
-__apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Sends push notification
@@ -661,7 +661,7 @@ __apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref 
  * 
  * @return  ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error`
  */
-__apn_export__ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload_ctx, apn_error_ref error);
+__apn_export__ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
 
 /**
  * Opens Apple Push Feedback Service connection
@@ -675,7 +675,7 @@ __apn_export__ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref paylo
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 
 /**
@@ -691,7 +691,7 @@ __apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error`
  */
- __apn_export__ uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count, apn_error_ref error);
+ __apn_export__ uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count, apn_error_ref *error);
 
  /**
   * Frees memory allocated for a tokens array, which returned ::apn_feedback()
@@ -720,7 +720,7 @@ __apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with stored error information stored to `error`
  */
-__apn_export__ uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Frees memory allocated for notification payload context
@@ -743,7 +743,7 @@ __apn_export__ void apn_payload_free(apn_payload_ctx_ref *payload_ctx);
  * 
  * @return Pointer to new `::apn_payload_ctx` structure on success, or NULL on failure with error information stored to `error`
  */
-__apn_export__ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Adds a new target device token to payload
@@ -764,7 +764,7 @@ __apn_export__ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref pa
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
  */
-__apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token, apn_error_ref error);  
+__apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token, apn_error_ref *error);  
 
 /**
  * Sets expiration time of notification 
@@ -784,7 +784,7 @@ __apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, co
  *
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
  */
-uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref error);
+uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref *error);
 
 /**
  * Sets a number to display as a badge on the application icon
@@ -801,7 +801,7 @@ uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry,
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
-__apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, int32_t badge, apn_error_ref error);
+__apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, int32_t badge, apn_error_ref *error);
 
 /**
  * Sets a name of a sound file in the application bundle
@@ -818,7 +818,7 @@ __apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, in
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
-__apn_export__ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound, apn_error_ref error);
+__apn_export__ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound, apn_error_ref *error);
 
 /**
  * Sets a text of the alert message
@@ -832,7 +832,7 @@ __apn_export__ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, co
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
-__apn_export__ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, apn_error_ref error);
+__apn_export__ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, apn_error_ref *error);
 
 /**
  * Sets a key used to get a localized string to use for the right button’s 
@@ -852,7 +852,7 @@ __apn_export__ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, con
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
-__apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, const char *key, apn_error_ref error);
+__apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, const char *key, apn_error_ref *error);
 
 /**
  * Sets a filename of an image file in the application bundle
@@ -871,7 +871,7 @@ __apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref 
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
-__apn_export__ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char *image, apn_error_ref error);
+__apn_export__ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char *image, apn_error_ref *error);
 
 /**
  * Sets a key used to get a localized alert-message string and an array of strings
@@ -891,7 +891,7 @@ __apn_export__ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
-__apn_export__ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const char *key, char **args, uint16_t args_count, apn_error_ref error);
+__apn_export__ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const char *key, char **args, uint16_t args_count, apn_error_ref *error);
 
 /**
  * Returns expiration time of notification
@@ -908,7 +908,7 @@ __apn_export__ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload
  *
  * @return Unix timestamp
  */
-uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref error);
+uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
 
 /**
  * Returns an array of strings to appear in place of the format specifiers in localized alert-message string
@@ -924,7 +924,7 @@ uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref error
  * 
  * @return Number of elements in `args`
  */
-__apn_export__ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref payload_ctx, char ***args, apn_error_ref error);
+__apn_export__ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref payload_ctx, char ***args, apn_error_ref *error);
 
 /**
  * Returns a number to display as the badge of the application icon
@@ -937,7 +937,7 @@ __apn_export__ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref
  * 
  * @return Number to display as the badge
  */
-__apn_export__ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Returns a name of a sound file in the application bundle which played as an alert
@@ -950,7 +950,7 @@ __apn_export__ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, 
  * @return Pointer to NULL-terminated string on success, or NULL on failure with 
  * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
  */
-__apn_export__ const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Returns a filename of an image file in the application bundle used as a launch image
@@ -963,7 +963,7 @@ __apn_export__ const char *apn_payload_sound(const apn_payload_ctx_ref payload_c
  * @return Pointer to NULL-terminated string on success, or NULL on failure with 
  * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
  */
-__apn_export__ const char *apn_payload_launch_image(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ const char *apn_payload_launch_image(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Returns a key used to get a localized string for the right button’s 
@@ -977,7 +977,7 @@ __apn_export__ const char *apn_payload_launch_image(const apn_payload_ctx_ref pa
  * @return Pointer to NULL-terminated string on success, or NULL on failure with stored 
  * error information stored to `error`. The retuned value is read-only and must not be modified or freed  
  */
-__apn_export__ const char *apn_payload_localized_action_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ const char *apn_payload_localized_action_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Returns a key used to get a localized alert-message string
@@ -990,7 +990,7 @@ __apn_export__ const char *apn_payload_localized_action_key(const apn_payload_ct
  * @return Pointer to NULL-terminated string on success, or NULL on failure with 
  * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
  */
-__apn_export__ const char *apn_payload_localized_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ const char *apn_payload_localized_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Returns a text of an alert message
@@ -1003,7 +1003,7 @@ __apn_export__ const char *apn_payload_localized_key(const apn_payload_ctx_ref p
  * @return Pointer to NULL-terminated string on success, or NULL on failure with stored 
  * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
  */
-__apn_export__ const char *apn_payload_body(const apn_payload_ctx_ref payload_ctx, apn_error_ref error) __apn_attribute_warn_unused_result__;
+__apn_export__ const char *apn_payload_body(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Adds a custom property with a boolean value to notification payload
@@ -1019,7 +1019,7 @@ __apn_export__ const char *apn_payload_body(const apn_payload_ctx_ref payload_ct
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_bool(apn_payload_ctx_ref payload_ctx, const char *key, 
         uint8_t value, 
-        apn_error_ref error);
+        apn_error_ref *error);
 
 /**
  * Adds a custom property with a double value to notification payload
@@ -1035,7 +1035,7 @@ __apn_export__ uint8_t apn_payload_add_custom_property_bool(apn_payload_ctx_ref 
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_double(apn_payload_ctx_ref payload_ctx, const char *name, 
         double value, 
-        apn_error_ref error);
+        apn_error_ref *error);
 
 /**
  * Adds a custom property with an integer value to notification payload
@@ -1051,7 +1051,7 @@ __apn_export__ uint8_t apn_payload_add_custom_property_double(apn_payload_ctx_re
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_ref payload_ctx, const char *name, 
         int64_t value, 
-        apn_error_ref error);
+        apn_error_ref *error);
 
 /**
  * Adds a custom property with a null value to notification payload
@@ -1063,7 +1063,7 @@ __apn_export__ uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_r
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
  */
-__apn_export__ uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref payload_ctx, const char *name, apn_error_ref error);
+__apn_export__ uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref payload_ctx, const char *name, apn_error_ref *error);
 
 
 /**
@@ -1080,7 +1080,7 @@ __apn_export__ uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref 
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_ref payload_ctx, const char *name, 
         const char *value,
-        apn_error_ref error);
+        apn_error_ref *error);
 
 /**
  * Adds a custom property with an array value to notification payload
@@ -1097,7 +1097,15 @@ __apn_export__ uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_re
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref payload_ctx, const char *name, 
         const char **array, uint8_t array_size,
-        apn_error_ref error);
+        apn_error_ref *error);
+
+/**
+ * @ingroup errors
+ * @since 1.0.0 beta3
+ * 
+ * @param error
+ */
+__apn_export__ void apn_error_free(apn_error_ref *error);
 
 #ifdef __cplusplus
 }
