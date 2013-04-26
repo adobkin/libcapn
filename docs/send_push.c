@@ -10,11 +10,11 @@ int main() {
     const char *push_message = "Test Push Message";
     const char *cert_path = "apns-dev-cert.pem";
     const char *key_path = "apns-dev-key.pem";
-    const char *token = "04C11AF19F8535381BC30D1F875EF9A0C626466932571C2AA2296B8C562D397C";
+    const char *token = "04C11AF19F8535381BC30D1F875EF9A0C626466932571C2AA2296B8C562D3979";
     time_t time_now = 0;
 
     if(apn_init(&ctx, cert_path, key_path, NULL, &error) == APN_ERROR){
-        printf("%s: %d\n", error->message,  APN_ERR_CODE_WITHOUT_CLASS(error->code));
+        printf("%s: %d\n", apn_error_message(error),  APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error)));
         apn_error_free(&error);
         return 1;
     }
@@ -22,7 +22,7 @@ int main() {
     apn_add_token(ctx, token, NULL);
 
     if(apn_payload_init(&payload_ctx, &error) == APN_ERROR) {
-        printf("%s: %d\n", error->message, APN_ERR_CODE_WITHOUT_CLASS(error->code));
+        printf("%s: %d\n", apn_error_message(error), APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error)));
         apn_free(&ctx);
         apn_error_free(&error);
         return 1;
@@ -37,7 +37,7 @@ int main() {
     apn_payload_add_custom_property_integer(payload_ctx, "int_property", 20, NULL);
   
     if(apn_connect(ctx, &error) == APN_ERROR) {
-       printf("Could not connected to Apple Push Notification Servece: %s (%d)\n", error->message, APN_ERR_CODE_WITHOUT_CLASS(error->code));
+       printf("Could not connected to Apple Push Notification Servece: %s (%d)\n", apn_error_message(error), APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error)));
        apn_payload_free(&payload_ctx);
        apn_free(&ctx);
        apn_error_free(&error);
@@ -45,7 +45,12 @@ int main() {
     }
     
     if(apn_send(ctx, payload_ctx, &error) == APN_ERROR) {
-       printf("Could not sent push: %s (%d)\n", error->message,  APN_ERR_CODE_WITHOUT_CLASS(error->code));
+       printf("Could not sent push: %s (%d)\n", apn_error_message(error),  APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error)));
+       
+       if(APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error)) == APN_ERR_TOKEN_INVALID) {
+           printf("Invalid token: %s\n", apn_error_invalid_token(error));
+       }
+       
        apn_close(ctx);
        apn_payload_free(&payload_ctx);
        apn_free(&ctx);

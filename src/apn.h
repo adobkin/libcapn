@@ -186,6 +186,8 @@ struct __apn_error {
      * is not available 
      */
     char *message;
+    
+    char *invalid_token;
 };
 
 /**
@@ -197,6 +199,14 @@ typedef struct __apn_error* apn_error_ref;
  */
 typedef struct __apn_error apn_error;
 
+struct __apn_binary_token {
+    char *token;
+    uint16_t length;
+};
+
+typedef struct __apn_binary_token apn_binary_token;
+
+typedef struct __apn_binary_token *apn_binary_token_ref;
 
 /**
  * @ingroup payload
@@ -306,7 +316,7 @@ struct __apn_payload {
      * gives to the device when it first connects with it. Device token is used to identify
      * a target device which should receive the notification
      */
-    char **tokens;
+    apn_binary_token_ref *tokens;
 
     uint32_t expiry;
 
@@ -377,7 +387,7 @@ struct __apn_ctx {
      * gives to the device when it first connects with it. Device token is used to identify
      * a target device which should receive the notification
      */
-    char **tokens;
+    apn_binary_token_ref *tokens;
     
     char *private_key_pass;
     
@@ -1094,39 +1104,57 @@ __apn_export__ uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref
         apn_error_ref *error);
 
 /**
+ * Frees memory allocated for an error
+ * 
  * @ingroup errors
  * @since 1.0.0 beta3
  * 
- * @param error
+ * @param[in] error - Pointer to pointer to `::apn_error` structure
  */
 __apn_export__ void apn_error_free(apn_error_ref *error);
 
 /**
+ * Returns error message
+ * 
  * @ingroup errors
  * @since 1.0.0 beta3
  * 
- * @param error
- * @return 
+ * @param[in] error - Pointer to `::apn_error` structure
+ * @return Pointer to NULL-terminated string, or NULL. 
+ * The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_error_message(const apn_error_ref error);
 
 /**
+ * Returns error code
+ * 
  * @ingroup errors
  * @since 1.0.0 beta3
  * 
- * @param error
- * @return 
+ * @param[in] error - Pointer to `::apn_error` structure
+ * @return -1 if `error' not initialized, or error code
  */
 __apn_export__ int32_t apn_error_code(const apn_error_ref error);
 
 /**
+ * Returns invalid device token in hex format
+ * 
+ * If error code == APN_ERR_TOKEN_INVALID, an invalid token is set:
+ * 
+ * @code{.c}
+ * if(APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error)) == APN_ERR_TOKEN_INVALID) {
+ *     printf("Invalid token: %s\n", apn_error_invalid_token(error));
+ * }
+ * @endcode
+ * 
  * @ingroup errors
  * @since 1.0.0 beta3
  * 
- * @param error
- * @return 
+ * @param[in] error - Pointer to `::apn_error` structure
+ * @return Pointer to NULL-terminated string, or NULL. 
+ * The retuned value is read-only and must not be modified or freed 
  */
-__apn_export__ uint8_t apn_is_error(const apn_error_ref error);
+__apn_export__  const char *apn_error_invalid_token(const apn_error_ref error);
 
 #ifdef __cplusplus
 }

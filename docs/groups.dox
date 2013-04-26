@@ -91,18 +91,24 @@
  * If the call succeeded, the contents of error are generally left unspecified.  The normal use 
  * of apn_error is to allocate it on the stack, and pass the pointer to a function.
  * 
+ * @sa apn_error_code()
+ * @sa apn_error_message()
+ * @sa apn_error_invalid_token()
  * 
  * Example code:
  * 
  * @code{.c}
  * int main() {
- *     apn_error error;
+ *     apn_error_ref error;
  *     apn_ctx_ref ctx = NULL;
  * 
  *     ...
  * 
  *     if(apn_init(&ctx, &error) == APN_ERROR){
- *       printf("%s: %d\n", error.message, error.code);
+ *       printf("%s: %d\n", apn_error_message(error), APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error));
+ *       if(APN_ERR_CODE_WITHOUT_CLASS(apn_error_code(error)) == APN_ERR_TOKEN_INVALID) {
+ *          printf("Invalid token: %s\n", apn_error_invalid_token(error));
+ *       }
  *       return 1;
  *     }
  * 

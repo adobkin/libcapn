@@ -44,6 +44,9 @@
 #ifndef HAVE_SYS_SOCKET_H
 #cmakedefine HAVE_SYS_SOCKET_H
 #endif
+#ifndef HAVE_CTYPE_H
+#cmakedefine HAVE_CTYPE_H
+#endif
 
 #if defined(__OpenBSD__)
 #undef HAVE_MALLOC_H
