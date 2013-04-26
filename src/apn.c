@@ -685,21 +685,17 @@ void apn_close(apn_ctx_ref ctx) {
     }
 }
 
-static void __apn_parse_apns_error(const apn_ctx_ref ctx, char *apns_error, char **token, apn_error_ref *error) {
+static void __apn_parse_apns_error(const apn_ctx_ref ctx, char *apns_error, uint32_t *id, apn_error_ref *error) {
     uint8_t cmd = 0;
     uint8_t error_code = 0;
-    uint32_t id = 0;
-    
-    if(token){
-        *token = NULL;
-    }
+    uint32_t error_id = 0;
     
     memcpy(&cmd, apns_error, sizeof(cmd));
-    apns_error++;
+    apns_error += sizeof(cmd);
     
     if(cmd == 8) {
         memcpy(&error_code, apns_error, sizeof(error_code));
-        apns_error++;
+        apns_error += sizeof(error_code);
         switch(error_code) {
             case APN_APNS_ERR_PROCESSING_ERROR:
                 APN_SET_ERROR(error, APN_ERR_PROCESSING_ERROR | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_PROCESSING_ERROR]);
@@ -708,11 +704,9 @@ static void __apn_parse_apns_error(const apn_ctx_ref ctx, char *apns_error, char
                 APN_SET_ERROR(error, APN_ERR_INVALID_PAYLOAD_SIZE | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_INVALID_PAYLOAD_SIZE]);
                 break;
             case APN_APNS_ERR_INVALID_TOKEN:
-                memcpy(&id, apns_error, sizeof(id));
-                if(token){
-                    if(id <= ctx->__tokens_count) {
-                        *token = ctx->tokens[id];
-                    }
+                memcpy(&error_id, apns_error, sizeof(error_id));
+                if(id){
+                    *id = error_id;
                 }
                 APN_SET_ERROR(error, APN_ERR_TOKEN_INVALID | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_TOKEN_INVALID]);
                 break;
@@ -870,7 +864,8 @@ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_r
     char **tokens = NULL;
     uint32_t tokens_count = 0;
     int read = 0;
-
+    uint32_t invalid_id = 0;
+    
     if (!ctx) {
         APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
         APN_RETURN_ERROR;
@@ -1008,8 +1003,7 @@ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_r
     }
 
     if (has_error) {
-        char *idd = NULL;
-        __apn_parse_apns_error(ctx, apple_error, &idd, error);
+        __apn_parse_apns_error(ctx, apple_error, &invalid_id, error);
         APN_RETURN_ERROR;
     }
 
@@ -1958,7 +1952,6 @@ uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref payload_ctx, co
         APN_SET_ERROR(error, APN_ERR_NOMEM | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_NOMEM]);
         APN_RETURN_ERROR;
     }    
-    
     
     property->value.string_value.value = NULL;
     property->value.string_value.length = 0;
