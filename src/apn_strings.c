@@ -117,3 +117,10 @@ uint8_t apn_string_is_utf8(const char *str) {
 
     return 1;
 }
+
+void apn_strfree(char **str) {
+    if (*str != NULL) {
+	free(*str);
+        *str = NULL;
+    }
+}

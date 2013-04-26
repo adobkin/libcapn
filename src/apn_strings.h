@@ -32,6 +32,7 @@ extern "C" {
 __apn_export__ char *apn_strndup(const char *str, size_t len) __apn_attribute_nonnull__((1)) __apn_attribute_warn_unused_result__;
 __apn_export__ uint8_t apn_strcpy(char *destination, const char *source, size_t destination_size) __apn_attribute_nonnull__((1,2));
 __apn_export__ uint8_t apn_string_is_utf8(const char *str);
+__apn_export__ void apn_strfree(char **str);
 
 #ifdef	__cplusplus
 }
