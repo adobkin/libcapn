@@ -658,6 +658,22 @@ __apn_export__ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref 
 __apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
+ * Returns a private key passphrase
+ *  
+ * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in, out] error - Pointer to `::apn_error` structure to return error information to the caller.
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * 
+ * @ingroup apn
+ * @ingroup feedback
+ * 
+ * @return Pointer to NULL-terminated string on success, or NULL on failure with
+ * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
+ */
+__apn_export__ const char *apn_private_key_pass(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
+
+
+/**
  * Sends push notification
  * 
  * @ingroup apn

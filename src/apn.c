@@ -1337,6 +1337,20 @@ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref *error) {
     return ret_value;
 }
 
+const char *apn_private_key_pass(const apn_ctx_ref ctx, apn_error_ref *error) {
+    char *ret_value = NULL;
+
+    if (!ctx) {
+        APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
+        return NULL;
+    }
+
+    if (ctx->private_key_pass) {
+        ret_value = ctx->private_key_pass;
+    }
+    return ret_value;
+}
+
 int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref *error) {
     if (!ctx) {
         APN_SET_ERROR(error, APN_ERR_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_CTX_NOT_INITIALIZED]);
