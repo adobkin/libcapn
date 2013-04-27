@@ -13,7 +13,12 @@ The library is licensed under the [MIT](http://www.opensource.org/licenses/mit-l
 
 ##DOCUMENTATION##
 
-- <a href="http://libcapn.org/doc/html/index.html">View documentation</a>
+- [View documentation](http://libcapn.org/doc/html/index.html)
+
+##BINDINGS##
+
+- [pypusher (Python 3)](https://github.com/idlesign/pypusher)
+- [PHP 5.3+ extension](http://libcapn.org/php-apn)
 
 ##EXAMPLE##
 
