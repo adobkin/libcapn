@@ -37,12 +37,6 @@ enum __apn_mode {
     APN_MODE_PRODUCTION = 0,
     APN_MODE_SANDBOX = 1
 };
-
-/**
- * Maximum size of error message
- * @ingroup errors
- */
-#define APN_ERROR_MESSAGE_MAX_SIZE 128
   
 /**
  * @ingroup errors
@@ -85,6 +79,9 @@ enum __apn_errors {
     /** No opened connection to Apple Push Feedback Service */
     APN_ERR_NOT_CONNECTED_FEEDBACK,
     
+    /** Connection was closed */
+    APN_ERR_CONNECTION_CLOSED,
+    
     APN_ERR_INVALID_ARGUMENT,  
     
     /** Path to SSL certificate file which is used to set up a secure connection is not set */
@@ -116,6 +113,9 @@ enum __apn_errors {
     
     /** Unable to create TCP socket */
     APN_ERR_COULD_NOT_CREATE_SOCKET,
+    
+    /** system call select() returned error */
+    APN_ERR_SELECT,
     
     /** Could not initialize connection */
     APN_ERR_COULD_NOT_INITIALIZE_CONNECTION,
@@ -476,6 +476,15 @@ __apn_export__ const char * apn_version_string();
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ * 
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored in `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_INVALID_ARGUMENT
+ *      - ::APN_ERR_NOMEM
+ * 
  */
 __apn_export__ uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, const char *private_key_pass, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -500,7 +509,18 @@ __apn_export__ void apn_free(apn_ctx_ref *ctx);
  * @param[in, out] error - Pointer to apn_error structure to return error information to the caller.
  * Pass NULL as the apn_error pointer, if information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored in `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_COULD_NOT_RESOLVE_HOST
+ *      - ::APN_ERR_COULD_NOT_CREATE_SOCKET
+ *      - ::APN_ERR_COULD_NOT_INITIALIZE_CONNECTION
+ *      - ::APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE
+ *      - ::APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY
+ *      - ::APN_ERR_NOMEM
+ *      - ::APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION
  */
 __apn_export__ uint8_t apn_connect(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -523,7 +543,13 @@ __apn_export__ void apn_close(apn_ctx_ref ctx);
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller.
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return point to new `::apn_ctx` structure on success, or NULL on failure with error information stored in `error`
+ * @return 
+ *      - Point to new `::apn_ctx` structure on success
+ *      - NULL on failure with error information stored in `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM
  */
 __apn_export__ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -553,7 +579,12 @@ __apn_export__ apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref *error)
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller.
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored in `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_CTX_NOT_INITIALIZED
  */
 __apn_export__ uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref *error);
 
@@ -568,7 +599,12 @@ __apn_export__ uint8_t apn_set_mode(apn_ctx_ref ctx, uint8_t mode, apn_error_ref
  * @param[in, out] error - Pointer to apn_error structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored in `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_CTX_NOT_INITIALIZED
  */
 __apn_export__ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, apn_error_ref *error);
 
@@ -585,7 +621,12 @@ __apn_export__ uint8_t apn_set_certificate(apn_ctx_ref ctx, const char *cert, ap
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored in `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_CTX_NOT_INITIALIZED
  */
 __apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, const char *pass, apn_error_ref *error);
 
@@ -607,7 +648,16 @@ __apn_export__ uint8_t apn_set_private_key(apn_ctx_ref ctx, const char *key, con
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored in `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_TOKEN_TOO_MANY
+ *      - ::APN_ERR_TOKEN_INVALID
+ *      - ::APN_ERR_NOMEM
+ *      - ::APN_ERR_INVALID_ARGUMENT
  */
 __apn_export__ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_error_ref *error);   
 
@@ -623,7 +673,9 @@ __apn_export__ uint8_t apn_add_token(apn_ctx_ref ctx, const char *token, apn_err
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the apn_error pointer, if error information should not be returned to the caller
  * 
- * @return -1 on error with error information stored to `error`, or mode 
+ * @return 
+ *      - \-1 on error with error information stored to `error`
+ *      - mode 
  */
 __apn_export__ int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref *error);
 
@@ -637,8 +689,11 @@ __apn_export__ int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref *error);
  * @ingroup apn
  * @ingroup feedback
  * 
- * @return Pointer to NULL-terminated string on success, or NULL on failure with error information stored 
- * in `error`. The retuned value is read-only and must not be modified or freed 
+ * @return 
+ *      - Pointer to NULL-terminated string on success
+ *      - NULL on failure with error information stored in `error`
+ * 
+ * The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -652,8 +707,11 @@ __apn_export__ const char *apn_certificate(const apn_ctx_ref ctx, apn_error_ref 
  * @ingroup apn
  * @ingroup feedback
  * 
- * @return Pointer to NULL-terminated string on success, or NULL on failure with
- * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
+ * @return 
+ *      - Pointer to NULL-terminated string on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -667,8 +725,11 @@ __apn_export__ const char *apn_private_key(const apn_ctx_ref ctx, apn_error_ref 
  * @ingroup apn
  * @ingroup feedback
  * 
- * @return Pointer to NULL-terminated string on success, or NULL on failure with
- * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
+ * @return 
+ *      - Pointer to NULL-terminated string on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ *  The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_private_key_pass(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -683,7 +744,28 @@ __apn_export__ const char *apn_private_key_pass(const apn_ctx_ref ctx, apn_error
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return  ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error`
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored in `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_CERTIFICATE_IS_NOT_SET
+ *      - ::APN_ERR_TOKEN_IS_NOT_SET
+ *      - ::APN_ERR_PRIVATE_KEY_IS_NOT_SET
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_PAYLOAD_TOO_MANY_CUSTOM_PROPERTIES
+ *      - ::APN_ERR_PAYLOAD_CUSTOM_PROPERTY_KEY_IS_ALREADY_USED
+ *      - ::APN_ERR_PAYLOAD_IS_NOT_SET
+ *      - ::APN_ERR_PAYLOAD_ALERT_IS_NOT_SET
+ *      - ::APN_ERR_INVALID_PAYLOAD_SIZE
+ *      - ::APN_ERR_TOKEN_INVALID
+ *      - ::APN_ERR_NOT_CONNECTED
+ *      - ::APN_ERR_CONNECTION_CLOSED
+ *      - ::APN_ERR_SELECT
+ *      - ::APN_ERR_SSL_READ_FAILED
+ *      - ::APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT
+ *      - ::APN_ERR_NOMEM
  */
 __apn_export__ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
 
@@ -697,7 +779,9 @@ __apn_export__ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref paylo
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored in `error`
  */
 __apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -713,7 +797,19 @@ __apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref
  * @param[in, out] tokens_array_count - Count tokens in `tokens_array`
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller 
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error`
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOT_CONNECTED_FEEDBACK
+ *      - ::APN_ERR_CERTIFICATE_IS_NOT_SET
+ *      - ::APN_ERR_PRIVATE_KEY_IS_NOT_SET
+ *      - ::APN_ERR_SELECT
+ *      - ::APN_ERR_NOMEM
+ *      - ::APN_ERR_CONNECTION_CLOSED
+ *      - ::APN_ERR_SSL_READ_FAILED
  */
  __apn_export__ uint8_t apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count, apn_error_ref *error);
 
@@ -742,7 +838,13 @@ __apn_export__ uint8_t apn_feedback_connect(const apn_ctx_ref ctx, apn_error_ref
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with stored error information stored to `error`
+ * @return 
+  *     - ::APN_SUCCESS on success
+  *     - ::APN_ERROR on failure with stored error information stored to `error`
+  * 
+  * __Returned error codes (apn_error_code()):__
+  *     - ::APN_ERR_INVALID_ARGUMENT
+  *     - ::APN_ERR_NOMEM
  */
 __apn_export__ uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -765,7 +867,13 @@ __apn_export__ void apn_payload_free(apn_payload_ctx_ref *payload_ctx);
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return Pointer to new `::apn_payload_ctx` structure on success, or NULL on failure with error information stored to `error`
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+  * __Returned error codes (apn_error_code()):__
+  *     - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+  *     - ::APN_ERR_NOMEM
  */
 __apn_export__ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -786,7 +894,16 @@ __apn_export__ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref pa
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error`
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM
+ *      - ::APN_ERR_TOKEN_TOO_MANY
+ *      - ::APN_ERR_TOKEN_INVALID
+ *      - ::APN_ERR_INVALID_ARGUMENT
  */
 __apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, const char *token, apn_error_ref *error);  
 
@@ -806,7 +923,12 @@ __apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, co
  * @param[in, out] error - Pointer to `apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  *
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored in `error``
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
  */
 __apn_export__ uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, uint32_t expiry, apn_error_ref *error);
 
@@ -823,7 +945,13 @@ __apn_export__ uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, u
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_PAYLOAD_BADGE_INVALID_VALUE 
  */
 __apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, int32_t badge, apn_error_ref *error);
 
@@ -840,7 +968,13 @@ __apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, in
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM
  */
 __apn_export__ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound, apn_error_ref *error);
 
@@ -854,7 +988,14 @@ __apn_export__ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, co
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller.
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_INVALID_ARGUMENT
+ *      - ::APN_ERR_NOMEM 
  */
 __apn_export__ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, apn_error_ref *error);
 
@@ -874,7 +1015,13 @@ __apn_export__ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, con
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM 
  */
 __apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, const char *key, apn_error_ref *error);
 
@@ -893,7 +1040,13 @@ __apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref 
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM  
  */
 __apn_export__ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_ctx, const char *image, apn_error_ref *error);
 
@@ -913,7 +1066,13 @@ __apn_export__ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM  
  */
 __apn_export__ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload_ctx, const char *key, char **args, uint16_t args_count, apn_error_ref *error);
 
@@ -930,7 +1089,12 @@ __apn_export__ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller.
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  *
- * @return Unix timestamp
+ * @return 
+ *      - Unix timestamp on success
+ *      - \-1 on failure with error information stored to `error` 
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
  */
 __apn_export__ uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
 
@@ -959,9 +1123,15 @@ __apn_export__ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return Number to display as the badge
+ * @return 
+ *      - Number to display as the badge on success
+ *      - \-1 on failure with error information stored to `error` 
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
  */
-__apn_export__ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
+
+__apn_export__ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
 
 /**
  * Returns a name of a sound file in the application bundle which played as an alert
@@ -971,8 +1141,14 @@ __apn_export__ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, 
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return Pointer to NULL-terminated string on success, or NULL on failure with 
- * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
+ * @return 
+ *      - Pointer to NULL-terminated string on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ * 
+ * The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -984,8 +1160,14 @@ __apn_export__ const char *apn_payload_sound(const apn_payload_ctx_ref payload_c
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return Pointer to NULL-terminated string on success, or NULL on failure with 
- * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
+ * @return 
+ *      - Pointer to NULL-terminated string on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ * 
+ * The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_payload_launch_image(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -998,8 +1180,14 @@ __apn_export__ const char *apn_payload_launch_image(const apn_payload_ctx_ref pa
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return Pointer to NULL-terminated string on success, or NULL on failure with stored 
- * error information stored to `error`. The retuned value is read-only and must not be modified or freed  
+ * @return 
+ *      - Pointer to NULL-terminated string on success
+ *      - NULL on failure with stored error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ * 
+ * The retuned value is read-only and must not be modified or freed  
  */
 __apn_export__ const char *apn_payload_localized_action_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -1011,8 +1199,14 @@ __apn_export__ const char *apn_payload_localized_action_key(const apn_payload_ct
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return Pointer to NULL-terminated string on success, or NULL on failure with 
- * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
+ * @return 
+ *      - Pointer to NULL-terminated string on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ * 
+ * The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_payload_localized_key(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -1024,8 +1218,14 @@ __apn_export__ const char *apn_payload_localized_key(const apn_payload_ctx_ref p
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return Pointer to NULL-terminated string on success, or NULL on failure with stored 
- * error information stored to `error`. The retuned value is read-only and must not be modified or freed 
+ * @return 
+ *      - Pointer to NULL-terminated string on success
+ *      - NULL on failure with stored error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ * 
+ *  The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_payload_body(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
@@ -1039,7 +1239,13 @@ __apn_export__ const char *apn_payload_body(const apn_payload_ctx_ref payload_ct
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM 
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_bool(apn_payload_ctx_ref payload_ctx, const char *key, 
         uint8_t value, 
@@ -1055,7 +1261,13 @@ __apn_export__ uint8_t apn_payload_add_custom_property_bool(apn_payload_ctx_ref 
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM  
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_double(apn_payload_ctx_ref payload_ctx, const char *name, 
         double value, 
@@ -1071,7 +1283,14 @@ __apn_export__ uint8_t apn_payload_add_custom_property_double(apn_payload_ctx_re
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM  
+ *      - ::APN_ERR_INVALID_ARGUMENT 
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_ref payload_ctx, const char *name, 
         int64_t value, 
@@ -1085,7 +1304,13 @@ __apn_export__ uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_r
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller.
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref payload_ctx, const char *name, apn_error_ref *error);
 
@@ -1100,7 +1325,14 @@ __apn_export__ uint8_t apn_payload_add_custom_property_null(apn_payload_ctx_ref 
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error` 
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM
+ *      - ::APN_ERR_INVALID_ARGUMENT 
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_ref payload_ctx, const char *name, 
         const char *value,
@@ -1117,7 +1349,14 @@ __apn_export__ uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_re
  * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
- * @return ::APN_SUCCESS on success, or ::APN_ERROR on failure with error information stored to `error`
+ * @return 
+ *      - Pointer to new `::apn_payload_ctx` structure on success
+ *      - NULL on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM
+ *      - ::APN_ERR_INVALID_ARGUMENT
  */
 __apn_export__ uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref payload_ctx, const char *name, 
         const char **array, uint8_t array_size,
