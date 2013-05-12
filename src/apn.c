@@ -758,7 +758,6 @@ static size_t __ssl_write(const apn_ctx_ref ctx, const char *message, size_t len
         bytes_written = SSL_write(ctx->ssl, message, length);
          
         if (bytes_written <= 0) {
-            printf("write error\n");
             switch (SSL_get_error(ctx->ssl, bytes_written)) {
                 case SSL_ERROR_WANT_WRITE:
                 case SSL_ERROR_WANT_READ:
@@ -806,7 +805,6 @@ static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t buff_length, apn
         if (read > 0) {
             break;
         }
-printf("read error\n");
         switch (SSL_get_error(ctx->ssl, read)) {
             case SSL_ERROR_WANT_WRITE:
             case SSL_ERROR_WANT_READ:
