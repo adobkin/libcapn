@@ -17,8 +17,7 @@ You can retrieve the source code through the standard Git client with:
 @code {.sh}
 git clone git://github.com/adobkin/libcapn libcapn
 cd libcapn
-git submodule init
-git submodule update
+git submodule update --init
 @endcode
 
 You can also download release tarballs from [FTP](ftp://ftp.libcapn.org) and [HTTP](http://libcapn.org/download).
