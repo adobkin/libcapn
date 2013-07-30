@@ -540,6 +540,7 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
                     break;
                 case APN_CUSTOM_PROPERTY_TYPE_STRING:
                     json_object_set_new(root, property->key, json_string(property->value.string_value.value));
+                    break;
                 case APN_CUSTOM_PROPERTY_TYPE_DOUBLE:
                     json_object_set_new(root, property->key, json_real(property->value.double_value));
                     break;
@@ -2116,13 +2117,13 @@ uint8_t apn_payload_add_custom_property_string(apn_payload_ctx_ref payload_ctx, 
         APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value of custom property is NULL");
         APN_RETURN_ERROR;
     }
-
-    if (__apn_payload_custom_property_init(payload_ctx, property_key, error)) {
+    
+    if (!apn_string_is_utf8(property_value)) {
+        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value contains non-utf8 symbols");
         APN_RETURN_ERROR;
     }
 
-    if (!apn_string_is_utf8(property_value)) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value contains non-utf8 symbols");
+    if (__apn_payload_custom_property_init(payload_ctx, property_key, error)) {
         APN_RETURN_ERROR;
     }
 
