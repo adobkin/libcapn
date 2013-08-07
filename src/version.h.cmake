@@ -27,25 +27,25 @@
  * Library version as string
  * @ingroup version
  */
-#define APN_VERSION_STRING "${APN_VERSION_MAJOR}.${APN_VERSION_MINOR}.${APN_VERSION_PATCH}"
+#define APN_VERSION_STRING "${CAPN_VERSION_MAJOR}.${CAPN_VERSION_MINOR}.${CAPN_VERSION_PATCH}"
 
 /**
  * Major part of the library version
  * @ingroup version
  */
-#define APN_VERSION_MAJOR  ${APN_VERSION_MAJOR}
+#define APN_VERSION_MAJOR  ${CAPN_VERSION_MAJOR}
 
 /**
  * Minor part of the library version
  * @ingroup version
  */
-#define APN_VERSION_MINOR  ${APN_VERSION_MINOR}
+#define APN_VERSION_MINOR  ${CAPN_VERSION_MINOR}
 
 /**
  * Patch part of the library version
  * @ingroup version
  */
-#define APN_VERSION_PATCH  ${APN_VERSION_PATCH}
+#define APN_VERSION_PATCH  ${CAPN_VERSION_PATCH}
 
 /**
  * Library version as 3-byte hexadecimal.
