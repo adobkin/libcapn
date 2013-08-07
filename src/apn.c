@@ -109,6 +109,8 @@
 #define APN_SET_ERROR(__err, __err_code, __err_msg) \
         __apn_error_set(__err, __err_code, __err_msg);
 
+static uint8_t __ssl_lib_initialized = 0;
+
 enum __apn_apns_errors {
     APN_APNS_ERR_NO_ERRORS = 0,
     APN_APNS_ERR_PROCESSING_ERROR = 1,
@@ -628,10 +630,6 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
         }
         
         ctx->sock = sock;
-        
-        SSL_library_init();
-        SSL_load_error_strings();
-
         ssl_ctx = SSL_CTX_new(SSLv23_client_method());
         
         if (!SSL_CTX_use_certificate_file(ssl_ctx, ctx->certificate_file, SSL_FILETYPE_PEM)) {
@@ -1193,6 +1191,12 @@ uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, co
                 APN_RETURN_ERROR;
             }
         }
+    }
+    
+    if (!__ssl_lib_initialized) {
+        SSL_library_init();
+        SSL_load_error_strings();
+        __ssl_lib_initialized = 1;
     }
     
     *ctx = _ctx;
