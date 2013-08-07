@@ -104,6 +104,9 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #define CLOSE_SOCKET(__socket) closesocket(__socket)
+#ifndef ETIMEDOUT
+#define ETIMEDOUT WSAETIMEDOUT
+#endif
 #else
 #define CLOSE_SOCKET(__socket) close(__socket)
 #define WSACleanup()
