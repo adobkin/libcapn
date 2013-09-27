@@ -25,3 +25,7 @@ The library is licensed under the [MIT](http://www.opensource.org/licenses/mit-l
 - [Send Push Notification](http://libcapn.org/doc/html/send_push_8c-example.html)
 - [Feedback Service](http://libcapn.org/doc/html/feedback_8c-example.html)
 
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/adobkin/libcapn/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
