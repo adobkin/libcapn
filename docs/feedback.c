@@ -10,14 +10,16 @@ int main() {
     uint32_t tokens_count = 0;
     uint32_t i = 0;
     
-    if(apn_init(&ctx, &error) == APN_ERROR){
+    const char *cert_path = "apns_cert.pem";
+    const char *key_path = "apns_key.pem";
+    const char *key_passwd = "test";
+    
+    if(apn_init(&ctx, cert_path, key_path, key_passwd, &error) == APN_ERROR){
         printf("%s: %d\n", error->message, APN_ERR_CODE_WITHOUT_CLASS(error->code));
         apn_error_free(&error);
         return 1;
     }
 
-    apn_set_certificate(ctx, "apns-dev-cert.pem", NULL);
-    apn_set_private_key(ctx, "apns-dev-key.pem", NULL, NULL);
     apn_set_mode(ctx, APN_MODE_SANDBOX, NULL);
     
     if(apn_feedback_connect(ctx, &error) == APN_ERROR) {
@@ -41,11 +43,8 @@ int main() {
         printf("Token: %s\n", tokens[i]);
     }
 
-    apn_feedback_tokens_array_free(tokens, tokens_count);
-    // tokens == NULL
-    
+    apn_feedback_tokens_array_free(tokens, tokens_count);    
     apn_close(ctx);
     apn_free(&ctx);
-    
     return 0;
 }
