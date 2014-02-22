@@ -1137,10 +1137,6 @@ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_r
     APN_RETURN_SUCCESS;
 }
 
-#if defined(__APPLE__) && defined(__MACH__)
-DIAGNOSTIC_ON(deprecated - declarations)
-#endif
-
 uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, const char *private_key_pass, apn_error_ref *error) {
     apn_ctx_ref _ctx = NULL;
 
@@ -1197,6 +1193,10 @@ uint8_t apn_init(apn_ctx_ref *ctx, const char *cert, const char *private_key, co
     *ctx = _ctx;
     APN_RETURN_SUCCESS;
 }
+
+#if defined(__APPLE__) && defined(__MACH__)
+DIAGNOSTIC_ON(deprecated-declarations)
+#endif
 
 apn_ctx_ref apn_copy(const apn_ctx_ref ctx, apn_error_ref *error) {
     apn_ctx_ref _ctx = NULL;
