@@ -163,7 +163,7 @@ struct __apn_appl_server {
     int port;
 };
 
-struct __apn_appl_server __apn_appl_servers[4] = {
+static struct __apn_appl_server __apn_appl_servers[4] = {
     {"gateway.sandbox.push.apple.com", 2195},
     {"gateway.push.apple.com", 2195},
     {"feedback.sandbox.push.apple.com", 2196},
