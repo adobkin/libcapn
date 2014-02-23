@@ -143,7 +143,6 @@ typedef int SOCKET;
 typedef unsigned    __int64     uint64_t;
 typedef signed      __int64     int64_t;
 typedef signed      __int32     int32_t;
-typedef unsigned    int         uint;
 #endif
 
 #endif	/* __APN_ATTRIBUTES_H__ */

@@ -2208,7 +2208,7 @@ uint8_t apn_payload_add_custom_property_array(apn_payload_ctx_ref payload_ctx, c
     APN_RETURN_SUCCESS;
 }
 
-uint apn_version() {
+uint32_t apn_version() {
     return APN_VERSION_NUM;
 }
 

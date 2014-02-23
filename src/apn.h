@@ -435,7 +435,7 @@ typedef struct __apn_ctx  apn_ctx;
  *
  * @return hexadecimal 
  */
-__apn_export__ uint apn_version();
+__apn_export__ uint32_t apn_version();
 
 /**
  * Returns a string representation of the 
