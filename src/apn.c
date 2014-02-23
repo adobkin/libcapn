@@ -273,7 +273,8 @@ static apn_binary_token_ref __token_hex_to_binary(const char *token, uint16_t to
 
 static char * __token_binary_to_hex(const char *binary_token, uint16_t token_length) {
     uint16_t i = 0;
-    char *token = malloc((token_length * 2) + 1);
+    size_t token_size = (token_length * 2) + 1;
+    char *token = malloc(token_size);
     char *p = token;
         
     if (!token) {
@@ -282,7 +283,7 @@ static char * __token_binary_to_hex(const char *binary_token, uint16_t token_len
 
     for (i = 0; i < token_length; i++) {
 #ifdef _WIN32
-        _snprintf(p, 3, "%2.2hhX", binary_token[i]);
+        _snprintf_s(p, token_size, 3, "%2.2hhX", binary_token[i]);
 #else
         snprintf(p, 3, "%2.2hhX", binary_token[i]);
 #endif
@@ -568,7 +569,11 @@ static int __apn_password_cd(char *buf, int size, int rwflag, void *password) {
     if (password == NULL) {
         return 0;
     }
+#ifdef _WIN32
+    strncpy_s(buf, size, (char *) password, size);
+#else
     strncpy(buf, (char *) password, size);
+#endif
     buf[size - 1] = '\0';
 
     return strlen(buf);
@@ -606,7 +611,6 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
 
         if (!hostent) {
             APN_SET_ERROR(error, APN_ERR_COULD_NOT_RESOLVE_HOST | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_RESOLVE_HOST]);
-            WSACleanup();
             APN_RETURN_ERROR;
         }
 
@@ -619,13 +623,11 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
 
         if (sock < 0) {
             APN_SET_ERROR(error, APN_ERR_COULD_NOT_CREATE_SOCKET | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_CREATE_SOCKET]);
-            WSACleanup();
             APN_RETURN_ERROR;
         }
         
         if (connect(sock, (struct sockaddr *) &socket_address, sizeof (socket_address)) < 0) {
             APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_CONNECTION | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_CONNECTION]);
-            WSACleanup();
             APN_RETURN_ERROR;
         }
         
@@ -638,7 +640,7 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
             APN_RETURN_ERROR;
         }
 
-	SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_cd);            
+		SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_cd);            
  
         if (ctx->private_key_pass) {
             password = apn_strndup(ctx->private_key_pass, strlen(ctx->private_key_pass));
@@ -697,7 +699,6 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
         sock_flags = 1;
         ioctlsocket(ctx->sock, FIONBIO, (u_long *) &sock_flags);
 #endif
-
     }
 
     APN_RETURN_SUCCESS;
@@ -746,6 +747,7 @@ static void __apn_parse_apns_error(char *apns_error, uint32_t *id, apn_error_ref
                 }
                 APN_SET_ERROR(error, APN_ERR_TOKEN_INVALID | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_TOKEN_INVALID]);
                 break;
+            default: break;
         }
     }
 }
