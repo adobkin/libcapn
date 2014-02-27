@@ -173,7 +173,7 @@ IF(DEFINED WIN32)
     ENDIF(MINGW)
 	
     FILE (GLOB OPENSSL_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/win/thirdparty/openssl/include/openssl/*.h)
-    INSTALL(FILES ${OPENSSL_HEADER_FILES} DESTINATION ${CAPN_INSTALL_PATH_HEADERS}/openssl)
+    INSTALL(FILES ${OPENSSL_HEADER_FILES} DESTINATION ${CAPN_INSTALL_PATH_INCLUDES}/openssl)
 
     INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/win/thirdparty/openssl/include")
     SET(OPENSSL_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/win/thirdparty/openssl/lib/ssleay32.lib")
@@ -184,6 +184,12 @@ IF(DEFINED WIN32)
           ${CMAKE_CURRENT_SOURCE_DIR}/win/thirdparty/openssl/bin/ssleay32.dll
           ${CMAKE_CURRENT_SOURCE_DIR}/win/thirdparty/openssl/bin/libeay32.dll
           DESTINATION ${CAPN_INSTALL_PATH_BIN})
+          
+    INSTALL(FILES
+          ${CMAKE_CURRENT_SOURCE_DIR}/win/thirdparty/openssl/lib/ssleay32.lib
+          ${CMAKE_CURRENT_SOURCE_DIR}/win/thirdparty/openssl/lib/libeay32.lib
+          DESTINATION ${CAPN_INSTALL_PATH_LIB})
+          
     INSTALL(FILES
           ${CMAKE_CURRENT_SOURCE_DIR}/README.md
           ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
