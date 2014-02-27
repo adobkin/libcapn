@@ -28,7 +28,7 @@
 ### Version 1.0.0 beta ###
 
 - Added Feedback Service support:
-    - new functions apn_feedback_connect()
+    - new function apn_feedback_connect()
     - new function apn_feedback()
     - new function apn_feedback_tokens_array_free()
 - Now used enhanced format to transmission notifications to APNs
