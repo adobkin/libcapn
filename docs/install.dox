@@ -19,8 +19,8 @@ Compilation and Installation
 1) Download [source tarballs](http://libcapn.org/download) and unpack it (replace <version> with the correct version number):
 
 @code {.sh}
-wget http://libcapn.org/download/libcapn-<version>-src.tar.bz2
-tar xvjf libcapn-<version>-src.tar.bz2
+wget http://libcapn.org/download/libcapn-<version>-src.tar.gz
+tar xvf libcapn-<version>-src.tar.gz
 @endcode
 
 or clone git repository:
