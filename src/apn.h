@@ -337,6 +337,8 @@ struct __apn_payload {
     
     /** Custom properties number */
     uint8_t __custom_properties_count;
+    
+    uint8_t content_available;
 };
 
 /**
@@ -979,6 +981,29 @@ __apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, in
 __apn_export__ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, const char *sound, apn_error_ref *error);
 
 /**
+ * Sets a content availability flag
+ * 
+ * Set this flag to value of 1 to indicate that new content is available. 
+ * This is used to support Newsstand apps and background content downloads.
+ * 
+ * @ingroup payload
+ * 
+ * @param[in] payload_ctx - Pointer to an initialized `::apn_payload_ctx` structure. Cannot be NULL
+ * @param[in] content_available - flag
+ * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * 
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ *      - ::APN_ERR_NOMEM
+ */
+__apn_export__ uint8_t apn_payload_set_content_available(apn_payload_ctx_ref payload_ctx, uint8_t content_available, apn_error_ref *error);
+
+/**
  * Sets a text of the alert message
  * 
  * @ingroup payload
@@ -1132,6 +1157,25 @@ __apn_export__ uint16_t apn_payload_localized_key_args(const apn_payload_ctx_ref
  */
 
 __apn_export__ int32_t apn_payload_badge(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
+
+/**
+ * Returns a content available flag
+ * 
+ * @ingroup payload
+ * 
+ * @param[in] payload_ctx - Pointer to an initialized `::apn_payload_ctx` structure. Cannot be NULL
+ * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * 
+ * @return 
+ *      - 1 if flag is set, 0 if not set
+ *      - \-1 on failure with error information stored to `error` 
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ */
+
+__apn_export__ int8_t apn_payload_content_available(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
 
 /**
  * Returns a name of a sound file in the application bundle which played as an alert

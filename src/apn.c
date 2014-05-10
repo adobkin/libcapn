@@ -480,7 +480,7 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
         return NULL;
     }
 
-    if (!payload_ctx->alert || (!payload_ctx->alert->loc_key && !payload_ctx->alert->body)) {
+    if (!payload_ctx->alert || (!payload_ctx->alert->loc_key && !payload_ctx->alert->body && !payload_ctx->content_available)) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_ALERT_IS_NOT_SET | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_ALERT_IS_NOT_SET]);
         return NULL;
     }
@@ -517,6 +517,10 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
         }
 
         json_object_set_new(aps, "alert", alert);
+    }
+
+    if (payload_ctx->content_available == 1) {
+        json_object_set_new(aps, "content-available", json_integer(payload_ctx->content_available));
     }
 
     if (payload_ctx->badge > -1) {
@@ -561,7 +565,7 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
     }
 
     json_document = json_dumps(root, JSON_ENSURE_ASCII);
-    json_decref(root);
+    json_decref(root);    
     return json_document;
 }
 
@@ -1637,6 +1641,7 @@ uint8_t apn_payload_init(apn_payload_ctx_ref *payload_ctx, apn_error_ref *error)
     _payload->__tokens_count = 0;
     _payload->tokens = NULL;
     _payload->expiry = 0;
+    _payload->content_available = 0;
 
     *payload_ctx = _payload;
 
@@ -1797,6 +1802,23 @@ const char *apn_payload_sound(const apn_payload_ctx_ref payload_ctx, apn_error_r
         ret_value = payload_ctx->sound;
     }
     return ret_value;
+}
+
+uint8_t apn_payload_set_content_available(apn_payload_ctx_ref payload_ctx, uint8_t content_available, apn_error_ref *error) {
+    if (!payload_ctx) {
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        APN_RETURN_ERROR;
+    }
+    payload_ctx->content_available = (content_available == 1) ? 1 : 0;
+    APN_RETURN_SUCCESS;
+}
+
+int8_t apn_payload_content_available(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
+    if (!payload_ctx) {
+        APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
+        return -1;
+    }
+    return payload_ctx->content_available;
 }
 
 uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, const char *body, apn_error_ref *error) {
