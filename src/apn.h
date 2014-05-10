@@ -895,8 +895,8 @@ __apn_export__ apn_payload_ctx_ref apn_payload_copy(const apn_payload_ctx_ref pa
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return 
- *      - Pointer to new `::apn_payload_ctx` structure on success
- *      - NULL on failure with error information stored to `error`
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
  * 
  * __Returned error codes (apn_error_code()):__
  *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
@@ -924,8 +924,8 @@ __apn_export__ uint8_t apn_payload_add_token(apn_payload_ctx_ref payload_ctx, co
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  *
  * @return 
- *      - Pointer to new `::apn_payload_ctx` structure on success
- *      - NULL on failure with error information stored to `error`
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
  * 
  * __Returned error codes (apn_error_code()):__
  *      - APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
@@ -946,8 +946,8 @@ __apn_export__ uint8_t apn_payload_set_expiry(apn_payload_ctx_ref payload_ctx, u
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return 
- *      - Pointer to new `::apn_payload_ctx` structure on success
- *      - NULL on failure with error information stored to `error`
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
  * 
  * __Returned error codes (apn_error_code()):__
  *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
@@ -969,8 +969,8 @@ __apn_export__ uint8_t apn_payload_set_badge(apn_payload_ctx_ref payload_ctx, in
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return 
- *      - Pointer to new `::apn_payload_ctx` structure on success
- *      - NULL on failure with error information stored to `error`
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
  * 
  * __Returned error codes (apn_error_code()):__
  *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
@@ -989,8 +989,8 @@ __apn_export__ uint8_t apn_payload_set_sound(apn_payload_ctx_ref payload_ctx, co
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return 
- *      - Pointer to new `::apn_payload_ctx` structure on success
- *      - NULL on failure with error information stored to `error`
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
  * 
  * __Returned error codes (apn_error_code()):__
  *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
@@ -1016,8 +1016,8 @@ __apn_export__ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, con
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return 
- *      - Pointer to new `::apn_payload_ctx` structure on success
- *      - NULL on failure with error information stored to `error`
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
  * 
  * __Returned error codes (apn_error_code()):__
  *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
@@ -1041,8 +1041,8 @@ __apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref 
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return 
- *      - Pointer to new `::apn_payload_ctx` structure on success
- *      - NULL on failure with error information stored to `error`
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
  * 
  * __Returned error codes (apn_error_code()):__
  *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
@@ -1067,8 +1067,8 @@ __apn_export__ uint8_t apn_payload_set_launch_image(apn_payload_ctx_ref payload_
  * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
  * 
  * @return 
- *      - Pointer to new `::apn_payload_ctx` structure on success
- *      - NULL on failure with error information stored to `error`
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
  * 
  * __Returned error codes (apn_error_code()):__
  *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
