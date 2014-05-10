@@ -56,6 +56,11 @@ cmake -DCMAKE_INSTALL_PREFIX=/usr ../
 
 Default install prefix is `/usr/local`
 
+In case You need to build static library (libcapn.a), add -DBUILD_SHARED_LIBRARY=OFF parameter to command line:
+
+@code {.sh}
+cmake -DBUILD_SHARED_LIBRARY=OFF
+@endcode
 
 4) Compile and install 
 
