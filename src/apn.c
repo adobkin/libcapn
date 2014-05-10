@@ -640,7 +640,7 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
             APN_RETURN_ERROR;
         }
 
-		SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_cd);            
+	SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_cd);            
  
         if (ctx->private_key_pass) {
             password = apn_strndup(ctx->private_key_pass, strlen(ctx->private_key_pass));
@@ -1081,21 +1081,12 @@ uint8_t apn_send(const apn_ctx_ref ctx, apn_payload_ctx_ref payload, apn_error_r
             if(bytes_written <= 0) {
                 APN_RETURN_ERROR;
             }
-
-            if ((i % 30) == 0) {
-#ifdef _WIN32
-                Sleep(1500);
-#else
-                usleep(1500000);
-#endif                    
-            }
-
             i++;
         }
     }
     
     if (!has_error) {
-	timeout.tv_sec = 3;
+	timeout.tv_sec = 0;
         for (;;) {
             FD_ZERO(&read_set);
             FD_SET(ctx->sock, &read_set);
