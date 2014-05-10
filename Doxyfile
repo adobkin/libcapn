@@ -680,7 +680,6 @@ WARN_LOGFILE           =
 INPUT                  = docs/mainpage.dox \
                          docs/install.dox \
                          docs/groups.dox \
-                         docs/changelog.dox \
                          src
 
 # This tag can be used to specify the character encoding of the source files 
