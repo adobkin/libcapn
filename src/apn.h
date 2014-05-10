@@ -1121,7 +1121,7 @@ __apn_export__ uint8_t apn_payload_set_localized_key(apn_payload_ctx_ref payload
  * __Returned error codes (apn_error_code()):__
  *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
  */
-__apn_export__ uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
+__apn_export__ int64_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error);
 
 /**
  * Returns an array of strings to appear in place of the format specifiers in localized alert-message string

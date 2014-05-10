@@ -1446,10 +1446,10 @@ int8_t apn_mode(apn_ctx_ref ctx, apn_error_ref *error) {
     return ctx->mode;
 }
 
-uint32_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
+int64_t apn_payload_expiry(apn_payload_ctx_ref payload_ctx, apn_error_ref *error) {
     if (!payload_ctx) {
         APN_SET_ERROR(error, APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED]);
-        return 0;
+        return -1;
     }
     
     return payload_ctx->expiry;
