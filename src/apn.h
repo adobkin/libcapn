@@ -155,6 +155,10 @@ enum __apn_errors {
     
     /** Processing error */
     APN_ERR_PROCESSING_ERROR,
+
+    /** Indicates that the APNs server closed the connection (for example, to perform maintenance). 
+    When you receive this status code, stop using this connection and open a new connection. */
+    APN_ERR_SERVICE_SHUTDOWN,
     
     /** Unknown error */
     APN_ERR_UNKNOWN,    
@@ -202,6 +206,17 @@ typedef struct __apn_error* apn_error_ref;
  * @ingroup errors
  */
 typedef struct __apn_error apn_error;
+
+/**
+ * @ingroup payload
+ * Notification priority
+ */
+typedef enum __apn_notification_priority {
+    /* The push message is sent immediately */
+    APN_NOTIFICATION_PRIORITY_DEFAULT = 5, 
+    /* The push message is sent at a time that conserves power on the device receiving it */    
+    APN_NOTIFICATION_PRIORITY_HIGH = 10
+} apn_notification_priority;
 
 struct __apn_binary_token {
     char *token;
@@ -339,6 +354,8 @@ struct __apn_payload {
     uint8_t __custom_properties_count;
     
     uint8_t content_available;
+
+    apn_notification_priority priority;
 };
 
 /**
@@ -1051,6 +1068,32 @@ __apn_export__ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, con
 __apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, const char *key, apn_error_ref *error);
 
 /**
+ * Sets a notification’s priority.
+ * 
+ * Provide one of the following values:
+ * :: APN_NOTIFICATION_PRIORITY_DEFAULT - The push message is sent immediately. 
+ * :: APN_NOTIFICATION_PRIORITY_HIGH - The push message is sent at a time that conserves power on the device receiving it.
+ * 
+ * If payload contains only content available flag you must use ::APN_NOTIFICATION_PRIORITY_DEFAULT, otherwise 
+ * it is an error to use 
+ * 
+ * @ingroup payload
+ * 
+ * @param[in] payload_ctx - Pointer to an initialized `::apn_payload_ctx` structure. Cannot be NULL
+ * @param[in] priority - Notification's priority.
+ * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * 
+ * @return 
+ *      - ::APN_SUCCESS on success
+ *      - ::APN_ERROR on failure with error information stored to `error`
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ */
+__apn_export__ uint8_t apn_payload_set_priority(apn_payload_ctx_ref payload_ctx, apn_notification_priority priority, apn_error_ref *error);
+
+/**
  * Sets a filename of an image file in the application bundle
  * 
  * Filename may include or not include the extension. The image is used as the launch image when users tap 
@@ -1272,6 +1315,23 @@ __apn_export__ const char *apn_payload_localized_key(const apn_payload_ctx_ref p
  *  The retuned value is read-only and must not be modified or freed 
  */
 __apn_export__ const char *apn_payload_body(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
+
+/**
+ * Returns a notification's priority
+ * 
+ * @ingroup payload
+ * @param[in] payload_ctx - Pointer to an initialized `::apn_payload_ctx` structure. Cannot be NULL
+ * @param[in, out] error - Pointer to pointer to `::apn_error` structure to return error information to the caller. 
+ * Pass NULL as the `::apn_error` pointer, if error information should not be returned to the caller
+ * 
+ * @return 
+ *      - ::APN_NOTIFICATION_PRIORITY_DEFAULT
+ *      - ::APN_NOTIFICATION_PRIORITY_HIGH
+ * 
+ * __Returned error codes (apn_error_code()):__
+ *      - ::APN_ERR_PAYLOAD_CTX_NOT_INITIALIZED
+ */
+__apn_export__ apn_notification_priority apn_payload_priority(const apn_payload_ctx_ref payload_ctx, apn_error_ref *error) __apn_attribute_warn_unused_result__;
 
 /**
  * Adds a custom property with a boolean value to notification payload
