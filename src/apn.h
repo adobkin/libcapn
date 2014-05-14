@@ -219,15 +219,6 @@ typedef enum __apn_notification_priority {
     APN_NOTIFICATION_PRIORITY_HIGH = 10
 } apn_notification_priority;
 
-struct __apn_binary_token {
-    char *token;
-    uint16_t length;
-};
-
-typedef struct __apn_binary_token apn_binary_token;
-
-typedef struct __apn_binary_token *apn_binary_token_ref;
-
 /**
  * @ingroup payload
  * Types of custom property of notification payload
@@ -336,7 +327,7 @@ struct __apn_payload {
      * gives to the device when it first connects with it. Device token is used to identify
      * a target device which should receive the notification
      */
-    apn_binary_token_ref *tokens;
+    uint8_t **tokens;
 
     uint32_t expiry;
 
@@ -411,7 +402,7 @@ struct __apn_ctx {
      * gives to the device when it first connects with it. Device token is used to identify
      * a target device which should receive the notification
      */
-    apn_binary_token_ref *tokens;
+    uint8_t **tokens;
     
     char *private_key_pass;
     
