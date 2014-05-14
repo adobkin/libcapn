@@ -212,9 +212,10 @@ typedef struct __apn_error apn_error;
  * Notification priority
  */
 typedef enum __apn_notification_priority {
-    /* The push message is sent immediately */
+    /* The push message is sent at a time that conserves power on the device receiving it */ 
     APN_NOTIFICATION_PRIORITY_DEFAULT = 5, 
-    /* The push message is sent at a time that conserves power on the device receiving it */    
+            
+    /* The push message is sent immediately */
     APN_NOTIFICATION_PRIORITY_HIGH = 10
 } apn_notification_priority;
 
@@ -1071,8 +1072,8 @@ __apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref 
  * Sets a notification’s priority.
  * 
  * Provide one of the following values:
- * :: APN_NOTIFICATION_PRIORITY_DEFAULT - The push message is sent immediately. 
- * :: APN_NOTIFICATION_PRIORITY_HIGH - The push message is sent at a time that conserves power on the device receiving it.
+ * :: APN_NOTIFICATION_PRIORITY_HIGH - The push message is sent immediately. 
+ * :: APN_NOTIFICATION_PRIORITY_DEFAULT - The push message is sent at a time that conserves power on the device receiving it.
  * 
  * If payload contains only content available flag you must use ::APN_NOTIFICATION_PRIORITY_DEFAULT, otherwise 
  * it is an error to use 
