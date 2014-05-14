@@ -1,9 +1,8 @@
 #LIBCAPN#
+[![Build Status](http://img.shields.io/travis/adobkin/libcapn.svg?style=flat)](http://travis-ci.org/adobkin/libcapn) [![MIT](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/adobkin/libcapn/blob/master/LICENSE) ![](http://img.shields.io/github/release/adobkin/libcapn.svg?style=flat)
 
 libcapn is a C Library to interact with the [Apple Push Notification Service](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) using simple and intuitive API. 
 With the library you can easily send push notifications to iOS and OS X (>= 10.8) devices. 
-
-[![Build Status](https://secure.travis-ci.org/adobkin/libcapn.png)](http://travis-ci.org/adobkin/libcapn)
 
 Please visit [libcapn.org](http://libcapn.org) for more information
 
@@ -25,7 +24,4 @@ The library is licensed under the [MIT](http://www.opensource.org/licenses/mit-l
 - [Send Push Notification](http://libcapn.org/doc/html/send_push_8c-example.html)
 - [Feedback Service](http://libcapn.org/doc/html/feedback_8c-example.html)
 
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/adobkin/libcapn/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
