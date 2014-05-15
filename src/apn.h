@@ -1060,14 +1060,16 @@ __apn_export__ uint8_t apn_payload_set_body(apn_payload_ctx_ref payload_ctx, con
 __apn_export__ uint8_t apn_payload_set_localized_action_key(apn_payload_ctx_ref payload_ctx, const char *key, apn_error_ref *error);
 
 /**
- * Sets a notification’s priority.
+ * Sets a notification priority.
  * 
  * Provide one of the following values:
- * :: APN_NOTIFICATION_PRIORITY_HIGH - The push message is sent immediately. 
- * :: APN_NOTIFICATION_PRIORITY_DEFAULT - The push message is sent at a time that conserves power on the device receiving it.
+ *      - ::APN_NOTIFICATION_PRIORITY_HIGH - The push message is sent immediately. 
+ *      - ::APN_NOTIFICATION_PRIORITY_DEFAULT - The push message is sent at a time that conserves power on the device receiving it.
  * 
  * If payload contains only content available flag you must use ::APN_NOTIFICATION_PRIORITY_DEFAULT, otherwise 
  * it is an error to use 
+ * 
+ * Default priority is ::APN_NOTIFICATION_PRIORITY_DEFAULT
  * 
  * @ingroup payload
  * 
