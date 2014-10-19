@@ -270,9 +270,9 @@ static char * __token_binary_to_hex(const uint8_t *binary_token) {
 
     for (i = 0; i < APN_TOKEN_BINARY_SIZE; i++) {
 #ifdef _WIN32
-        _snprintf_s(p, token_size, 3, "%2.2hhX", binary_token[i]);
+        _snprintf_s(p, token_size, 3, "%2.2hhX", (unsigned char) binary_token[i]);
 #else
-        snprintf(p, 3, "%2.2hhX", binary_token[i]);
+        snprintf(p, 3, "%2.2hhX", (unsigned char) binary_token[i]);
 #endif
         p += 2;
     }
