@@ -804,7 +804,7 @@ void apn_close(apn_ctx_ref ctx) {
             ctx->sock = -1;
         }
 
-#ifndef _WIN32
+#ifdef _WIN32
         WSACleanup();
 #endif
     }
