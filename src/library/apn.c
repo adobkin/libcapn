@@ -629,7 +629,7 @@ char  *apn_strerror(int errnum) {
             __apn_strerror_r(errnum, error, sizeof(error) - 1);
             break;
     }
-    return strdup(error);
+    return apn_strndup(error, sizeof(error));
 }
 
 static int __apn_password_cd(char *buf, int size, int rwflag, void *password) {
