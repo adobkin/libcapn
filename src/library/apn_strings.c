@@ -22,40 +22,17 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h> 
+#include <stdlib.h>
+#include <assert.h>
+#include <stdarg.h>
 
 #include "apn_strings.h"
 
 static int _apn_seq_octets(uint8_t ch);
 
-uint8_t apn_strcpy(char *destination, const char *source, size_t destination_size) {
-    char *buffer = NULL;
-    size_t tmp_size = 0;
-    const char *s = NULL;
-
-    if (!destination) {
-        return 1;
-    }
-    buffer = destination;
-    if (!source || destination_size == 0) {
-        *buffer = '\0';
-        return 0;
-    }
-    tmp_size = destination_size;
-    s = source;
-
-    if (tmp_size > 0) {
-        while (--tmp_size != 0) {
-            if ((*buffer++ = *s++) == '\0') {
-                return 0;
-            }
-        }
-    }
-    *buffer = '\0';
-    return 0;
-}
-
 char *apn_strndup(const char *str, size_t len) {
+    assert(str);
+
     char *str_copy = NULL;
     char *p = NULL;
     size_t str_copy_len = 0;
@@ -92,6 +69,8 @@ static int _apn_seq_octets(uint8_t ch) {
 }
 
 uint8_t apn_string_is_utf8(const char *str) {
+    assert(str);
+
     uint8_t ch = 0;
     uint8_t j = 0;
     int s_octets = 0;
@@ -123,4 +102,53 @@ void apn_strfree(char **str) {
 	    free(*str);
         *str = NULL;
     }
+}
+
+int apn_snprintf(char * s, size_t n, const char * format, ...) {
+    assert(s);
+    assert(format);
+
+    va_list args;
+    int ret = 0;
+
+    va_start(args, format);
+#ifdef _WIN32
+    ret = vsnprintf_s(s, n, _TRUNCATE, format, args);
+#else
+    ret = vsnprintf(s, n, format, args);
+#endif
+
+    va_end(args);
+    return ret;
+}
+
+void apn_strncpy(char *dst, const char * const src, size_t dst_len, size_t src_len) {
+    assert(dst);
+    assert(src);
+
+    size_t tmp_src_len = 0;
+    char *buff = dst;
+    const char *s = src;
+
+    if (!dst || dst_len == 0) {
+        return;
+    }
+    if (!src || src_len == 0) {
+        *buff = '\0';
+        return;
+    }
+
+    if (dst_len <= src_len) {
+        tmp_src_len = dst_len - 1;
+    } else {
+        tmp_src_len = src_len;
+    }
+    if (tmp_src_len > 0) {
+        while (tmp_src_len-- != 0) {
+            if ((*buff++ = *s++) == '\0') {
+                return;
+            }
+        }
+    }
+    *buff = '\0';
 }

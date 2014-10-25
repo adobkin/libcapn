@@ -82,6 +82,7 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
 static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t length);
 static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t length);
 static void __apn_parse_apns_error(char *apns_error, uint16_t *errcode, uint32_t *id);
+static void __apn_strerror_r(int errnum, char *buf, size_t buff_size);
 
 apn_return apn_library_init() {
     static uint8_t library_initialized = 0;
@@ -537,6 +538,99 @@ void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_c
         free(tokens_array);
     }
 }
+char  *apn_strerror(int errnum) {
+    char error[250] = {0};
+    switch (errnum) {
+        case APN_ERR_FAILED_INIT:
+            apn_snprintf(error, sizeof(error) - 1, "unable to initialize library");
+            break;
+        case APN_ERR_NOT_CONNECTED:
+            apn_snprintf(error, sizeof(error) - 1, "no opened connection to Apple Push Notification Service");
+            break;
+        case APN_ERR_NOT_CONNECTED_FEEDBACK:
+            apn_snprintf(error, sizeof(error) - 1, "no opened connection to Apple Feedback Service");
+            break;
+        case APN_ERR_CONNECTION_CLOSED:
+            apn_snprintf(error, sizeof(error) - 1, "connection was closed");
+            break;
+        case APN_ERR_CONNECTION_TIMEDOUT:
+            apn_snprintf(error, sizeof(error) - 1, "connection timed out");
+            break;
+        case APN_ERR_NETWORK_UNREACHABLE:
+            apn_snprintf(error, sizeof(error) - 1, "network unreachable");
+            break;
+        case APN_ERR_TOKEN_IS_NOT_SET:
+            apn_snprintf(error, sizeof(error) - 1, "no device tokens given");
+            break;
+        case APN_ERR_TOKEN_INVALID:
+            apn_snprintf(error, sizeof(error) - 1, "invalid device token");
+            break;
+        case APN_ERR_TOKEN_TOO_MANY:
+            apn_snprintf(error, sizeof(error) - 1, "too many device tokens");
+            break;
+        case APN_ERR_CERTIFICATE_IS_NOT_SET:
+            apn_snprintf(error, sizeof(error) - 1, "certificate is not set");
+            break;
+        case APN_ERR_PRIVATE_KEY_IS_NOT_SET:
+            apn_snprintf(error, sizeof(error) - 1, "private key is not set");
+            break;
+        case APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE:
+            apn_snprintf(error, sizeof(error) - 1, "unable to use specified SSL certificate");
+            break;
+        case APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY:
+            apn_snprintf(error, sizeof(error) - 1, "unable to use specified private key");
+            break;
+        case APN_ERR_COULD_NOT_RESOLVE_HOST:
+            apn_snprintf(error, sizeof(error) - 1, "could not reslove host");
+            break;
+        case APN_ERR_COULD_NOT_CREATE_SOCKET:
+            apn_snprintf(error, sizeof(error) - 1, "could not create socket");
+            break;
+        case APN_ERR_SELECT:
+            apn_snprintf(error, sizeof(error) - 1, "system call select() returned error");
+            break;
+        case APN_ERR_COULD_NOT_INITIALIZE_CONNECTION:
+            apn_snprintf(error, sizeof(error) - 1, "could not initialize connection");
+            break;
+        case APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION:
+            apn_snprintf(error, sizeof(error) - 1, "could not initialize ssl connection");
+            break;
+        case APN_ERR_SSL_WRITE_FAILED:
+            apn_snprintf(error, sizeof(error) - 1, "SSL_write failed");
+            break;
+        case APN_ERR_SSL_READ_FAILED:
+            apn_snprintf(error, sizeof(error) - 1, "SSL_read failed");
+            break;
+        case APN_ERR_INVALID_PAYLOAD_SIZE:
+            apn_snprintf(error, sizeof(error) - 1, "invalid notification payload size");
+            break;
+        case APN_ERR_PAYLOAD_BADGE_INVALID_VALUE:
+            apn_snprintf(error, sizeof(error) - 1, "incorrect number to display as the badge on application icon");
+            break;
+        case APN_ERR_PAYLOAD_CUSTOM_PROPERTY_KEY_IS_ALREADY_USED:
+            apn_snprintf(error, sizeof(error) - 1, "specified custom property name is already used");
+            break;
+        case APN_ERR_PAYLOAD_COULD_NOT_CREATE_JSON_DOCUMENT:
+            apn_snprintf(error, sizeof(error) - 1, "could not create json document");
+            break;
+        case APN_ERR_STRING_CONTAINS_NON_UTF8_CHARACTERS:
+            apn_snprintf(error, sizeof(error) - 1, "non-UTF8 symbols detected in a string");
+            break;
+        case APN_ERR_PROCESSING_ERROR:
+            apn_snprintf(error, sizeof(error) - 1, "processing error");
+            break;
+        case APN_ERR_SERVICE_SHUTDOWN:
+            apn_snprintf(error, sizeof(error) - 1, "server closed the connection (service shutdown)");
+            break;
+        case APN_ERR_PAYLOAD_ALERT_IS_NOT_SET:
+            apn_snprintf(error, sizeof(error) - 1, "alert message text or key used to get a localized alert-message string or content-available flag must be set");
+            break;
+        default:
+            __apn_strerror_r(errnum, error, sizeof(error) - 1);
+            break;
+    }
+    return strdup(error);
+}
 
 static int __apn_password_cd(char *buf, int size, int rwflag, void *password) {
     (void) rwflag;
@@ -861,4 +955,41 @@ static void __apn_parse_apns_error(char *apns_error, uint16_t *errcode, uint32_t
             default: break;
         }
     }
+}
+
+#ifdef HAVE_STRERROR_R
+#if(!defined(HAVE_POSIX_STRERROR_R) && !defined(HAVE_GLIBC_STRERROR_R) || defined(HAVE_POSIX_STRERROR_R) && defined(HAVE_GLIBC_STRERROR_R))
+#    error "strerror_r MUST be either POSIX, glibc or vxworks-style"
+#  endif
+#endif
+
+static void __apn_strerror_r(int errnum, char *buf, size_t buff_size) {
+#ifdef _WIN32
+    if (strerror_s(buf, buff_size, errnum) != 0) {
+        if (buf[0] == '\0') {
+            apn_snprintf(buf, buff_size, "Error code %d", errnum);
+        }
+    }
+#elif defined(HAVE_STRERROR_R) && defined(HAVE_POSIX_STRERROR_R)
+    if (0 != strerror_r(errnum, buf, buff_size)) {
+        if (buf[0] == '\0') {
+            apn_snprintf(buf, buff_size, "Error code %d", errnum);
+        }
+    }
+#elif defined(HAVE_STRERROR_R) && defined(HAVE_GLIBC_STRERROR_R)
+    char tmp_buff[256];
+    char *str_error = strerror_r(errnum, tmp_buff, sizeof(tmp_buff));
+    if(str_error) {
+        apn_strncpy(buf, str_error, buff_size, strlen(str_error));
+    } else {
+        apn_snprintf(buf, buff_size, "Error code %d", errnum);
+    }
+#else
+    char *str_error = strerror(errnum);
+    if (str_error) {
+        apn_strncpy(buf, str_error, buff_size, strlen(str_error));
+    } else {
+        apn_snprintf(buf, buff_size, "Error code %d", errnum);
+    }
+#endif
 }

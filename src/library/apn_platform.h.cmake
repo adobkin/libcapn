@@ -45,6 +45,10 @@
 #cmakedefine HAVE_CTYPE_H
 #endif
 
+#cmakedefine HAVE_STRERROR_R
+#cmakedefine HAVE_GLIBC_STRERROR_R
+#cmakedefine HAVE_POSIX_STRERROR_R
+
 typedef enum __apn_return {
     APN_SUCCESS,
     APN_ERROR
