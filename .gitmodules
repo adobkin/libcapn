@@ -1,3 +1,4 @@
-[submodule "jansson"]
-	path = jansson
+[submodule "src/third_party/jansson"]
+	path = src/third_party/jansson
 	url = git://github.com/akheron/jansson.git
+	branch = 2.7
