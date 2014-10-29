@@ -23,7 +23,6 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <sys/fcntl.h>
 #include <openssl/err.h>
 
 #include "apn_strings.h"
@@ -31,6 +30,10 @@
 #include "apn_memory.h"
 #include "apn_version.h"
 #include "apn.h"
+
+#ifdef HAVE_SYS_FCNTL_H
+#include <sys/fcntl.h>
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -111,11 +114,12 @@ void apn_library_free() {
 #endif
 }
 
-apn_ctx_ref apn_init(const char *cert, const char *private_key, const char *private_key_pass) {
-    if(APN_ERROR == apn_library_init()) {
+apn_ctx_ref apn_init(const char * const cert, const char * const private_key, const char * const private_key_pass) {
+apn_ctx_ref ctx =  NULL;
+   if(APN_ERROR == apn_library_init()) {
         return NULL;
     }
-    apn_ctx_ref ctx = malloc(sizeof (apn_ctx));
+    ctx = malloc(sizeof (apn_ctx));
     if (!ctx) {
         errno = ENOMEM;
         return NULL;
@@ -225,10 +229,11 @@ void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode) {
 }
 
 apn_return apn_add_token(apn_ctx_ref ctx, const char * const token) {
-    assert(ctx);
-    assert(token);
     uint8_t *binary_token = NULL;
     uint8_t **tokens = NULL;
+	
+	assert(ctx);
+    assert(token);
 
     if (ctx->tokens_count >= UINT32_MAX) {
         errno = APN_ERR_TOKEN_TOO_MANY;
@@ -294,9 +299,6 @@ apn_return apn_connect(const apn_ctx_ref ctx) {
 }
 
 apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
-    assert(ctx);
-    assert(payload);
-
     char *json = NULL;
     size_t json_size = 0;
 
@@ -308,7 +310,7 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
     char apple_error[6];
     uint16_t apple_errcode = 0;
     int bytes_read = 0;
-    ssize_t bytes_written = 0;
+    int bytes_written = 0;
     uint32_t tokens_count = 0;
     uint32_t invalid_id = 0;
     fd_set write_set, read_set;
@@ -316,6 +318,9 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
     uint32_t i = 0;
     struct timeval timeout = {10, 0};
     char *invalid_token = NULL;
+	
+	assert(ctx);
+    assert(payload);
 
     if (!ctx->ssl || ctx->feedback) {
         errno = APN_ERR_NOT_CONNECTED;
@@ -447,10 +452,6 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
 }
 
 apn_return apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count) {
-    assert(ctx);
-    assert(tokens_array);
-    assert(tokens_array_count);
-
     char buffer[38]; /* Buffer to read data */
     char *buffer_ref = buffer; /* Pointer to buffer */
     fd_set read_set;
@@ -462,6 +463,10 @@ apn_return apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *t
     uint32_t tokens_count = 0; /* Tokens count */
     char *token_hex = NULL; /* Token as HEX string */
     int select_returned = 0;
+	
+	assert(ctx);
+    assert(tokens_array);
+    assert(tokens_array_count);
 
     if (!ctx->ssl || ctx->feedback) {
         errno = APN_ERR_NOT_CONNECTED;
@@ -654,7 +659,7 @@ static size_t __apn_create_binary_message(uint8_t *token, const char * const pay
     size_t payload_size = 0;
 
     uint32_t id_n = htonl(id); // ID (network ordered)
-    uint32_t expiry_n = htonl(expiry); // expiry time (network ordered)
+    uint32_t expiry_n = htonl((uint32_t)expiry); // expiry time (network ordered)
 
     uint8_t item_id = 1; // Item ID
     uint16_t item_data_size_n = 0; // Item data size (network ordered)

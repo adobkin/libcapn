@@ -31,11 +31,11 @@
 static int _apn_seq_octets(uint8_t ch);
 
 char *apn_strndup(const char *str, size_t len) {
-    assert(str);
-
     char *str_copy = NULL;
     char *p = NULL;
     size_t str_copy_len = 0;
+	
+	assert(str);
 
     if (str && len > 0) {
         str_copy_len = len + 1;
@@ -69,13 +69,13 @@ static int _apn_seq_octets(uint8_t ch) {
 }
 
 uint8_t apn_string_is_utf8(const char *str) {
-    assert(str);
-
     uint8_t ch = 0;
     uint8_t j = 0;
     int s_octets = 0;
     size_t i = 0;
     size_t str_len = 0;
+	
+	assert(str);
 
     str_len = strlen(str);
 
@@ -105,11 +105,11 @@ void apn_strfree(char **str) {
 }
 
 int apn_snprintf(char * s, size_t n, const char * format, ...) {
-    assert(s);
-    assert(format);
-
     va_list args;
     int ret = 0;
+	
+	assert(s);
+    assert(format);
 
     va_start(args, format);
 #ifdef _WIN32
@@ -123,12 +123,12 @@ int apn_snprintf(char * s, size_t n, const char * format, ...) {
 }
 
 void apn_strncpy(char *dst, const char * const src, size_t dst_len, size_t src_len) {
-    assert(dst);
-    assert(src);
-
     size_t tmp_src_len = 0;
     char *buff = dst;
     const char *s = src;
+	
+	assert(dst);
+    assert(src);
 
     if (!dst || dst_len == 0) {
         return;

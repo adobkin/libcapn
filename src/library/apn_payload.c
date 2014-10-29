@@ -18,17 +18,19 @@
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
+
 */
 
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
 
-#include "src/jansson.h"
-#include "apn.h"
 #include "apn_strings.h"
 #include "apn_tokens.h"
 #include "apn_memory.h"
+#include "apn.h"
+
+#include "src/jansson.h"
 
 static apn_payload_alert_ref __apn_payload_alert_init();
 static void __apn_payload_custom_property_free(apn_payload_custom_property_ref *property);
@@ -129,7 +131,7 @@ apn_return apn_payload_set_badge(apn_payload_ref payload, int32_t badge) {
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_set_sound(apn_payload_ref payload, const char *sound) {
+apn_return apn_payload_set_sound(apn_payload_ref payload, const char * const sound) {
     assert(payload);
     if (payload->sound) {
         apn_strfree(&payload->sound);
@@ -148,7 +150,7 @@ void apn_payload_set_content_available(apn_payload_ref payload, uint8_t content_
     payload->content_available = (uint8_t) ((content_available == 1) ? 1 : 0);
 }
 
-apn_return apn_payload_set_body(apn_payload_ref payload, const char *body) {
+apn_return apn_payload_set_body(apn_payload_ref payload, const char * const body) {
     assert(payload);
     if (payload->alert->body) {
         apn_strfree(&payload->alert->body);
@@ -180,7 +182,7 @@ apn_return apn_payload_set_localized_action_key(apn_payload_ref payload, const c
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_set_launch_image(apn_payload_ref payload, const char *image) {
+apn_return apn_payload_set_launch_image(apn_payload_ref payload, const char * const image) {
     assert(payload);
     if (payload->alert->action_loc_key) {
         apn_strfree(&payload->alert->action_loc_key);
@@ -194,12 +196,13 @@ apn_return apn_payload_set_launch_image(apn_payload_ref payload, const char *ima
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_set_localized_key(apn_payload_ref payload, const char *key, char **args, uint16_t args_count) {
-    assert(payload);
-    assert(key);
+apn_return apn_payload_set_localized_key(apn_payload_ref payload, const char * const key, char **args, uint16_t args_count) {
     char *arg = NULL;
     uint16_t i = 0;
     uint16_t args_i = 0;
+	
+	assert(payload);
+    assert(key);
 
     if (payload->alert->loc_key) {
         apn_strfree(&payload->alert->loc_key);
@@ -233,7 +236,7 @@ apn_return apn_payload_set_localized_key(apn_payload_ref payload, const char *ke
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_set_category(apn_payload_ref payload, const char *category) {
+apn_return apn_payload_set_category(apn_payload_ref payload, const char * const category) {
     assert(payload);
     if (payload->category) {
         apn_strfree(&payload->category);
@@ -247,12 +250,12 @@ apn_return apn_payload_set_category(apn_payload_ref payload, const char *categor
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_add_token(apn_payload_ref payload, const char *token) {
-    assert(payload);
-    assert(token);
-
-    uint8_t *binary_token = NULL;
+apn_return apn_payload_add_token(apn_payload_ref payload, const char * const token) {
+	uint8_t *binary_token = NULL;
     uint8_t **tokens = NULL;
+	
+	assert(payload);
+    assert(token);
 
     if (payload->tokens_count >= UINT32_MAX) {
         errno = APN_ERR_TOKEN_TOO_MANY;
@@ -301,10 +304,11 @@ void apn_payload_remove_all_tokens(apn_payload_ref payload) {
         }\
     } while(0);
 
-apn_return apn_payload_add_custom_property_integer(apn_payload_ref payload, const char *name, int64_t value) {
-    assert(payload);
-    assert(name);
+apn_return apn_payload_add_custom_property_integer(apn_payload_ref payload, const char * const name, int64_t value) {
     apn_payload_custom_property_ref property = NULL;
+	
+	assert(payload);
+    assert(name);
 
     APN_PAYLOAD_CHECK_KEY(payload, name);
 
@@ -324,11 +328,11 @@ apn_return apn_payload_add_custom_property_integer(apn_payload_ref payload, cons
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_add_custom_property_double(apn_payload_ref payload, const char *name, double value) {
-    assert(payload);
-    assert(name);
-
+apn_return apn_payload_add_custom_property_double(apn_payload_ref payload, const char * const name, double value) {
     apn_payload_custom_property_ref property = NULL;
+	
+	assert(payload);
+    assert(name);
 
     APN_PAYLOAD_CHECK_KEY(payload, name);
 
@@ -348,11 +352,11 @@ apn_return apn_payload_add_custom_property_double(apn_payload_ref payload, const
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_add_custom_property_bool(apn_payload_ref payload, const char *name, unsigned char value) {
-    assert(payload);
-    assert(name);
-
+apn_return apn_payload_add_custom_property_bool(apn_payload_ref payload, const char * const name, unsigned char value) {
     apn_payload_custom_property_ref property = NULL;
+	
+	assert(payload);
+    assert(name);
 
     APN_PAYLOAD_CHECK_KEY(payload, name);
 
@@ -371,11 +375,11 @@ apn_return apn_payload_add_custom_property_bool(apn_payload_ref payload, const c
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_add_custom_property_null(apn_payload_ref payload, const char *name) {
-    assert(payload);
-    assert(name);
-
+apn_return apn_payload_add_custom_property_null(apn_payload_ref payload, const char * const name) {
     apn_payload_custom_property_ref property = NULL;
+	
+	assert(payload);
+    assert(name);
 
     APN_PAYLOAD_CHECK_KEY(payload, name);
 
@@ -396,12 +400,12 @@ apn_return apn_payload_add_custom_property_null(apn_payload_ref payload, const c
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_add_custom_property_string(apn_payload_ref payload, const char *name, const char *value) {
-    assert(payload);
-    assert(name);
-
+apn_return apn_payload_add_custom_property_string(apn_payload_ref payload, const char * const name, const char *value) {
     apn_payload_custom_property_ref property = NULL;
 
+	assert(payload);
+    assert(name);
+	
     APN_PAYLOAD_CHECK_KEY(payload, name);
 
     if (APN_ERROR == __apn_payload_custom_property_realloc_if_needed(payload)) {
@@ -427,15 +431,15 @@ apn_return apn_payload_add_custom_property_string(apn_payload_ref payload, const
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_add_custom_property_array(apn_payload_ref payload, const char *name, const char **array, uint8_t array_size) {
-    assert(payload);
-    assert(name);
-    assert(array);
-
+apn_return apn_payload_add_custom_property_array(apn_payload_ref payload, const char * const name, const char **array, uint8_t array_size) {
     char **_array = NULL;
     apn_payload_custom_property_ref property = NULL;
     uint8_t i = 0;
 
+	assert(payload);
+    assert(name);
+    assert(array);
+	
     APN_PAYLOAD_CHECK_KEY(payload, name);
 
     if (APN_ERROR == __apn_payload_custom_property_realloc_if_needed(payload)) {
@@ -518,7 +522,7 @@ time_t apn_payload_expiry(apn_payload_ref payload) {
     return payload->expiry;
 }
 
-apn_notification_priority apn_payload_priority(apn_payload_ref payload) {
+apn_notification_priority apn_payload_priority(const apn_payload_ref payload) {
     assert(payload);
     return payload->priority;
 }
@@ -562,8 +566,7 @@ static void __apn_payload_custom_property_free(apn_payload_custom_property_ref *
 }
 
 static apn_payload_alert_ref __apn_payload_alert_init() {
-    apn_payload_alert_ref alert = NULL;
-    alert = malloc(sizeof (apn_payload_alert));
+    apn_payload_alert_ref alert = malloc(sizeof (apn_payload_alert));
     if (!alert) {
         errno = ENOMEM;
         return NULL;
@@ -617,7 +620,6 @@ static apn_return __apn_payload_custom_property_realloc_if_needed(apn_payload_re
 }
 
 char * apn_create_json_document_from_payload(const apn_payload_ref payload) {
-    assert(payload);
     json_t *root = NULL;
     json_t *aps = NULL;
     json_t *alert = NULL;
@@ -626,6 +628,8 @@ char * apn_create_json_document_from_payload(const apn_payload_ref payload) {
     char *json_document = NULL;
     uint16_t i = 0;
     uint8_t array_i = 0;
+	
+	assert(payload);
 
     root = json_object();
     aps = json_object();

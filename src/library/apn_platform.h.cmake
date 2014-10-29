@@ -58,40 +58,29 @@ typedef enum __apn_return {
 } apn_return;
 
 #ifdef _WIN32
-  #define __apn_export__ __declspec(dllexport)
+	#define __apn_export__ __declspec(dllexport)
+	#define __apn_attribute_nonnull__(i)
+	#define __apn_attribute_warn_unused_result__
+	
+	#include <winsock2.h>
+	#include <windows.h>
+	
+	#define CLOSE_SOCKET(__socket) closesocket(__socket)
+	#ifndef ETIMEDOUT
+		#define ETIMEDOUT WSAETIMEDOUT
+	#endif
 #else 
-  #if defined (__clang__) 
-     #define __apn_export__ __attribute__ ((visibility("default")))
-     #define __apn_attribute_nonnull__(i)  __attribute__((nonnull i))
-     #define __apn_attribute_warn_unused_result__  __attribute__((warn_unused_result))
-  #else
-    #define __apn_attribute_nonnull__(i)  __attribute__((nonnull i))
-    #define __apn_attribute_warn_unused_result__  __attribute__((warn_unused_result))
-    #define __apn_export__ __attribute__ ((visibility("default")))
-  #endif
-#endif
-
-#ifndef __apn_export__
-#define __apn_export__
-#endif
-
-#ifndef __apn_attribute_nonnull__
-#define __apn_attribute_nonnull__(i)
-#endif
-
-#ifndef __apn_attribute_warn_unused_result__
-#define __apn_attribute_warn_unused_result__
-#endif
-
-#ifdef _WIN32
-#include <winsock2.h>
-#define CLOSE_SOCKET(__socket) closesocket(__socket)
-#ifndef ETIMEDOUT
-#define ETIMEDOUT WSAETIMEDOUT
-#endif
-#else
-#define CLOSE_SOCKET(__socket) close(__socket)
-typedef int SOCKET;
+	#if defined (__clang__) 
+		#define __apn_export__ __attribute__ ((visibility("default")))
+		#define __apn_attribute_nonnull__(i)  __attribute__((nonnull i))
+		#define __apn_attribute_warn_unused_result__  __attribute__((warn_unused_result))
+	#else
+		#define __apn_attribute_nonnull__(i)  __attribute__((nonnull i))
+		#define __apn_attribute_warn_unused_result__  __attribute__((warn_unused_result))
+		#define __apn_export__ __attribute__ ((visibility("default")))
+	#endif
+	#define CLOSE_SOCKET(__socket) close(__socket)
+	typedef int SOCKET;
 #endif
 
 #ifdef HAVE_MALLOC_H
@@ -101,30 +90,27 @@ typedef int SOCKET;
 #include <limits.h>
 
 #if defined(HAVE_STDINT_H)
-#include <stdint.h>
+	#include <stdint.h>
 #elif defined(HAVE_INTTYPES_H)
-#include <inttypes.h>
+	#include <inttypes.h>
 #elif defined(_MSC_VER)
-#if _MSC_VER > 1000
-#pragma once
-#endif
-#if (_MSC_VER < 1300)
-   typedef unsigned char     uint8_t;
-   typedef unsigned short    uint16_t;
-   typedef unsigned int      uint32_t;
-   typedef signed   char     int8_t;
-#else
-   typedef signed __int8     int8_t;
-   typedef unsigned __int8   uint8_t;
-   typedef unsigned __int16  uint16_t;
-   typedef unsigned __int32  uint32_t;
-#endif
-#define UINT16_MAX   _UI16_MAX
-#define UINT32_MAX   _UI32_MAX
-    typedef unsigned    __int64     uint64_t;
-    typedef signed      __int64     int64_t;
-    typedef signed      __int32     int32_t;
-#endif
+	#if (_MSC_VER < 1300)
+		typedef unsigned char     uint8_t;
+		typedef unsigned short    uint16_t;
+		typedef unsigned int      uint32_t;
+		typedef signed   char     int8_t;
+	#else
+		typedef signed __int8     int8_t;
+		typedef unsigned __int8   uint8_t;
+		typedef unsigned __int16  uint16_t;
+		typedef unsigned __int32  uint32_t;
+	#endif
+	#define UINT16_MAX   _UI16_MAX
+	#define UINT32_MAX   _UI32_MAX
+		typedef unsigned    __int64     uint64_t;
+		typedef signed      __int64     int64_t;
+		typedef signed      __int32     int32_t;
+	#endif
 
 #endif
 
