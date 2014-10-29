@@ -64,7 +64,7 @@ typedef enum __apn_errors {
     APN_ERR_PAYLOAD_ALERT_IS_NOT_SET,
     APN_ERR_STRING_CONTAINS_NON_UTF8_CHARACTERS,
     APN_ERR_PROCESSING_ERROR,
-    APN_ERR_SERVICE_SHUTDOWN,
+    APN_ERR_SERVICE_SHUTDOWN
 } apn_errors;
 
 typedef struct __apn_ctx {

@@ -194,9 +194,6 @@ __apn_export__ const char *apn_payload_body(const apn_payload_ref payload)
 __apn_export__ apn_notification_priority apn_payload_priority(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1));
 
-char *apn_create_json_document_from_payload(const apn_payload_ref payload)
-        __apn_attribute_nonnull__((1));
-
 #ifdef __cplusplus
 }
 #endif
