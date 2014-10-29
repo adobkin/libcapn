@@ -29,6 +29,7 @@
 #include "apn_tokens.h"
 #include "apn_memory.h"
 #include "apn_version.h"
+#include "apn_paload_private.h"
 #include "apn.h"
 
 #ifdef HAVE_SYS_FCNTL_H
@@ -41,10 +42,6 @@
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
-#endif
-
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
 #endif
 
 #ifdef HAVE_NETDB_H
