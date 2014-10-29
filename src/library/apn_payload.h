@@ -96,133 +96,102 @@ typedef apn_payload_custom_property *apn_payload_custom_property_ref;
 typedef apn_payload_alert *apn_payload_alert_ref;
 typedef apn_payload *apn_payload_ref;
 
-apn_payload_ref apn_payload_init()
-        __apn_export__
-        __apn_attribute_warn_unused_result__;
+__apn_export__ apn_payload_ref apn_payload_init()
+		__apn_attribute_warn_unused_result__;
 
-void apn_payload_free(apn_payload_ref *payload)
-        __apn_export__
-        __apn_attribute_nonnull__((1));
+__apn_export__ void apn_payload_free(apn_payload_ref *payload)
+		__apn_attribute_nonnull__((1));
 
-apn_return apn_payload_add_token(apn_payload_ref payload, const char *token)
-        __apn_export__
+__apn_export__ apn_return apn_payload_add_token(apn_payload_ref payload, const char * const token)
         __apn_attribute_nonnull__((1, 2));
 
-void apn_payload_remove_all_tokens(apn_payload_ref payload)
-        __apn_export__
+__apn_export__ void apn_payload_remove_all_tokens(apn_payload_ref payload)
         __apn_attribute_nonnull__((1));
 
-void apn_payload_set_expiry(apn_payload_ref payload, time_t expiry)
-        __apn_export__
+__apn_export__ void apn_payload_set_expiry(apn_payload_ref payload, time_t expiry)
         __apn_attribute_nonnull__((1));
 
-apn_return apn_payload_set_badge(apn_payload_ref payload, int32_t badge)
-        __apn_export__
+__apn_export__ apn_return apn_payload_set_badge(apn_payload_ref payload, int32_t badge)
         __apn_attribute_nonnull__((1));
 
-apn_return apn_payload_set_sound(apn_payload_ref payload, const char *sound)
-        __apn_export__
+__apn_export__ apn_return apn_payload_set_sound(apn_payload_ref payload, const char * const sound)
         __apn_attribute_nonnull__((1, 2));
 
-void apn_payload_set_content_available(apn_payload_ref payload, uint8_t content_available)
-        __apn_export__
+__apn_export__ void apn_payload_set_content_available(apn_payload_ref payload, uint8_t content_available)
         __apn_attribute_nonnull__((1));
 
-void apn_payload_set_priority(apn_payload_ref payload, apn_notification_priority priority)
-        __apn_export__
+__apn_export__ void apn_payload_set_priority(apn_payload_ref payload, apn_notification_priority priority)
         __apn_attribute_nonnull__((1));
 
-apn_return apn_payload_set_body(apn_payload_ref payload, const char *body)
-        __apn_export__
+__apn_export__ apn_return apn_payload_set_body(apn_payload_ref payload, const char * const body)
         __apn_attribute_nonnull__((1, 2));
 
-apn_return apn_payload_set_localized_action_key(apn_payload_ref payload, const char *key)
-        __apn_export__
+__apn_export__ apn_return apn_payload_set_localized_action_key(apn_payload_ref payload, const char * const key)
         __apn_attribute_nonnull__((1, 2));
 
-apn_return apn_payload_set_launch_image(apn_payload_ref payload, const char *image)
-        __apn_export__
+__apn_export__ apn_return apn_payload_set_launch_image(apn_payload_ref payload, const char * const image)
         __apn_attribute_nonnull__((1));
 
-apn_return apn_payload_set_localized_key(apn_payload_ref payload, const char *key, char **args, uint16_t args_count)
-        __apn_export__
+__apn_export__ apn_return apn_payload_set_localized_key(apn_payload_ref payload, const char * const key, char **args, uint16_t args_count)
         __apn_attribute_nonnull__((1));
 
-apn_return apn_payload_set_category(apn_payload_ref payload, const char *category)
-        __apn_export__
+__apn_export__ apn_return apn_payload_set_category(apn_payload_ref payload, const char * const category)
         __apn_attribute_nonnull__((1));
 
-apn_return apn_payload_add_custom_property_integer(apn_payload_ref payload, const char *key, int64_t value)
-        __apn_export__
+__apn_export__ apn_return apn_payload_add_custom_property_integer(apn_payload_ref payload, const char * const key, int64_t value)
         __apn_attribute_nonnull__((1, 2));
 
-apn_return apn_payload_add_custom_property_bool(apn_payload_ref payload, const char *key, uint8_t value)
-        __apn_export__
+__apn_export__ apn_return apn_payload_add_custom_property_bool(apn_payload_ref payload, const char * const key, uint8_t value)
         __apn_attribute_nonnull__((1, 2));
 
-apn_return apn_payload_add_custom_property_double(apn_payload_ref payload, const char *key, double value)
-        __apn_export__
+__apn_export__ apn_return apn_payload_add_custom_property_double(apn_payload_ref payload, const char * const key, double value)
         __apn_attribute_nonnull__((1, 2));
 
-apn_return apn_payload_add_custom_property_null(apn_payload_ref payload, const char *key)
-        __apn_export__
+__apn_export__ apn_return apn_payload_add_custom_property_null(apn_payload_ref payload, const char * const key)
         __apn_attribute_nonnull__((1, 2));
 
-apn_return apn_payload_add_custom_property_string(apn_payload_ref payload, const char *key, const char *value)
-        __apn_export__
+__apn_export__ apn_return apn_payload_add_custom_property_string(apn_payload_ref payload, const char * const key, const char *value)
         __apn_attribute_nonnull__((1, 2, 3));
 
-apn_return apn_payload_add_custom_property_array(apn_payload_ref payload, const char *key, const char **array, uint8_t array_size)
-        __apn_export__
+__apn_export__ apn_return apn_payload_add_custom_property_array(apn_payload_ref payload, const char * const key, const char **array, uint8_t array_size)
         __apn_attribute_nonnull__((1, 2, 3));
 
-uint8_t apn_payload_content_available(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ uint8_t apn_payload_content_available(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1));
 
-const char * apn_payload_category(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ const char * apn_payload_category(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1));
 
-time_t apn_payload_expiry(apn_payload_ref payload_ctx)
-        __apn_export__
+__apn_export__ time_t apn_payload_expiry(apn_payload_ref payload_ctx)
         __apn_attribute_nonnull__((1));
 
-uint16_t apn_payload_localized_key_args(const apn_payload_ref payload, char ***args)
-        __apn_export__
+__apn_export__ uint16_t apn_payload_localized_key_args(const apn_payload_ref payload, char ***args)
         __apn_attribute_nonnull__((1, 2));
 
-int32_t apn_payload_badge(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ int32_t apn_payload_badge(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1));
 
-const char *apn_payload_sound(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ const char *apn_payload_sound(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-const char *apn_payload_launch_image(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ const char *apn_payload_launch_image(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-const char *apn_payload_localized_action_key(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ const char *apn_payload_localized_action_key(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-const char *apn_payload_localized_key(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ const char *apn_payload_localized_key(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-const char *apn_payload_body(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ const char *apn_payload_body(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-apn_notification_priority apn_payload_priority(const apn_payload_ref payload)
-        __apn_export__
+__apn_export__ apn_notification_priority apn_payload_priority(const apn_payload_ref payload)
         __apn_attribute_nonnull__((1));
 
 char *apn_create_json_document_from_payload(const apn_payload_ref payload)

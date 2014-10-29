@@ -32,12 +32,12 @@
 #include <ctype.h>
 #endif
 
-uint8_t *apn_token_hex_to_binary(const char *const token) {
-    assert(token);
-    uint16_t i = 0;
+uint8_t *apn_token_hex_to_binary(const char *const token) {    uint16_t i = 0;
     uint16_t j = 0;
     uint8_t *binary_token = NULL;
     unsigned int binary = 0;
+	
+	assert(token);
 
     binary_token = malloc(APN_TOKEN_BINARY_SIZE);
     if (!binary_token) {
@@ -59,11 +59,15 @@ uint8_t *apn_token_hex_to_binary(const char *const token) {
 }
 
 char *apn_token_binary_to_hex(const uint8_t *const binary_token) {
-    assert(binary_token);
     uint16_t i = 0;
-    size_t token_size = (APN_TOKEN_BINARY_SIZE * 2) + 1;
-    char *token = malloc(token_size);
+    uint32_t token_size = 0;
+    char *token = NULL;
     char *p = token;
+	
+	assert(binary_token);
+	
+	token_size = (APN_TOKEN_BINARY_SIZE * 2) + 1;
+	token = malloc(token_size);
     if (!token) {
         errno = ENOMEM;
         return NULL;
@@ -81,8 +85,10 @@ char *apn_token_binary_to_hex(const uint8_t *const binary_token) {
 }
 
 uint8_t apn_hex_token_is_valid(const char *const token) {
-    assert(token);
     char *p = (char *) token;
+	
+	assert(token);
+	 
     while (*p != '\0') {
         if (!isxdigit(*p)) {
             return 0;
