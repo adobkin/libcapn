@@ -25,12 +25,12 @@
 #include <errno.h>
 #include <assert.h>
 
+#include "src/jansson.h"
+
 #include "apn_strings.h"
 #include "apn_tokens.h"
 #include "apn_memory.h"
 #include "apn.h"
-
-#include "src/jansson.h"
 
 static apn_payload_alert_ref __apn_payload_alert_init();
 static void __apn_payload_custom_property_free(apn_payload_custom_property_ref *property);
