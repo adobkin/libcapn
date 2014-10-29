@@ -70,13 +70,13 @@ struct __apn_apple_server {
 };
 
 static struct __apn_apple_server __apn_apple_servers[4] = {
-    {"gateway.sandbox.push.apple.com", 2195},
-    {"gateway.push.apple.com", 2195},
-    {"feedback.sandbox.push.apple.com", 2196},
-    {"feedback.push.apple.com", 2196}
+        {"gateway.sandbox.push.apple.com", 2195},
+        {"gateway.push.apple.com", 2195},
+        {"feedback.sandbox.push.apple.com", 2196},
+        {"feedback.push.apple.com", 2196}
 };
 
-static size_t __apn_create_binary_message(uint8_t *token, const char * const payload, uint32_t id, time_t expiry, apn_notification_priority priority, uint8_t ** message);
+static size_t __apn_create_binary_message(uint8_t *token, const char *const payload, uint32_t id, time_t expiry, apn_notification_priority priority, uint8_t **message);
 static int __apn_password_cd(char *buf, int size, int rwflag, void *password);
 static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server server);
 static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t length);
@@ -111,12 +111,12 @@ void apn_library_free() {
 #endif
 }
 
-apn_ctx_ref apn_init(const char * const cert, const char * const private_key, const char * const private_key_pass) {
-apn_ctx_ref ctx =  NULL;
-   if(APN_ERROR == apn_library_init()) {
+apn_ctx_ref apn_init(const char *const cert, const char *const private_key, const char *const private_key_pass) {
+    apn_ctx_ref ctx = NULL;
+    if (APN_ERROR == apn_library_init()) {
         return NULL;
     }
-    ctx = malloc(sizeof (apn_ctx));
+    ctx = malloc(sizeof(apn_ctx));
     if (!ctx) {
         errno = ENOMEM;
         return NULL;
@@ -179,7 +179,7 @@ void apn_set_invalid_token_cb(apn_ctx_ref ctx, void (*invalid_token_cb)(char *))
     ctx->invalid_token_cb = invalid_token_cb ? invalid_token_cb : NULL;
 }
 
-apn_return apn_set_certificate(apn_ctx_ref ctx, const char * const cert) {
+apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert) {
     assert(ctx);
     if (ctx->certificate_file) {
         apn_strfree(&ctx->certificate_file);
@@ -193,7 +193,7 @@ apn_return apn_set_certificate(apn_ctx_ref ctx, const char * const cert) {
     return APN_SUCCESS;
 }
 
-apn_return apn_set_private_key(apn_ctx_ref ctx, const char * const key, const char * const pass) {
+apn_return apn_set_private_key(apn_ctx_ref ctx, const char *const key, const char *const pass) {
     assert(ctx);
     if (ctx->private_key_file) {
         apn_strfree(&ctx->private_key_file);
@@ -225,11 +225,11 @@ void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode) {
     }
 }
 
-apn_return apn_add_token(apn_ctx_ref ctx, const char * const token) {
+apn_return apn_add_token(apn_ctx_ref ctx, const char *const token) {
     uint8_t *binary_token = NULL;
     uint8_t **tokens = NULL;
-	
-	assert(ctx);
+
+    assert(ctx);
     assert(token);
 
     if (ctx->tokens_count >= UINT32_MAX) {
@@ -242,7 +242,7 @@ apn_return apn_add_token(apn_ctx_ref ctx, const char * const token) {
         return APN_ERROR;
     }
 
-    tokens = (uint8_t **)apn_realloc(ctx->tokens, (ctx->tokens_count + 1) * sizeof(uint8_t *));
+    tokens = (uint8_t **) apn_realloc(ctx->tokens, (ctx->tokens_count + 1) * sizeof(uint8_t *));
     if (!tokens) {
         errno = ENOMEM;
         return APN_ERROR;
@@ -272,7 +272,7 @@ apn_connection_mode apn_mode(const apn_ctx_ref ctx) {
 
 const char *apn_certificate(const apn_ctx_ref ctx) {
     assert(ctx);
-    return  ctx->certificate_file;
+    return ctx->certificate_file;
 }
 
 const char *apn_private_key(const apn_ctx_ref ctx) {
@@ -315,8 +315,8 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
     uint32_t i = 0;
     struct timeval timeout = {10, 0};
     char *invalid_token = NULL;
-	
-	assert(ctx);
+
+    assert(ctx);
     assert(payload);
 
     if (!ctx->ssl || ctx->feedback) {
@@ -374,7 +374,7 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
         }
 
         if (FD_ISSET(ctx->sock, &read_set)) {
-            bytes_read = __ssl_read(ctx, apple_error, sizeof (apple_error));
+            bytes_read = __ssl_read(ctx, apple_error, sizeof(apple_error));
             if (bytes_read <= 0) {
                 if (message) {
                     free(message);
@@ -384,8 +384,8 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
             }
             __apn_parse_apns_error(apple_error, &apple_errcode, &invalid_id);
             if (apple_errcode == APN_ERR_TOKEN_INVALID) {
-                invalid_token =  apn_token_binary_to_hex(tokens[invalid_id]);
-                if(ctx->invalid_token_cb) {
+                invalid_token = apn_token_binary_to_hex(tokens[invalid_id]);
+                if (ctx->invalid_token_cb) {
                     ctx->invalid_token_cb(invalid_token);
                 }
             } else {
@@ -410,7 +410,7 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
     free(json);
 
     timeout.tv_sec = 1;
-    for (;;) {
+    for (; ;) {
         FD_ZERO(&read_set);
         FD_SET(ctx->sock, &read_set);
         select_returned = select(ctx->sock + 1, &read_set, NULL, NULL, &timeout);
@@ -427,12 +427,12 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
         }
 
         if (FD_ISSET(ctx->sock, &read_set)) {
-            bytes_read = __ssl_read(ctx, apple_error, sizeof (apple_error));
+            bytes_read = __ssl_read(ctx, apple_error, sizeof(apple_error));
             if (bytes_read > 0) {
                 __apn_parse_apns_error(apple_error, &apple_errcode, &invalid_id);
                 if (apple_errcode == APN_ERR_TOKEN_INVALID) {
-                    invalid_token =  apn_token_binary_to_hex(tokens[invalid_id]);
-                    if(ctx->invalid_token_cb) {
+                    invalid_token = apn_token_binary_to_hex(tokens[invalid_id]);
+                    if (ctx->invalid_token_cb) {
                         ctx->invalid_token_cb(invalid_token);
                     }
                 } else {
@@ -448,6 +448,17 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
     return APN_SUCCESS;
 }
 
+apn_return apn_feedback_connect(const apn_ctx_ref ctx) {
+    struct __apn_apple_server server;
+    if (ctx->mode == APN_MODE_SANDBOX) {
+        server = __apn_apple_servers[2];
+    } else {
+        server = __apn_apple_servers[3];
+    }
+    ctx->feedback = 1;
+    return __apn_connect(ctx, server);
+}
+
 apn_return apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count) {
     char buffer[38]; /* Buffer to read data */
     char *buffer_ref = buffer; /* Pointer to buffer */
@@ -460,8 +471,8 @@ apn_return apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *t
     uint32_t tokens_count = 0; /* Tokens count */
     char *token_hex = NULL; /* Token as HEX string */
     int select_returned = 0;
-	
-	assert(ctx);
+
+    assert(ctx);
     assert(tokens_array);
     assert(tokens_array_count);
 
@@ -470,7 +481,7 @@ apn_return apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *t
         return APN_ERROR;
     }
 
-    for (;;) {
+    for (; ;) {
         FD_ZERO(&read_set);
         FD_SET(ctx->sock, &read_set);
 
@@ -489,21 +500,21 @@ apn_return apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *t
         }
 
         if (FD_ISSET(ctx->sock, &read_set)) {
-            bytes_read = __ssl_read(ctx, buffer, sizeof (buffer));
+            bytes_read = __ssl_read(ctx, buffer, sizeof(buffer));
             if (bytes_read < 0) {
                 return APN_ERROR;
             } else if (bytes_read > 0) {
-                buffer_ref += sizeof (uint32_t);
-                memcpy(&token_length, buffer_ref, sizeof (token_length));
-                buffer_ref += sizeof (token_length);
+                buffer_ref += sizeof(uint32_t);
+                memcpy(&token_length, buffer_ref, sizeof(token_length));
+                buffer_ref += sizeof(token_length);
                 token_length = ntohs(token_length);
-                memcpy(&binary_token, buffer_ref, sizeof (binary_token));
+                memcpy(&binary_token, buffer_ref, sizeof(binary_token));
                 token_hex = apn_token_binary_to_hex(binary_token);
                 if (token_hex == NULL) {
                     apn_feedback_tokens_array_free(tokens, tokens_count);
                     return APN_ERROR;
                 }
-                tokens = (char **) apn_realloc(tokens, (tokens_count + 1) * sizeof (char *));
+                tokens = (char **) apn_realloc(tokens, (tokens_count + 1) * sizeof(char *));
                 if (!tokens) {
                     apn_feedback_tokens_array_free(tokens, tokens_count);
                     errno = ENOMEM;
@@ -526,7 +537,7 @@ uint32_t apn_version() {
     return APN_VERSION_NUM;
 }
 
-const char * apn_version_string() {
+const char *apn_version_string() {
     return APN_VERSION_STRING;
 }
 
@@ -540,7 +551,8 @@ void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_c
         free(tokens_array);
     }
 }
-char  *apn_strerror(int errnum) {
+
+char *apn_strerror(int errnum) {
     char error[250] = {0};
     switch (errnum) {
         case APN_ERR_FAILED_INIT:
@@ -646,17 +658,17 @@ static int __apn_password_cd(char *buf, int size, int rwflag, void *password) {
 #endif
     buf[size - 1] = '\0';
 
-    return (int)strlen(buf);
+    return (int) strlen(buf);
 }
 
-static size_t __apn_create_binary_message(uint8_t *token, const char * const payload, uint32_t id, time_t expiry, apn_notification_priority priority, uint8_t ** message) {
-    uint8_t * frame = NULL;
-    uint8_t * frame_ref = NULL;
+static size_t __apn_create_binary_message(uint8_t *token, const char *const payload, uint32_t id, time_t expiry, apn_notification_priority priority, uint8_t **message) {
+    uint8_t *frame = NULL;
+    uint8_t *frame_ref = NULL;
     size_t frame_size = 0;
     size_t payload_size = 0;
 
     uint32_t id_n = htonl(id); // ID (network ordered)
-    uint32_t expiry_n = htonl((uint32_t)expiry); // expiry time (network ordered)
+    uint32_t expiry_n = htonl((uint32_t) expiry); // expiry time (network ordered)
 
     uint8_t item_id = 1; // Item ID
     uint16_t item_data_size_n = 0; // Item data size (network ordered)
@@ -667,12 +679,12 @@ static size_t __apn_create_binary_message(uint8_t *token, const char * const pay
     uint32_t frame_size_n; // Frame size (network ordered)
 
     payload_size = strlen(payload);
-    frame_size = ((sizeof (uint8_t) + sizeof (uint16_t)) * 5)
+    frame_size = ((sizeof(uint8_t) + sizeof(uint16_t)) * 5)
             + APN_TOKEN_BINARY_SIZE
             + payload_size
-            + sizeof (uint32_t)
-            + sizeof (uint32_t)
-            + sizeof (uint8_t);
+            + sizeof(uint32_t)
+            + sizeof(uint32_t)
+            + sizeof(uint8_t);
 
     frame_size_n = htonl(frame_size);
 
@@ -684,7 +696,7 @@ static size_t __apn_create_binary_message(uint8_t *token, const char * const pay
     }
     frame_ref = frame;
 
-    binary_message_size = frame_size + sizeof (uint32_t) + sizeof (uint8_t);
+    binary_message_size = frame_size + sizeof(uint32_t) + sizeof(uint8_t);
     binary_message = (uint8_t *) malloc(binary_message_size);
     if (!binary_message) {
         errno = ENOMEM;
@@ -697,47 +709,47 @@ static size_t __apn_create_binary_message(uint8_t *token, const char * const pay
     /* Token */
     *frame_ref++ = item_id++;
     item_data_size_n = htons(APN_TOKEN_BINARY_SIZE);
-    memcpy(frame_ref, &item_data_size_n, sizeof (uint16_t));
-    frame_ref += sizeof (uint16_t);
+    memcpy(frame_ref, &item_data_size_n, sizeof(uint16_t));
+    frame_ref += sizeof(uint16_t);
     memcpy(frame_ref, token, APN_TOKEN_BINARY_SIZE);
     frame_ref += APN_TOKEN_BINARY_SIZE;
 
     /* Payload */
     *frame_ref++ = item_id++;
     item_data_size_n = htons(payload_size);
-    memcpy(frame_ref, &item_data_size_n, sizeof (uint16_t));
-    frame_ref += sizeof (uint16_t);
+    memcpy(frame_ref, &item_data_size_n, sizeof(uint16_t));
+    frame_ref += sizeof(uint16_t);
     memcpy(frame_ref, payload, payload_size);
     frame_ref += payload_size;
 
     /* Message ID */
     *frame_ref++ = item_id++;
-    item_data_size_n = htons(sizeof (uint32_t));
-    memcpy(frame_ref, &item_data_size_n, sizeof (uint16_t));
-    frame_ref += sizeof (uint16_t);
-    memcpy(frame_ref, &id_n, sizeof (uint32_t));
-    frame_ref += sizeof (uint32_t);
+    item_data_size_n = htons(sizeof(uint32_t));
+    memcpy(frame_ref, &item_data_size_n, sizeof(uint16_t));
+    frame_ref += sizeof(uint16_t);
+    memcpy(frame_ref, &id_n, sizeof(uint32_t));
+    frame_ref += sizeof(uint32_t);
 
     /* Expires */
     *frame_ref++ = item_id++;
-    item_data_size_n = htons(sizeof (uint32_t));
-    memcpy(frame_ref, &item_data_size_n, sizeof (uint16_t));
-    frame_ref += sizeof (uint16_t);
-    memcpy(frame_ref, &expiry_n, sizeof (uint32_t));
-    frame_ref += sizeof (uint32_t);
+    item_data_size_n = htons(sizeof(uint32_t));
+    memcpy(frame_ref, &item_data_size_n, sizeof(uint16_t));
+    frame_ref += sizeof(uint16_t);
+    memcpy(frame_ref, &expiry_n, sizeof(uint32_t));
+    frame_ref += sizeof(uint32_t);
 
     /* Priority */
     *frame_ref++ = item_id;
-    item_data_size_n = htons(sizeof (uint8_t));
-    memcpy(frame_ref, &item_data_size_n, sizeof (uint16_t));
-    frame_ref += sizeof (uint16_t);
+    item_data_size_n = htons(sizeof(uint8_t));
+    memcpy(frame_ref, &item_data_size_n, sizeof(uint16_t));
+    frame_ref += sizeof(uint16_t);
     *frame_ref = (uint8_t) priority;
 
     /* Binary message */
     *binary_message_ref++ = 2;
 
-    memcpy(binary_message_ref, &frame_size_n, sizeof (uint32_t));
-    binary_message_ref += sizeof (uint32_t);
+    memcpy(binary_message_ref, &frame_size_n, sizeof(uint32_t));
+    binary_message_ref += sizeof(uint32_t);
     memcpy(binary_message_ref, frame, frame_size);
 
     free(frame);
@@ -747,7 +759,7 @@ static size_t __apn_create_binary_message(uint8_t *token, const char * const pay
 }
 
 static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server server) {
-    struct hostent * hostent = NULL;
+    struct hostent *hostent = NULL;
     struct sockaddr_in socket_address;
     SOCKET sock;
     int sock_flags = 0;
@@ -770,8 +782,8 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
             return APN_ERROR;
         }
 
-        memset(&socket_address, 0, sizeof (socket_address));
-        socket_address.sin_addr = *(struct in_addr*) hostent->h_addr_list[0];
+        memset(&socket_address, 0, sizeof(socket_address));
+        socket_address.sin_addr = *(struct in_addr *) hostent->h_addr_list[0];
         socket_address.sin_family = AF_INET;
         socket_address.sin_port = htons(server.port);
 
@@ -781,7 +793,7 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
             return APN_ERROR;
         }
 
-        if (connect(sock, (struct sockaddr *) &socket_address, sizeof (socket_address)) < 0) {
+        if (connect(sock, (struct sockaddr *) &socket_address, sizeof(socket_address)) < 0) {
             errno = APN_ERR_COULD_NOT_INITIALIZE_CONNECTION;
             return APN_ERROR;
         }
@@ -837,7 +849,7 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
         }
 
         if (-1 == SSL_set_fd(ctx->ssl, ctx->sock) ||
-                SSL_connect(ctx->ssl) < 1 ) {
+                SSL_connect(ctx->ssl) < 1) {
             errno = APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION;
             return APN_ERROR;
         }
@@ -896,7 +908,7 @@ static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t len
 
 static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t length) {
     int read;
-    for (;;) {
+    for (; ;) {
         read = SSL_read(ctx->ssl, buff, (int) length);
         if (read > 0) {
             break;
@@ -934,11 +946,11 @@ static void __apn_parse_apns_error(char *apns_error, uint16_t *errcode, uint32_t
     uint8_t cmd = 0;
     uint8_t apple_error_code = 0;
     uint32_t notification_id = 0;
-    memcpy(&cmd, apns_error, sizeof (uint8_t));
-    apns_error += sizeof (cmd);
+    memcpy(&cmd, apns_error, sizeof(uint8_t));
+    apns_error += sizeof(cmd);
     if (cmd == 8) {
-        memcpy(&apple_error_code, apns_error, sizeof (uint8_t));
-        apns_error += sizeof (apple_error_code);
+        memcpy(&apple_error_code, apns_error, sizeof(uint8_t));
+        apns_error += sizeof(apple_error_code);
         switch (apple_error_code) {
             case APN_APNS_ERR_PROCESSING_ERROR:
                 *errcode = APN_ERR_PROCESSING_ERROR;
@@ -951,10 +963,11 @@ static void __apn_parse_apns_error(char *apns_error, uint16_t *errcode, uint32_t
                 break;
             case APN_APNS_ERR_INVALID_TOKEN:
                 *errcode = APN_ERR_TOKEN_INVALID;
-                memcpy(&notification_id, apns_error, sizeof (uint32_t));
+                memcpy(&notification_id, apns_error, sizeof(uint32_t));
                 *id = notification_id;
                 break;
-            default: break;
+            default:
+                break;
         }
     }
 }
