@@ -61,10 +61,9 @@ typedef enum __apn_return {
 	#define __apn_export__ __declspec(dllexport)
 	#define __apn_attribute_nonnull__(i)
 	#define __apn_attribute_warn_unused_result__
-	
+
 	#include <winsock2.h>
-	#include <windows.h>
-	
+
 	#define CLOSE_SOCKET(__socket) closesocket(__socket)
 	#ifndef ETIMEDOUT
 		#define ETIMEDOUT WSAETIMEDOUT
