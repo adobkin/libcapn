@@ -24,20 +24,23 @@ IF(NOT DEFINED CMAKE_BUILD_TYPE)
     SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
 
+STRING(REPLACE "/" ";" CAPN_CC_LIST ${CMAKE_C_COMPILER})
+LIST(GET CAPN_CC_LIST -1 CAPN_CC)
+
 IF("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    SET(CMAKE_C_FLAGS "-D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -fPIC -W -Wformat-security -pedantic")
+    SET(CMAKE_C_FLAGS "-std=c99 -D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -fPIC -W -Wformat-security -pedantic")
     SET(CMAKE_C_FLAGS_DEBUGE "-g3 -O0 -DDEBUG")
     SET(CMAKE_C_FLAGS_RELEASE "-g2 -O3")
 ENDIF()
 
-SET(APN_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-SET(APN_SOURCE_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/library")
-SET(APN_THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/third_party")
+SET(CAPN_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+SET(CAPN_SOURCE_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/library")
+SET(CAPN_THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/third_party")
 
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}")
 SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}")
 
-INCLUDE_DIRECTORIES (${APN_SOURCE_LIB_DIR})
+INCLUDE_DIRECTORIES (${CAPN_SOURCE_LIB_DIR})
 INCLUDE_DIRECTORIES (${PROJECT_BINARY_DIR})
 INCLUDE_DIRECTORIES ("${PROJECT_BINARY_DIR}/src/library")
 
@@ -64,7 +67,7 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 CHECK_FUNCTION_EXISTS (strerror_r HAVE_STRERROR_R)
 
-MACRO(APN_TEST_STRERROR_R HEADER)
+MACRO(CAPN_TEST_STRERROR_R HEADER)
     MESSAGE(STATUS "Performing test ${HEADER}")
     TRY_RUN(${HEADER} ${HEADER}_res ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake/tests/strerror_r.c"
 	    CMAKE_FLAGS -DCOMPILE_DEFINITIONS:STRING=-D${HEADER}
@@ -83,28 +86,28 @@ FOREACH(STRERROR_R_HEADER
     HAVE_GLIBC_STRERROR_R
     HAVE_POSIX_STRERROR_R
 )
-APN_TEST_STRERROR_R(${STRERROR_R_HEADER})
+CAPN_TEST_STRERROR_R(${STRERROR_R_HEADER})
 ENDFOREACH(STRERROR_R_HEADER)
 
 INCLUDE(ExternalProject)
 
-INCLUDE_DIRECTORIES ("${APN_THIRD_PARTY_DIR}/jansson")
-INCLUDE_DIRECTORIES ("${APN_THIRD_PARTY_DIR}/jansson/include")
+INCLUDE_DIRECTORIES ("${CAPN_THIRD_PARTY_DIR}/jansson")
+INCLUDE_DIRECTORIES ("${CAPN_THIRD_PARTY_DIR}/jansson/include")
 
-CONFIGURE_FILE("${APN_SOURCE_LIB_DIR}/apn_platform.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_platform.h")
-CONFIGURE_FILE("${APN_SOURCE_LIB_DIR}/apn_version.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_version.h")
+CONFIGURE_FILE("${CAPN_SOURCE_LIB_DIR}/apn_platform.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_platform.h")
+CONFIGURE_FILE("${CAPN_SOURCE_LIB_DIR}/apn_version.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_version.h")
 
 SET(CAPN_SOURCE_FILES
-    ${APN_SOURCE_LIB_DIR}/apn_memory.c
-    ${APN_SOURCE_LIB_DIR}/apn.c
-    ${APN_SOURCE_LIB_DIR}/apn_strings.c
-    ${APN_SOURCE_LIB_DIR}/apn_payload.c
-    ${APN_SOURCE_LIB_DIR}/apn_tokens.c
+    ${CAPN_SOURCE_LIB_DIR}/apn_memory.c
+    ${CAPN_SOURCE_LIB_DIR}/apn.c
+    ${CAPN_SOURCE_LIB_DIR}/apn_strings.c
+    ${CAPN_SOURCE_LIB_DIR}/apn_payload.c
+    ${CAPN_SOURCE_LIB_DIR}/apn_tokens.c
 )
 
 SET(CAPN_PUBLIC_HEADER_FILES
-    ${APN_SOURCE_LIB_DIR}/apn.h
-    ${APN_SOURCE_LIB_DIR}/apn_payload.h
+    ${CAPN_SOURCE_LIB_DIR}/apn.h
+    ${CAPN_SOURCE_LIB_DIR}/apn_payload.h
     ${PROJECT_BINARY_DIR}/src/library/apn_platform.h
     ${PROJECT_BINARY_DIR}/src/library/apn_version.h
 )
@@ -117,40 +120,40 @@ IF(WIN32)
 	
     ExternalProject_Add(
         jansson
-        SOURCE_DIR "${APN_THIRD_PARTY_DIR}/jansson"
-        BINARY_DIR "${APN_THIRD_PARTY_DIR}/jansson"
-        INSTALL_DIR "${APN_THIRD_PARTY_DIR}/jansson"
+        SOURCE_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
+        BINARY_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
+        INSTALL_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
         CMAKE_COMMAND cmake . -DJANSSON_BUILD_DOCS=OFF
         BUILD_COMMAND nmake
         INSTALL_COMMAND ""
     )
 	
     IF(MINGW)
-        ADD_CUSTOM_COMMAND ( OUTPUT ${APN_SOURCE_LIB_DIR}/rc_capn.obj
+        ADD_CUSTOM_COMMAND ( OUTPUT ${CAPN_SOURCE_LIB_DIR}/rc_capn.obj
         COMMAND windres.exe -I${CMAKE_CURRENT_SOURCE_DIR} -i${CMAKE_CURRENT_SOURCE_DIR}/win/capn.rc
                 -o ${PROJECT_BINARY_DIR}/rc_capn.obj )
         LIST(APPEND SOURCE_FILES rc_capn.obj)
     ELSE()
-		LIST(APPEND CAPN_SOURCE_FILES ${APN_SOURCE_LIB_DIR}/capn.rc)
+		LIST(APPEND CAPN_SOURCE_FILES ${CAPN_SOURCE_LIB_DIR}/capn.rc)
     ENDIF()
 	
-    FILE (GLOB OPENSSL_HEADER_FILES ${APN_THIRD_PARTY_DIR}/openssl/win/include/openssl/*.h)
+    FILE (GLOB OPENSSL_HEADER_FILES ${CAPN_THIRD_PARTY_DIR}/openssl/win/include/openssl/*.h)
     INSTALL(FILES ${OPENSSL_HEADER_FILES} DESTINATION "${CAPN_INSTALL_PATH_INCLUDES}/openssl")
 
-    INCLUDE_DIRECTORIES("${APN_THIRD_PARTY_DIR}/openssl/win/include")
-	SET(OPENSSL_SSLEAY_LIBRARY "${APN_THIRD_PARTY_DIR}/openssl/win/lib/ssleay32.lib")
-	SET(OPENSSL_LIBEAY_LIBRARY "${APN_THIRD_PARTY_DIR}/openssl/win/lib/libeay32.lib")
+    INCLUDE_DIRECTORIES("${CAPN_THIRD_PARTY_DIR}/openssl/win/include")
+	SET(OPENSSL_SSLEAY_LIBRARY "${CAPN_THIRD_PARTY_DIR}/openssl/win/lib/ssleay32.lib")
+	SET(OPENSSL_LIBEAY_LIBRARY "${CAPN_THIRD_PARTY_DIR}/openssl/win/lib/libeay32.lib")
 
     CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/build/win/createpkg.bat.cmake" "${PROJECT_BINARY_DIR}/build/win/createpkg.bat")
 
     INSTALL(FILES
-        ${APN_THIRD_PARTY_DIR}/openssl/win/bin/ssleay32.dll
-        ${APN_THIRD_PARTY_DIR}/openssl/win/bin/libeay32.dll
+        ${CAPN_THIRD_PARTY_DIR}/openssl/win/bin/ssleay32.dll
+        ${CAPN_THIRD_PARTY_DIR}/openssl/win/bin/libeay32.dll
         DESTINATION ${CAPN_INSTALL_PATH_BIN})
           
     INSTALL(FILES
-        ${APN_THIRD_PARTY_DIR}/openssl/win/lib/ssleay32.lib
-	    ${APN_THIRD_PARTY_DIR}/openssl/win/lib/libeay32.lib
+        ${CAPN_THIRD_PARTY_DIR}/openssl/win/lib/ssleay32.lib
+	    ${CAPN_THIRD_PARTY_DIR}/openssl/win/lib/libeay32.lib
         DESTINATION ${CAPN_INSTALL_PATH_LIB})
           
     INSTALL(FILES
@@ -179,7 +182,7 @@ ELSE(WIN32)
             SET(CAPN_INSTALL_PATH_INCLUDES "${CMAKE_INSTALL_PREFIX}/include/${CAPN_LIB_NAME}"  CACHE PATH "")
         ENDIF()
 
-        IF(NOT DEFINED CAPN_INSTALL_PATH_LIB)
+        IF(NOT DEFINED CAPN_INSTALL_PATH_BIN)
             SET(CAPN_INSTALL_PATH_BIN "${CMAKE_INSTALL_PREFIX}/bin"  CACHE PATH "")
         ENDIF()
 
@@ -199,9 +202,9 @@ ELSE(WIN32)
 
         ExternalProject_Add(
             jansson
-            SOURCE_DIR "${APN_THIRD_PARTY_DIR}/jansson"
-            BINARY_DIR "${APN_THIRD_PARTY_DIR}/jansson"
-            INSTALL_DIR "${APN_THIRD_PARTY_DIR}/jansson"
+            SOURCE_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
+            BINARY_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
+            INSTALL_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
             CMAKE_COMMAND cmake . -DCMAKE_C_FLAGS=-fPIC -DJANSSON_BUILD_DOCS=OFF
             BUILD_COMMAND make
             INSTALL_COMMAND ""
@@ -222,6 +225,11 @@ ELSE(WIN32)
                 INSTALL(FILES "${PROJECT_BINARY_DIR}/${CAPN_LDCONF_FILE_NAME}" DESTINATION "${CAPN_INSTALL_PATH_SYSCONFIG}/ld.so.conf.d")
             ENDIF()
         ENDIF()
+
+        CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/config/apn_config.c.cmake" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
+        ADD_EXECUTABLE("apn-config" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
+        INSTALL(TARGETS "apn-config" DESTINATION ${CAPN_INSTALL_PATH_BIN})
+
     ENDIF(UNIX)
 ENDIF(WIN32)
 
@@ -232,12 +240,12 @@ ELSE()
 ENDIF()
 
 IF(WIN32)
-	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} "${APN_THIRD_PARTY_DIR}/jansson/lib/jansson_d.lib")
+	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} "${CAPN_THIRD_PARTY_DIR}/jansson/lib/jansson_d.lib")
 	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} Ws2_32.lib)
 	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} ${OPENSSL_SSLEAY_LIBRARY})
 	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} ${OPENSSL_LIBEAY_LIBRARY})
 ELSE()
-	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} "${APN_THIRD_PARTY_DIR}/jansson/lib/libjansson.a")
+	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} "${CAPN_THIRD_PARTY_DIR}/jansson/lib/libjansson.a")
 	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} ${OPENSSL_LIBRARIES})
 ENDIF()
 
