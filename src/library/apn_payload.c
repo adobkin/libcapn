@@ -24,7 +24,6 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <CalendarStore/CalendarStore.h>
 
 #include "src/jansson.h"
 
