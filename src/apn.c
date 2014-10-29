@@ -719,7 +719,7 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
         }
 
         ctx->sock = sock;
-        ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+        ssl_ctx = SSL_CTX_new(TLSv1_client_method());
 
         if (!SSL_CTX_use_certificate_file(ssl_ctx, ctx->certificate_file, SSL_FILETYPE_PEM)) {
             APN_SET_ERROR(error, APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE | APN_ERR_CLASS_USER, __apn_errors[APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE]);
