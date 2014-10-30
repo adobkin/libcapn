@@ -227,8 +227,8 @@ ELSE(WIN32)
         ENDIF()
 
         CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/config/apn_config.c.cmake" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
-        ADD_EXECUTABLE("apn-config" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
-        INSTALL(TARGETS "apn-config" DESTINATION ${CAPN_INSTALL_PATH_BIN})
+        ADD_EXECUTABLE("capn-config" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
+        INSTALL(TARGETS "capn-config" DESTINATION ${CAPN_INSTALL_PATH_BIN})
 
     ENDIF(UNIX)
 ENDIF(WIN32)
