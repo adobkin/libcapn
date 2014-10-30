@@ -144,7 +144,7 @@ IF(WIN32)
 	SET(OPENSSL_SSLEAY_LIBRARY "${CAPN_THIRD_PARTY_DIR}/openssl/win/lib/ssleay32.lib")
 	SET(OPENSSL_LIBEAY_LIBRARY "${CAPN_THIRD_PARTY_DIR}/openssl/win/lib/libeay32.lib")
 
-    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/build/win/createpkg.bat.cmake" "${PROJECT_BINARY_DIR}/build/win/createpkg.bat")
+    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/win_build/createpkg.bat.cmake" "${PROJECT_BINARY_DIR}/win_build/createpkg.bat")
 
     INSTALL(FILES
         ${CAPN_THIRD_PARTY_DIR}/openssl/win/bin/ssleay32.dll
@@ -161,7 +161,7 @@ IF(WIN32)
         ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
         DESTINATION ${CAPN_INSTALL_DIR})
 
-    	ADD_CUSTOM_TARGET(zip COMMAND "${PROJECT_BINARY_DIR}/build/win/createpkg.bat")
+    	ADD_CUSTOM_TARGET(zip COMMAND "${PROJECT_BINARY_DIR}/win_build/createpkg.bat")
 ELSE(WIN32)
     IF(UNIX)
 	    INCLUDE (FindOpenSSL)
