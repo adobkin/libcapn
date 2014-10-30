@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
         } else if (strncmp(argv[i], "--all", 5) == 0) {
             printf("--version          [%s]\n", APN_VERSION_STRING);
             printf("--vernum           [%X]\n", APN_VERSION_NUM);
-            printf("--libs             [-l@CAPN_LIB_NAME@ -L@CMAKE_INSTALL_PREFIX@/@INSTALL_LIB_DIR@]\n");
+            printf("--libs             [-l@CAPN_LIB_NAME@ -L@CAPN_INSTALL_PATH_LIB@]\n");
             printf("--cc               [@CAPN_CC@]\n");
             printf("--cflags           [@CMAKE_C_FLAGS@]\n");
             printf("--prefix           [@CMAKE_INSTALL_PREFIX@]\n");
