@@ -6,11 +6,11 @@ With the library you can easily send push notifications to iOS and OS X (>= 10.8
 
 __THIS BRANCH IS EXPIREMENTAL__
 
-# Examples
+## Examples
 
-### Send notification
+#### Send notification
 
-``` c
+```c
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
