@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
             printf("--cc               [@CAPN_CC@]\n");
             printf("--cflags           [@CMAKE_C_FLAGS@]\n");
             printf("--prefix           [@CMAKE_INSTALL_PREFIX@]\n");
-            printf("--includes         [-I@CMAKE_INSTALL_PREFIX@/@INSTALL_HEADERS_DIR@]\n");
+            printf("--includes         [-I@CAPN_INSTALL_PATH_INCLUDES@]\n");
         } else if (strncmp(argv[i], "--version", 9) == 0) {
             printf("%s\n", APN_VERSION_STRING);
         } else if (strncmp(argv[i], "--vernum", 8) == 0) {
@@ -68,13 +68,13 @@ int main(int argc, char **argv) {
         } else if (strncmp(argv[i], "--cc", 4) == 0) {
             printf("\n");
         } else if (strncmp(argv[i], "--libs", 6) == 0) {
-            printf("-l@CAPN_LIB_NAME@ -L@CMAKE_INSTALL_PREFIX@/@INSTALL_LIB_DIR@\n");
+            printf("-l@CAPN_LIB_NAME@ -L@CAPN_INSTALL_PATH_LIB@\n");
         } else if (strncmp(argv[i], "--cflags", 8) == 0) {
             printf("@CMAKE_C_FLAGs@\n");
         } else if (strncmp(argv[i], "--prefix", 8) == 0) {
             printf("@CMAKE_INSTALL_PREFIX@\n");
         } else if (strncmp(argv[i], "--includes", 10) == 0) {
-            printf("-I@CMAKE_INSTALL_PREFIX@/@INSTALL_HEADERS_DIR@\n");
+            printf("-I@CAPN_INSTALL_PATH_INCLUDES@\n");
         } else {
     	    printf("Unknown option: `%s'\n", argv[i]);
         }
