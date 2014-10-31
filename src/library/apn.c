@@ -882,7 +882,7 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
         fcntl(ctx->sock, F_SETFL, sock_flags | O_NONBLOCK);
 #else
         sock_flags = 1;
-        ioctlsocket(ctx->sock, FIONBIO, (u_long *) & sock_flags);
+        ioctlsocket(ctx->sock, FIONBIO, (u_long *) &sock_flags);
 #endif
     }
 
@@ -915,6 +915,7 @@ static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t len
                             return -1;
                     }
                 case SSL_ERROR_ZERO_RETURN:
+                    apn_close(ctx);
                     errno = APN_ERR_CONNECTION_CLOSED;
                     return -1;
                 default:
@@ -955,6 +956,7 @@ static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t length) {
                         return -1;
                 }
             case SSL_ERROR_ZERO_RETURN:
+                apn_close(ctx);
                 errno = APN_ERR_CONNECTION_CLOSED;
                 return -1;
             default:
