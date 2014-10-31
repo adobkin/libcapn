@@ -64,7 +64,8 @@ typedef enum __apn_errors {
     APN_ERR_PAYLOAD_ALERT_IS_NOT_SET,
     APN_ERR_STRING_CONTAINS_NON_UTF8_CHARACTERS,
     APN_ERR_PROCESSING_ERROR,
-    APN_ERR_SERVICE_SHUTDOWN
+    APN_ERR_SERVICE_SHUTDOWN,
+    APN_ERR_UNKNOWN
 } apn_errors;
 
 typedef struct __apn_ctx {
@@ -79,7 +80,7 @@ typedef struct __apn_ctx {
     SSL *ssl;
 } apn_ctx;
 
-typedef struct __apn_ctx *apn_ctx_ref;
+typedef apn_ctx *apn_ctx_ref;
 
 __apn_export__ apn_return apn_library_init()
         __apn_attribute_warn_unused_result__;
