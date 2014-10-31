@@ -21,6 +21,7 @@ int main() {
     apn_ctx_ref ctx = NULL;
     time_t time_now = 0;
     uint8_t ret = 0;
+    char *invalid_token = NULL;
 
     if(APN_ERROR == apn_library_init()) {
         printf("Unable to init capn library: %d\n", errno);
@@ -57,11 +58,15 @@ int main() {
     apn_payload_add_custom_property_integer(payload, "custom_property_integer", 100); // Custom property
 
     if(APN_ERROR == apn_connect(ctx)) {
-       printf("Could not connected to Apple Push Notification Servece: errno: %d\n", errno);
+       printf("Could not connected to Apple Push Notification Servece: %s (errno: %d)\n", apn_strerror(errno), errno);
        ret =  1;
     } else {
-        if(APN_ERROR == apn_send(ctx, payload)) {
-           printf("Could not sent push: errno: %d\n", errno);
+        if(APN_ERROR == apn_send(ctx, payload, &invalid_token)) {
+           if(errno == APN_ERR_TOKEN_INVALID) {
+                printf("Invalid token: %s\n", token);
+           } else {
+                printf("Could not sent push: %s (errno: %d)\n", apn_strerror(errno), errno);
+           }
            ret = 1;
         } else {
             printf("Success!");
