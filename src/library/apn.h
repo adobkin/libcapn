@@ -77,7 +77,6 @@ typedef struct __apn_ctx {
     char *private_key_file;
     char *private_key_pass;
     SSL *ssl;
-    void (*invalid_token_cb)(char *);
 } apn_ctx;
 
 typedef struct __apn_ctx *apn_ctx_ref;
@@ -95,8 +94,6 @@ __apn_export__ apn_ctx_ref apn_init(const char * const cert, const char *const p
         __apn_attribute_warn_unused_result__;
 
 __apn_export__ void apn_free(apn_ctx_ref *ctx);
-
-__apn_export__ void apn_set_invalid_token_cb(apn_ctx_ref ctx, void (*invalid_token_cb)(char *));
 
 __apn_export__ apn_return apn_connect(const apn_ctx_ref ctx)
         __apn_attribute_warn_unused_result__;
@@ -134,7 +131,7 @@ __apn_export__ const char *apn_private_key_pass(const apn_ctx_ref ctx)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-__apn_export__ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload)
+__apn_export__ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, char **invalid_token)
         __apn_attribute_nonnull__((1));
 
 __apn_export__ void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_count);

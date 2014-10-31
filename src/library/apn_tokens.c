@@ -62,25 +62,26 @@ char *apn_token_binary_to_hex(const uint8_t *const binary_token) {
     uint16_t i = 0;
     uint32_t token_size = 0;
     char *token = NULL;
-    char *p = token;
+    char *p = NULL;
 	
-	assert(binary_token);
-	
-	token_size = (APN_TOKEN_BINARY_SIZE * 2) + 1;
-	token = malloc(token_size);
+    assert(binary_token);
+    
+    token_size = (APN_TOKEN_BINARY_SIZE * 2) + 1;
+    token = malloc(token_size);
     if (!token) {
         errno = ENOMEM;
         return NULL;
     }
-
+    p = token;
     for (i = 0; i < APN_TOKEN_BINARY_SIZE; i++) {
 #ifdef _WIN32
         _snprintf_s(p, token_size, 3, "%2.2hhX", (unsigned char) binary_token[i]);
 #else
-        snprintf(p, 3, "%2.2hhX", (unsigned char) binary_token[i]);
+        snprintf(p, 3, "%2.2hhX", (uint8_t) binary_token[i]);
 #endif
         p += 2;
     }
+    
     return token;
 }
 

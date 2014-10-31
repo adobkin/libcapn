@@ -174,11 +174,6 @@ void apn_close(apn_ctx_ref ctx) {
     }
 }
 
-void apn_set_invalid_token_cb(apn_ctx_ref ctx, void (*invalid_token_cb)(char *)) {
-    assert(ctx);
-    ctx->invalid_token_cb = invalid_token_cb ? invalid_token_cb : NULL;
-}
-
 apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert) {
     assert(ctx);
     if (ctx->certificate_file) {
@@ -295,13 +290,11 @@ apn_return apn_connect(const apn_ctx_ref ctx) {
     return __apn_connect(ctx, server);
 }
 
-apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
+apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload , char **invalid_token) {
     char *json = NULL;
     size_t json_size = 0;
-
     size_t message_size = 0;
     uint8_t *message = NULL;
-
     uint8_t **tokens = NULL;
     uint8_t *token = NULL;
     char apple_error[6];
@@ -309,12 +302,12 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
     int bytes_read = 0;
     int bytes_written = 0;
     uint32_t tokens_count = 0;
-    uint32_t invalid_id = 0;
+    uint32_t invalid_message_id = 0;
     fd_set write_set, read_set;
     int select_returned = 0;
     uint32_t i = 0;
     struct timeval timeout = {10, 0};
-    char *invalid_token = NULL;
+    uint8_t apple_returned_error = 0;
 
     assert(ctx);
     assert(payload);
@@ -369,33 +362,21 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
             if (errno == EINTR) {
                 continue;
             }
+            free(message);
+            free(json);
             errno = APN_ERR_SELECT;
             return APN_ERROR;
         }
-
+        
         if (FD_ISSET(ctx->sock, &read_set)) {
             bytes_read = __ssl_read(ctx, apple_error, sizeof(apple_error));
+            free(message);
+            free(json);
             if (bytes_read <= 0) {
-                if (message) {
-                    free(message);
-                }
-                free(json);
                 return APN_ERROR;
             }
-            __apn_parse_apns_error(apple_error, &apple_errcode, &invalid_id);
-            if (apple_errcode == APN_ERR_TOKEN_INVALID) {
-                invalid_token = apn_token_binary_to_hex(tokens[invalid_id]);
-                if (ctx->invalid_token_cb) {
-                    ctx->invalid_token_cb(invalid_token);
-                }
-            } else {
-                free(message);
-                free(json);
-                errno = apple_errcode;
-                return APN_ERROR;
-            }
+            apple_returned_error = 1;
         }
-
         if (FD_ISSET(ctx->sock, &write_set)) {
             bytes_written = __ssl_write(ctx, message, message_size);
             free(message);
@@ -410,7 +391,7 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
     free(json);
 
     timeout.tv_sec = 1;
-    for (; ;) {
+    for (;;) {
         FD_ZERO(&read_set);
         FD_SET(ctx->sock, &read_set);
         select_returned = select(ctx->sock + 1, &read_set, NULL, NULL, &timeout);
@@ -429,22 +410,23 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload) {
         if (FD_ISSET(ctx->sock, &read_set)) {
             bytes_read = __ssl_read(ctx, apple_error, sizeof(apple_error));
             if (bytes_read > 0) {
-                __apn_parse_apns_error(apple_error, &apple_errcode, &invalid_id);
-                if (apple_errcode == APN_ERR_TOKEN_INVALID) {
-                    invalid_token = apn_token_binary_to_hex(tokens[invalid_id]);
-                    if (ctx->invalid_token_cb) {
-                        ctx->invalid_token_cb(invalid_token);
-                    }
-                } else {
-                    errno = apple_errcode;
-                    return APN_ERROR;
-                }
+                apple_returned_error = 1;
             } else {
-                return APN_ERROR;;
+                return APN_ERROR;
             }
             break;
         }
     }
+    
+    if(apple_returned_error) {
+        __apn_parse_apns_error(apple_error, &apple_errcode, &invalid_message_id);
+        if (apple_errcode == APN_ERR_TOKEN_INVALID && invalid_token) {
+            *invalid_token = apn_token_binary_to_hex(tokens[invalid_message_id]);
+        }
+        errno = apple_errcode;
+        return APN_ERROR;
+    }
+    
     return APN_SUCCESS;
 }
 
@@ -964,7 +946,7 @@ static void __apn_parse_apns_error(char *apns_error, uint16_t *errcode, uint32_t
             case APN_APNS_ERR_INVALID_TOKEN:
                 *errcode = APN_ERR_TOKEN_INVALID;
                 memcpy(&notification_id, apns_error, sizeof(uint32_t));
-                *id = notification_id;
+                *id = ntohl(notification_id);
                 break;
             default:
                 break;
