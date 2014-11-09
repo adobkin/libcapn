@@ -145,6 +145,7 @@ int main() {
     apn_ctx_ref ctx = NULL;
     time_t time_now = 0;
     char *invalid_token = NULL;
+    int ret = 0;
 
     assert(apn_library_init());
 
@@ -152,19 +153,22 @@ int main() {
 
     if(NULL == (ctx = apn_init("apns_test_cert.pem", "apns_test_key.pem", "12345678"))) {
         printf("Unable to init context: %d\n", errno);
-        goto error;
+        ret = 1;
+        goto finish;
     }
 
     apn_set_mode(ctx,  APN_MODE_PRODUCTION); //APN_MODE_PRODUCTION or APN_MODE_SANDBOX
 
     if(APN_ERROR == apn_connect(ctx)) {
         printf("Could not connected to Apple Push Notification Service: %s (errno: %d)\n", apn_error_string(errno), errno);
-        goto error;
+        ret = 1;
+        goto finish;
     }
-    
+
     if(NULL == (payload = apn_payload_init())) {
         printf("Unable to init payload: %d\n", errno);
-        goto error;
+        ret = 1;
+        goto finish;
     }
 
     apn_payload_add_token(payload, "XXXXXXXX");
@@ -175,31 +179,26 @@ int main() {
     apn_payload_set_category(payload, "MY_CAT"); // Notification category
     apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH);  // Notification priority
     apn_payload_add_custom_property_integer(payload, "custom_property_integer", 100); // Custom property
-    
+
     if(APN_ERROR == apn_send(ctx, payload, &invalid_token)) {
         if(errno == APN_ERR_TOKEN_INVALID) {
             printf("Invalid token: %s\n", invalid_token);
         } else {
             printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
         }
-        goto error;
-    } 
-    
+        ret = 1;
+        goto finish;
+    }
+
     printf("Success!");
-    
-    apn_close(ctx);
-    apn_free(&ctx);
-    apn_payload_free(&payload);
-    apn_library_free();
 
-    return 0;
-
-    error:
+    finish:
         apn_close(ctx);
         apn_free(&ctx);
         apn_payload_free(&payload);
         apn_library_free();
-        return 1;
+
+        return ret;
 }
 
 ```
