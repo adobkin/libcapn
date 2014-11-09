@@ -532,7 +532,7 @@ void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_c
     }
 }
 
-char *apn_strerror(int errnum) {
+char *apn_error_string(int errnum) {
     char error[250] = {0};
     switch (errnum) {
         case APN_ERR_FAILED_INIT:
@@ -722,7 +722,7 @@ static apn_binary_message_ref __apn_create_binary_message(const apn_payload_ref 
     }
     frame_ref = frame;
     
-    binary_message = __apn_binary_message_init(frame_size + sizeof(uint32_t) + sizeof(uint8_t));
+    binary_message = __apn_binary_message_init((uint32_t) (frame_size + sizeof(uint32_t) + sizeof(uint8_t)));
     if(!binary_message) {
         return NULL;
     }

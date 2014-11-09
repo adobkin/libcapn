@@ -143,7 +143,7 @@ __apn_export__ apn_return apn_feedback(const apn_ctx_ref ctx, char ***tokens_arr
 __apn_export__ apn_return apn_feedback_connect(const apn_ctx_ref ctx)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ char  *apn_strerror(int errnum);
+__apn_export__ char  *apn_error_string(int err_code);
 
 #ifdef __cplusplus
 }
