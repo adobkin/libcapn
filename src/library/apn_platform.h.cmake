@@ -47,6 +47,9 @@
 #ifndef HAVE_SYS_FCNTL_H
 #cmakedefine HAVE_SYS_FCNTL_H
 #endif
+#ifndef HAVE_STRINGS_H
+#cmakedefine HAVE_STRINGS_H
+#endif
 
 #cmakedefine HAVE_STRERROR_R
 #cmakedefine HAVE_GLIBC_STRERROR_R
