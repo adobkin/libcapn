@@ -35,7 +35,7 @@
 #include <strings.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #define strcasecmp _stricmp
 #endif
 
