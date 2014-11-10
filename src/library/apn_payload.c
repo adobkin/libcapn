@@ -26,11 +26,18 @@
 #include <assert.h>
 
 #include "src/jansson.h"
-
 #include "apn_strings.h"
 #include "apn_tokens.h"
 #include "apn_memory.h"
 #include "apn.h"
+
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
+#ifdef WIN32
+#define strcasecmp _stricmp
+#endif
 
 static apn_payload_alert_ref __apn_payload_alert_init();
 static void __apn_payload_custom_property_free(apn_payload_custom_property_ref *property);
@@ -587,6 +594,8 @@ static uint8_t __apn_payload_custom_property_name_already_is_used(apn_payload_re
     uint8_t i = 0;
     if (payload_ctx->custom_properties_count == 0 || payload_ctx->custom_properties == NULL) {
         return 0;
+    } else if(strcasecmp(property_key, "aps") == 0) {
+        return 1;
     }
     for (i = 0; i < payload_ctx->custom_properties_count; i++) {
         property = *(payload_ctx->custom_properties + 0);

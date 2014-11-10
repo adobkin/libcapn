@@ -78,7 +78,7 @@ static struct __apn_apple_server __apn_apple_servers[4] = {
 
 typedef struct __apn_binary_message {
     uint32_t payload_size;
-    uint32_t message_size;
+    uint32_t size;
     uint8_t *token_position;
     uint8_t *id_position;
     uint8_t *message; 
@@ -96,7 +96,7 @@ static void __apn_strerror_r(int errnum, char *buf, size_t buff_size);
 static apn_binary_message * __apn_create_binary_message(const apn_payload_ref payload);
 static void __apn_binary_message_set_id(apn_binary_message_ref binary_message, uint32_t id);
 static void __apn_binary_message_set_token(apn_binary_message_ref binary_message, uint8_t *token);
-static apn_binary_message_ref __apn_binary_message_init(uint32_t message_size);
+static apn_binary_message_ref __apn_binary_message_init(uint32_t size);
 static void __apn_binary_message_free(apn_binary_message_ref binary_message);
 
 apn_return apn_library_init() {
@@ -378,7 +378,7 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, char *
         }
                 
         if (FD_ISSET(ctx->sock, &write_set)) {
-            bytes_written = __ssl_write(ctx, binary_message->message, binary_message->message_size);
+            bytes_written = __ssl_write(ctx, binary_message->message, binary_message->size);
             if (bytes_written <= 0) {
                 __apn_binary_message_free(binary_message);
                 return APN_ERROR;
@@ -641,19 +641,19 @@ static int __apn_password_cd(char *buf, int size, int rwflag, void *password) {
     return (int) strlen(buf);
 }
 
-static apn_binary_message_ref __apn_binary_message_init(uint32_t message_size) {
+static apn_binary_message_ref __apn_binary_message_init(uint32_t size) {
     apn_binary_message_ref binary_message = malloc(sizeof(apn_binary_message));
     if(!binary_message) {
         errno = ENOMEM;
         return NULL;
     }
-    binary_message->message = malloc(message_size);
+    binary_message->message = malloc(size);
     if (!binary_message->message) {
         errno = ENOMEM;
         free(binary_message);
         return NULL;
     };
-    binary_message->message_size = message_size;
+    binary_message->size = size;
     binary_message->id_position = NULL;
     binary_message->token_position = NULL;
     return binary_message;
