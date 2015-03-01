@@ -47,6 +47,9 @@
 #ifndef HAVE_SYS_FCNTL_H
 #cmakedefine HAVE_SYS_FCNTL_H
 #endif
+#ifndef HAVE_STRINGS_H
+#cmakedefine HAVE_STRINGS_H
+#endif
 
 #cmakedefine HAVE_STRERROR_R
 #cmakedefine HAVE_GLIBC_STRERROR_R
@@ -61,10 +64,9 @@ typedef enum __apn_return {
 	#define __apn_export__ __declspec(dllexport)
 	#define __apn_attribute_nonnull__(i)
 	#define __apn_attribute_warn_unused_result__
-	
+
 	#include <winsock2.h>
-	#include <windows.h>
-	
+
 	#define CLOSE_SOCKET(__socket) closesocket(__socket)
 	#ifndef ETIMEDOUT
 		#define ETIMEDOUT WSAETIMEDOUT
