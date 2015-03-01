@@ -648,7 +648,7 @@ static char * __apn_create_json_document_from_payload(apn_payload_ctx_ref payloa
         }
     }
 
-    json_document = json_dumps(root, JSON_ENSURE_ASCII);
+    json_document = json_dumps(root, JSON_COMPACT);
     json_decref(root);
     return json_document;
 }
