@@ -1978,11 +1978,6 @@ uint8_t apn_payload_add_custom_property_integer(apn_payload_ctx_ref payload_ctx,
 
     apn_payload_custom_property_ref property = NULL;
 
-    if (!property_value) {
-        APN_SET_ERROR(error, APN_ERR_INVALID_ARGUMENT | APN_ERR_CLASS_USER, "value of custom property is NULL");
-        APN_RETURN_ERROR;
-    }
-
     if (__apn_payload_custom_property_init(payload_ctx, property_key, error)) {
         APN_RETURN_ERROR;
     }
