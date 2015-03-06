@@ -31,9 +31,7 @@
 #include "apn.h"
 #include "apn_strings.h"
 #include "apn_binary_message_private.h"
-#include "apn_binary_message.h"
 #include "apn_paload_private.h"
-#include "apn_payload.h"
 #include "apn_tokens.h"
 
 static apn_return __apn_binary_message_set_token(apn_binary_message_ref binary_message, const uint8_t * const token_binary, const char * const token_hex);
