@@ -84,7 +84,7 @@ void apn_binary_message_set_token(apn_binary_message_ref binary_message, const u
 
 apn_return apn_binary_message_set_token_hex(apn_binary_message_ref binary_message, const char * const token_hex) {
     uint8_t *token_binary = NULL;
-    apn_return ret = APN_SUCCESS;
+    apn_return ret;
     assert(token_hex);
     token_binary = apn_token_hex_to_binary(token_hex);
     ret = __apn_binary_message_set_token(binary_message, token_binary, token_hex);

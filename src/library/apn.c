@@ -287,25 +287,6 @@ apn_return apn_connect(const apn_ctx_ref ctx) {
     return __apn_connect(ctx, server);
 }
 
-
-//typedef void (*invalid_token_cb)(const char * const);
-//
-
-//apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, invalid_token_cb cb) {
-//    char *invalid_token = NULL;
-//
-//    if(APN_ERROR == apn_send(ctx, payload, &invalid_token)) {
-//        if(errno == APN_ERR_TOKEN_INVALID) {
-//
-//        } else {
-//            printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
-//        }
-//        ret = 1;
-//        goto finish;
-//    }
-//
-//}
-
 apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, char **invalid_token) {
     apn_binary_message *binary_message = NULL;
     uint8_t **tokens = NULL;
