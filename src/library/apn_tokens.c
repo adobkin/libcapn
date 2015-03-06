@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2104 Anton Dobkin
+ * Copyright (c) 2013, 2014, 2015 Anton Dobkin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -86,10 +86,17 @@ char *apn_token_binary_to_hex(const uint8_t *const binary_token) {
 }
 
 uint8_t apn_hex_token_is_valid(const char *const token) {
-    char *p = (char *) token;
-	
+    char *p = NULL;
+	size_t token_length = 0;
+
 	assert(token);
-	 
+
+    p = (char *) token;
+    token_length = strlen(token);
+
+    if(token_length < APN_TOKEN_LENGTH || token_length > APN_TOKEN_LENGTH) {
+        return 0;
+    }
     while (*p != '\0') {
         if (!isxdigit(*p)) {
             return 0;

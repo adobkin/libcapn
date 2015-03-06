@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013, 2014, 2015 Anton Dobkin
+ * Copyright (c) 2013, 2014, 2015 Anton Dobkin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,30 +20,33 @@
  * THE SOFTWARE.
  */
 
-#ifndef __APN_TOKENS_H__
-#define __APN_TOKENS_H__
+#ifndef __APN_BINARY_MESSSAGE_H__
+#define __APN_BINARY_MESSSAGE_H__
 
 #include "apn_platform.h"
+#include "apn_payload.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define APN_TOKEN_BINARY_SIZE 32
-#define APN_TOKEN_LENGTH 64
+typedef struct __apn_binary_message apn_binary_message;
+typedef struct __apn_binary_message *apn_binary_message_ref;
 
-uint8_t * apn_token_hex_to_binary(const char * const token)
-        __apn_attribute_nonnull__((1))
+__apn_export__ apn_binary_message *apn_create_binary_message(const apn_payload_ref payload)
         __apn_attribute_warn_unused_result__;
 
-char * apn_token_binary_to_hex(const uint8_t * const binary_token)
-        __apn_attribute_nonnull__((1))
-        __apn_attribute_warn_unused_result__;
-
-uint8_t apn_hex_token_is_valid(const char * const token)
+__apn_export__ void apn_binary_message_set_id(apn_binary_message_ref binary_message, uint32_t id)
         __apn_attribute_nonnull__((1));
 
-void apn_tokens_array_free(uint8_t **tokens, uint32_t count);
+__apn_export__ void apn_binary_message_set_token(apn_binary_message_ref binary_message, const uint8_t * const token)
+        __apn_attribute_nonnull__((1,2));
+
+__apn_export__ void apn_binary_message_free(apn_binary_message_ref binary_message)
+        __apn_attribute_nonnull__((1));
+
+__apn_export__ apn_return apn_binary_message_set_token_hex(apn_binary_message_ref binary_message, const char * const token_hex)
+        __apn_attribute_nonnull__((1,2));
 
 #ifdef __cplusplus
 }
