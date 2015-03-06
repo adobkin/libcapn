@@ -104,6 +104,7 @@ SET(CAPN_SOURCE_FILES
     ${CAPN_SOURCE_LIB_DIR}/apn_strings.c
     ${CAPN_SOURCE_LIB_DIR}/apn_payload.c
     ${CAPN_SOURCE_LIB_DIR}/apn_tokens.c
+    ${CAPN_SOURCE_LIB_DIR}/apn_binary_message.c
 )
 
 SET(CAPN_PUBLIC_HEADER_FILES
@@ -111,6 +112,7 @@ SET(CAPN_PUBLIC_HEADER_FILES
     ${CAPN_SOURCE_LIB_DIR}/apn_payload.h
     ${PROJECT_BINARY_DIR}/src/library/apn_platform.h
     ${PROJECT_BINARY_DIR}/src/library/apn_version.h
+    ${PROJECT_BINARY_DIR}/src/library/apn_binary_message.h
 )
 
 IF(WIN32)
@@ -228,8 +230,8 @@ ELSE(WIN32)
         ENDIF()
 
         CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/config/apn_config.c.cmake" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
-        ADD_EXECUTABLE("capn-config" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
-        INSTALL(TARGETS "capn-config" DESTINATION ${CAPN_INSTALL_PATH_BIN})
+        ADD_EXECUTABLE("libcapn-config" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
+        INSTALL(TARGETS "libcapn-config" DESTINATION ${CAPN_INSTALL_PATH_BIN})
 
     ENDIF(UNIX)
 ENDIF(WIN32)

@@ -147,7 +147,7 @@ int main() {
     char *invalid_token = NULL;
     int ret = 0;
 
-    assert(apn_library_init());
+    assert(apn_library_init() == APN_SUCCESS);
 
     time(&time_now);
 

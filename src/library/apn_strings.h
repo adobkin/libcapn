@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2013, 2104 Anton Dobkin
+ * Copyright (c) 2013, 2014, 2015 Anton Dobkin
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,12 @@
 #define	__APN_STRINGS_H__
 
 #include "apn_platform.h"
+#include <string.h>
+
+
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 
 #ifdef	__cplusplus
 extern "C" {
