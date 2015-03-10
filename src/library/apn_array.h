@@ -20,35 +20,48 @@
  * THE SOFTWARE.
  */
 
-#ifndef __APN_BINARY_MESSSAGE_H__
-#define __APN_BINARY_MESSSAGE_H__
+#ifndef __APN_ARRAY_H__
+#define	__APN_ARRAY_H__
 
 #include "apn_platform.h"
-#include "apn_payload.h"
 
-#ifdef __cplusplus
+#ifdef	__cplusplus
 extern "C" {
 #endif
 
-typedef struct __apn_binary_message apn_binary_message;
-typedef struct __apn_binary_message *apn_binary_message_ref;
+typedef void *(*apn_array_ctor)(uint32_t index, const void * const data);
+typedef void (*apn_array_dtor)(uint32_t index, void *data);
 
-__apn_export__ apn_binary_message *apn_create_binary_message(const apn_payload_ref payload)
+typedef struct __apn_array apn_array;
+typedef struct __apn_array * apn_array_ref;
+
+__apn_export__ apn_array *apn_array_init(uint32_t min_size, apn_array_dtor dtor, apn_array_ctor ctor)
         __apn_attribute_warn_unused_result__;
 
-__apn_export__ void apn_binary_message_set_token(apn_binary_message_ref binary_message, const uint8_t * const token)
-        __apn_attribute_nonnull__((1,2));
-
-__apn_export__ void apn_binary_message_free(apn_binary_message_ref binary_message)
+__apn_export__ void apn_array_free(apn_array *array)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ apn_return apn_binary_message_set_token_hex(apn_binary_message_ref binary_message, const char * const token_hex)
-        __apn_attribute_nonnull__((1,2));
-
-__apn_export__ const char * apn_binary_message_token_hex(apn_binary_message_ref binary_message)
+__apn_export__ apn_array *apn_array_copy(const apn_array * const array)
+        __apn_attribute_warn_unused_result__
         __apn_attribute_nonnull__((1));
 
-#ifdef __cplusplus
+__apn_export__ apn_return apn_array_insert(apn_array *array, void *item)
+        __apn_attribute_nonnull__((1,2));
+
+__apn_export__ uint32_t apn_array_count(const apn_array * const array)
+        __apn_attribute_nonnull__((1));
+
+__apn_export__ apn_return apn_array_insert_at_index(apn_array * const array, uint32_t index, void *item)
+        __apn_attribute_nonnull__((1,3));
+
+__apn_export__ void * apn_array_item_at_index(const apn_array * const array, uint32_t index)
+        __apn_attribute_nonnull__((1));
+
+__apn_export__ void apn_array_remove(apn_array * const array, uint32_t index)
+        __apn_attribute_nonnull__((1));
+
+
+#ifdef	__cplusplus
 }
 #endif
 

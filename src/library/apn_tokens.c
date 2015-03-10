@@ -106,14 +106,3 @@ uint8_t apn_hex_token_is_valid(const char *const token) {
     return 1;
 }
 
-void apn_tokens_array_free(uint8_t **tokens, uint32_t count) {
-    uint8_t *token = NULL;
-    int64_t i = 0;
-    if (tokens && count > 0) {
-        for (i = 0; i < count; i++) {
-            token = tokens[i];
-            free(token);
-        }
-        free(tokens);
-    }
-}

@@ -105,6 +105,7 @@ SET(CAPN_SOURCE_FILES
     ${CAPN_SOURCE_LIB_DIR}/apn_payload.c
     ${CAPN_SOURCE_LIB_DIR}/apn_tokens.c
     ${CAPN_SOURCE_LIB_DIR}/apn_binary_message.c
+    ${CAPN_SOURCE_LIB_DIR}/apn_array.c
 )
 
 SET(CAPN_PUBLIC_HEADER_FILES
@@ -112,7 +113,8 @@ SET(CAPN_PUBLIC_HEADER_FILES
     ${CAPN_SOURCE_LIB_DIR}/apn_payload.h
     ${PROJECT_BINARY_DIR}/src/library/apn_platform.h
     ${PROJECT_BINARY_DIR}/src/library/apn_version.h
-    ${PROJECT_BINARY_DIR}/src/library/apn_binary_message.h
+    ${CAPN_SOURCE_LIB_DIR}/apn_binary_message.h
+    ${CAPN_SOURCE_LIB_DIR}/apn_array.h
 )
 
 IF(WIN32)

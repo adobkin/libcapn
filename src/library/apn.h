@@ -26,6 +26,8 @@
 #include <openssl/ssl.h>
 #include "apn_platform.h"
 #include "apn_payload.h"
+#include "apn_binary_message.h"
+#include "apn_array.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,7 +45,6 @@ typedef enum __apn_errors {
     APN_ERR_CONNECTION_CLOSED,
     APN_ERR_CONNECTION_TIMEDOUT,
     APN_ERR_NETWORK_UNREACHABLE,
-    APN_ERR_TOKEN_IS_NOT_SET,
     APN_ERR_TOKEN_INVALID,
     APN_ERR_TOKEN_TOO_MANY,
     APN_ERR_CERTIFICATE_IS_NOT_SET,
@@ -70,6 +71,8 @@ typedef enum __apn_errors {
 
 typedef struct __apn_ctx apn_ctx;
 typedef struct __apn_ctx *apn_ctx_ref;
+
+typedef void (*invalid_message_cb)(apn_binary_message *message);
 
 __apn_export__ apn_return apn_library_init()
         __apn_attribute_warn_unused_result__;
@@ -121,13 +124,11 @@ __apn_export__ const char *apn_private_key_pass(const apn_ctx_ref ctx)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-__apn_export__ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, char **invalid_token)
+__apn_export__ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_array_ref tokens, char **invalid_token)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ void apn_feedback_tokens_array_free(char **tokens_array, uint32_t tokens_array_count);
-
-__apn_export__ apn_return apn_feedback(const apn_ctx_ref ctx, char ***tokens_array, uint32_t *tokens_array_count)
-        __apn_attribute_nonnull__((1, 2, 3));
+__apn_export__ apn_return apn_feedback(const apn_ctx_ref ctx, apn_array_ref *tokens)
+        __apn_attribute_nonnull__((1, 2));
 
 __apn_export__ apn_return apn_feedback_connect(const apn_ctx_ref ctx)
         __apn_attribute_nonnull__((1));
