@@ -60,14 +60,12 @@ struct __apn_payload {
         uint32_t custom_properties_count;
         uint8_t content_available;
         apn_notification_priority priority;
-        uint32_t tokens_count;
         uint32_t custom_properties_allocated;
         int32_t badge;
         time_t expiry;
         apn_payload_alert *alert;
         char *sound;
         char *category;
-        uint8_t **tokens;
         apn_payload_custom_property **custom_properties;
 };
 

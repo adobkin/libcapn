@@ -63,8 +63,6 @@ apn_payload_ref apn_payload_init() {
     payload->category = NULL;
     payload->custom_properties_count = 0;
     payload->custom_properties = NULL;
-    payload->tokens_count = 0;
-    payload->tokens = NULL;
     payload->expiry = 0;
     payload->content_available = 0;
     payload->custom_properties_allocated = 0;
@@ -112,7 +110,6 @@ void apn_payload_free(apn_payload_ref *payload) {
             }
             free((*payload)->custom_properties);
         }
-        apn_tokens_array_free((*payload)->tokens, (*payload)->tokens_count);
         free((*payload));
         *payload = NULL;
     }
@@ -258,48 +255,6 @@ apn_return apn_payload_set_category(apn_payload_ref payload, const char *const c
         }
     }
     return APN_SUCCESS;
-}
-
-apn_return apn_payload_add_token(apn_payload_ref payload, const char *const token) {
-    uint8_t *binary_token = NULL;
-    uint8_t **tokens = NULL;
-
-    assert(payload);
-    assert(token);
-
-    if (payload->tokens_count >= UINT32_MAX) {
-        errno = APN_ERR_TOKEN_TOO_MANY;
-        return APN_ERROR;
-    }
-
-    if (!apn_hex_token_is_valid(token)) {
-        errno = APN_ERR_TOKEN_INVALID;
-        return APN_ERROR;
-    }
-
-    tokens = (uint8_t **) apn_realloc(payload->tokens, (payload->tokens_count + 1) * sizeof(uint8_t *));
-    if (!tokens) {
-        errno = ENOMEM;
-        return APN_ERROR;
-    }
-    payload->tokens = tokens;
-
-    if (!(binary_token = apn_token_hex_to_binary(token))) {
-        errno = ENOMEM;
-        return APN_ERROR;
-    }
-
-    payload->tokens[payload->tokens_count] = binary_token;
-    payload->tokens_count++;
-
-    return APN_SUCCESS;
-}
-
-void apn_payload_remove_all_tokens(apn_payload_ref payload) {
-    assert(payload);
-    apn_tokens_array_free(payload->tokens, payload->tokens_count);
-    payload->tokens = NULL;
-    payload->tokens_count = 0;
 }
 
 #define APN_PAYLOAD_CHECK_KEY(__payload, __property_name) \

@@ -92,6 +92,11 @@ apn_return apn_binary_message_set_token_hex(apn_binary_message_ref binary_messag
     return ret;
 }
 
+const char * apn_binary_message_token_hex(apn_binary_message_ref binary_message) {
+    assert(binary_message);
+    return binary_message->token_hex;
+}
+
 apn_binary_message_ref apn_create_binary_message(const apn_payload_ref payload) {
     char *json = NULL;
     size_t json_size = 0;

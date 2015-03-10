@@ -42,6 +42,9 @@ struct __apn_binary_message {
 apn_binary_message_ref apn_binary_message_init(uint32_t size)
         __apn_attribute_warn_unused_result__;
 
+void apn_binary_message_set_id(apn_binary_message_ref binary_message, uint32_t id)
+        __apn_attribute_nonnull__((1));
+
 #ifdef __cplusplus
 }
 #endif

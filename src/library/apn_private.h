@@ -38,7 +38,6 @@ struct __apn_ctx {
     apn_connection_mode mode;
     uint32_t tokens_count;
     SOCKET sock;
-    uint8_t **tokens;
     char *certificate_file;
     char *private_key_file;
     char *private_key_pass;
