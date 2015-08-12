@@ -769,13 +769,13 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
 
         if (SSL_set_fd(ctx->ssl, ctx->sock) == -1) {
             APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION]);
-            SSL_free(ctx->ssl);
+            //SSL_free(ctx->ssl);
             APN_RETURN_ERROR;
         }
 
         if (SSL_connect(ctx->ssl) < 1) {
             APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION]);
-            SSL_free(ctx->ssl);
+            //SSL_free(ctx->ssl);
             APN_RETURN_ERROR;
         }
 
