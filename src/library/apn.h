@@ -51,9 +51,6 @@ typedef enum __apn_errors {
     APN_ERR_PRIVATE_KEY_IS_NOT_SET,
     APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE,
     APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY,
-    APN_ERR_COULD_NOT_RESOLVE_HOST,
-    APN_ERR_COULD_NOT_CREATE_SOCKET,
-    APN_ERR_SELECT,
     APN_ERR_COULD_NOT_INITIALIZE_CONNECTION,
     APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION,
     APN_ERR_SSL_WRITE_FAILED,
@@ -69,10 +66,17 @@ typedef enum __apn_errors {
     APN_ERR_UNKNOWN
 } apn_errors;
 
+typedef enum __apn_log_level {
+    APN_LOG_LEVEL_INFO =  1 << 0,
+    APN_LOG_LEVEL_ERROR = 1 << 1,
+    APN_LOG_LEVEL_DEBUG = 1 << 2
+} apn_log_level;
+
 typedef struct __apn_ctx apn_ctx;
 typedef struct __apn_ctx *apn_ctx_ref;
 
-typedef void (*invalid_message_cb)(apn_binary_message *message);
+typedef void (*invalid_token_cb)(const char * const token);
+typedef void (*log_cb)(apn_log_level level, const char * const log_message, uint32_t message_len);
 
 __apn_export__ apn_return apn_library_init()
         __apn_attribute_warn_unused_result__;
@@ -96,6 +100,12 @@ __apn_export__ void apn_close(apn_ctx_ref ctx)
 
 __apn_export__ void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode)
         __apn_attribute_nonnull__((1));
+
+__apn_export__ void apn_set_log_cb(apn_ctx_ref ctx, log_cb funct)
+        __apn_attribute_nonnull__((1,2));
+
+__apn_export__ void apn_set_invalid_token_cb(apn_ctx_ref ctx, invalid_token_cb funct)
+        __apn_attribute_nonnull__((1,2));
 
 __apn_export__ apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert)
         __apn_attribute_nonnull__((1));
@@ -125,7 +135,10 @@ __apn_export__ const char *apn_private_key_pass(const apn_ctx_ref ctx)
         __apn_attribute_warn_unused_result__;
 
 __apn_export__ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_array_ref tokens, char **invalid_token)
-        __apn_attribute_nonnull__((1));
+        __apn_attribute_nonnull__((1,2,3));
+
+__apn_export__ apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_array_ref tokens)
+        __apn_attribute_nonnull__((1,2,3));
 
 __apn_export__ apn_return apn_feedback(const apn_ctx_ref ctx, apn_array_ref *tokens)
         __apn_attribute_nonnull__((1, 2));

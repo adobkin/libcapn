@@ -34,6 +34,7 @@ extern "C" {
 #endif
 
 struct __apn_ctx {
+    apn_log_level log_level;
     uint8_t feedback;
     apn_connection_mode mode;
     uint32_t tokens_count;
@@ -42,6 +43,8 @@ struct __apn_ctx {
     char *private_key_file;
     char *private_key_pass;
     SSL *ssl;
+    log_cb log_cb;
+    invalid_token_cb invalid_token_cb;
 };
 
 
