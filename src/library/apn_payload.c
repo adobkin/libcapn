@@ -26,7 +26,6 @@
 
 #include "src/jansson.h"
 #include "apn_strings.h"
-#include "apn_tokens.h"
 #include "apn_memory.h"
 #include "apn.h"
 #include "apn_paload_private.h"
@@ -209,7 +208,7 @@ apn_return apn_payload_set_localized_key(apn_payload_ref payload, const char *co
     uint16_t args_i = 0;
 
     assert(payload);
-    assert(key);
+    assert(key && strlen(key) > 0);
 
     if (payload->alert->loc_key) {
         apn_strfree(&payload->alert->loc_key);
@@ -223,23 +222,22 @@ apn_return apn_payload_set_localized_key(apn_payload_ref payload, const char *co
         }
     }
 
-    if (key && strlen(key) > 0) {
-        payload->alert->loc_key = apn_strndup(key, strlen(key));
-        if (args && args_count > 0) {
-            payload->alert->loc_args = (char **) malloc((args_count) * sizeof(char *));
-            if (!payload->alert->loc_args) {
+    payload->alert->loc_key = apn_strndup(key, strlen(key));
+    if (args && args_count > 0) {
+        payload->alert->loc_args = (char **) malloc((args_count) * sizeof(char *));
+        if (!payload->alert->loc_args) {
+            errno = ENOMEM;
+            return APN_ERROR;
+        }
+        for (args_i = 0; args_i < args_count; args_i++) {
+            if ((payload->alert->loc_args[args_i] = apn_strndup(args[args_i], strlen(args[args_i]))) == NULL) {
                 errno = ENOMEM;
                 return APN_ERROR;
             }
-            for (args_i = 0; args_i < args_count; args_i++) {
-                if ((payload->alert->loc_args[args_i] = apn_strndup(args[args_i], strlen(args[args_i]))) == NULL) {
-                    errno = ENOMEM;
-                    return APN_ERROR;
-                }
-                payload->alert->loc_args_count++;
-            }
+            payload->alert->loc_args_count++;
         }
     }
+
     return APN_SUCCESS;
 }
 

@@ -105,4 +105,3 @@ uint8_t apn_hex_token_is_valid(const char *const token) {
     }
     return 1;
 }
-

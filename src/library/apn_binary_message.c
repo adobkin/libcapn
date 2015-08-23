@@ -102,7 +102,7 @@ apn_binary_message_ref apn_create_binary_message(const apn_payload_ref payload) 
     size_t json_size = 0;
     uint8_t *frame = NULL;
     uint8_t *frame_ref = NULL;
-    size_t frame_size = 0;
+    uint32_t frame_size = 0;
     uint32_t id_n = 0; // ID (network ordered)
     uint32_t expiry_n = htonl((uint32_t) payload->expiry); // expiry time (network ordered)
     uint8_t item_id = 1; // Item ID
@@ -123,12 +123,12 @@ apn_binary_message_ref apn_create_binary_message(const apn_payload_ref payload) 
         return NULL;
     }
 
-    frame_size = ((sizeof(uint8_t) + sizeof(uint16_t)) * 5)
-            + APN_TOKEN_BINARY_SIZE
-            + json_size
-            + sizeof(uint32_t)
-            + sizeof(uint32_t)
-            + sizeof(uint8_t);
+    frame_size = (uint32_t) (((sizeof(uint8_t) + sizeof(uint16_t)) * 5)
+                + APN_TOKEN_BINARY_SIZE
+                + json_size
+                + sizeof(uint32_t)
+                + sizeof(uint32_t)
+                + sizeof(uint8_t));
 
     frame_size_n = htonl(frame_size);
     frame = malloc(frame_size);
@@ -153,7 +153,7 @@ apn_binary_message_ref apn_create_binary_message(const apn_payload_ref payload) 
 
     /* Payload */
     *frame_ref++ = item_id++;
-    item_data_size_n = htons(json_size);
+    item_data_size_n = htons((uint16_t) json_size);
     memcpy(frame_ref, &item_data_size_n, sizeof(uint16_t));
     frame_ref += sizeof(uint16_t);
     memcpy(frame_ref, json, json_size);
