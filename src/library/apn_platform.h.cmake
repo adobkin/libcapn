@@ -50,6 +50,9 @@
 #ifndef HAVE_STRINGS_H
 #cmakedefine HAVE_STRINGS_H
 #endif
+#ifndef HAVE_NETINET_IN_H
+#cmakedefine HAVE_NETINET_IN_H
+#endif
 
 #cmakedefine HAVE_STRERROR_R
 #cmakedefine HAVE_GLIBC_STRERROR_R
@@ -67,7 +70,7 @@ typedef enum __apn_return {
 
 	#include <winsock2.h>
 
-	#define CLOSE_SOCKET(__socket) closesocket(__socket)
+	#define APN_CLOSE_SOCKET(__socket) closesocket(__socket)
 	#ifndef ETIMEDOUT
 		#define ETIMEDOUT WSAETIMEDOUT
 	#endif
@@ -81,7 +84,7 @@ typedef enum __apn_return {
 		#define __apn_attribute_warn_unused_result__  __attribute__((warn_unused_result))
 		#define __apn_export__ __attribute__ ((visibility("default")))
 	#endif
-	#define CLOSE_SOCKET(__socket) close(__socket)
+	#define APN_CLOSE_SOCKET(__socket) close(__socket)
 	typedef int SOCKET;
 #endif
 
