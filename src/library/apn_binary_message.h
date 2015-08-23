@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __APN_BINARY_MESSSAGE_H__
-#define __APN_BINARY_MESSSAGE_H__
+#ifndef __APN_BINARY_MESSAGE_H__
+#define __APN_BINARY_MESSAGE_H__
 
 #include "apn_platform.h"
 #include "apn_payload.h"
@@ -34,7 +34,8 @@ typedef struct __apn_binary_message apn_binary_message;
 typedef struct __apn_binary_message *apn_binary_message_ref;
 
 __apn_export__ apn_binary_message *apn_create_binary_message(const apn_payload_ref payload)
-        __apn_attribute_warn_unused_result__;
+        __apn_attribute_warn_unused_result__
+        __apn_attribute_nonnull__((1));
 
 __apn_export__ void apn_binary_message_set_token(apn_binary_message_ref binary_message, const uint8_t * const token)
         __apn_attribute_nonnull__((1,2));

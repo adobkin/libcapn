@@ -35,23 +35,21 @@ char *apn_strndup(const char *str, size_t len) {
     char *p = NULL;
     size_t str_copy_len = 0;
 	
-	assert(str);
+	assert(str && len > 0);
 
-    if (str && len > 0) {
-        str_copy_len = len + 1;
-        str_copy = malloc(str_copy_len * sizeof(char));
-        p = str_copy;
+    str_copy_len = len + 1;
+    str_copy = malloc(str_copy_len * sizeof(char));
+    p = str_copy;
 
-        if(!str_copy) {
-            return NULL;
-        }        
-        while (--str_copy_len != 0) {
-            if ((*p++ = *str++) == '\0') {
-                return str_copy;
-            }
-        }
-        *p = '\0';
+    if(!str_copy) {
+        return NULL;
     }
+    while (--str_copy_len != 0) {
+        if ((*p++ = *str++) == '\0') {
+            return str_copy;
+        }
+    }
+    *p = '\0';
     return str_copy;
 }
 
@@ -130,10 +128,10 @@ void apn_strncpy(char *dst, const char * const src, size_t dst_len, size_t src_l
 	assert(dst);
     assert(src);
 
-    if (!dst || dst_len == 0) {
+    if (dst_len == 0) {
         return;
     }
-    if (!src || src_len == 0) {
+    if (src_len == 0) {
         *buff = '\0';
         return;
     }
