@@ -103,24 +103,21 @@ By default the library uses default priority to send notifications. Call `apn_pa
 apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH); 
 ```
 
-Next, add the device tokens as either a hexadecimal string:
+Next, create array of tokens and add the device tokens as either a hexadecimal string to array:
 
 ```c
-apn_payload_add_token(payload, "XXXXXXXX");
-apn_payload_add_token(payload, "YYYYYYYY");
+apn_array_ref tokens = apn_array_init(2, NULL, NULL);
+if(tokens) {
+    apn_array_insert(tokens, "XXXXXXXX");
+    apn_array_insert(tokens, "YYYYYYYY");
+    apn_array_insert(tokens, "ZZZZZZZZ");
+}
 ```
 
-alternatively you can add tokens to `contex`:
+To send notification to devices call `apn_send()`, passing `context`, `payload` and array of tokens:
 
 ```c
-apn_add_token(ctx, "XXXXXXXX");
-apn_add_token(ctx, "YYYYYYYY");
-```
-
-To send notification to devices call `apn_send()`, passing a `context` and a `payload`:
-
-```c
-if(APN_ERROR == apn_send(ctx, payload, &invalid_token)) {
+if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token)) {
 	if(errno == APN_ERR_TOKEN_INVALID) {
 		printf("Invalid token: %s\n", token);
 	} else {
@@ -171,16 +168,24 @@ int main() {
         goto finish;
     }
 
-    apn_payload_add_token(payload, "XXXXXXXX");
-    apn_payload_add_token(payload, "YYYYYYYY");
     apn_payload_set_badge(payload, 10); // Icon badge
     apn_payload_set_body(payload, "Test Push Message");  // Notification text
     apn_payload_set_expiry(payload, time_now + 3600); // Expires
     apn_payload_set_category(payload, "MY_CAT"); // Notification category
     apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH);  // Notification priority
     apn_payload_add_custom_property_integer(payload, "custom_property_integer", 100); // Custom property
+    
+    apn_array_ref tokens = apn_array_init(2, NULL, NULL);
+    if(!tokens) {
+        ret = 1;
+        goto finish;
+    }
 
-    if(APN_ERROR == apn_send(ctx, payload, &invalid_token)) {
+    apn_array_insert(tokens, "XXXXXXXX");
+    apn_array_insert(tokens, "YYYYYYYY");
+    apn_array_insert(tokens, "ZZZZZZZZ");
+
+    if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token)) {
         if(errno == APN_ERR_TOKEN_INVALID) {
             printf("Invalid token: %s\n", invalid_token);
         } else {
@@ -193,9 +198,9 @@ int main() {
     printf("Success!");
 
     finish:
-        apn_close(ctx);
         apn_free(&ctx);
         apn_payload_free(&payload);
+        apn_array_free(tokens);
         apn_library_free();
 
         return ret;
