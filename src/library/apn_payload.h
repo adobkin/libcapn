@@ -63,12 +63,6 @@ __apn_export__ apn_payload_ref apn_payload_init()
 __apn_export__ void apn_payload_free(apn_payload_ref *payload)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ apn_return apn_payload_add_token(apn_payload_ref payload, const char *const token)
-        __apn_attribute_nonnull__((1, 2));
-
-__apn_export__ void apn_payload_remove_all_tokens(apn_payload_ref payload)
-        __apn_attribute_nonnull__((1));
-
 __apn_export__ void apn_payload_set_expiry(apn_payload_ref payload, time_t expiry)
         __apn_attribute_nonnull__((1));
 
