@@ -94,7 +94,8 @@ static void __apn_parse_apns_error(char *apns_error, uint8_t *apns_error_code, u
 static void __apn_strerror_r(int errnum, char *buf, size_t buff_size);
 static apn_binary_message_ref __apn_payload_to_binary_message(const apn_ctx_ref ctx, const apn_payload_ref payload);
 static void __apn_convert_apple_error(uint8_t apple_error_code);
-static apn_return __apn_tls_connect(const apn_ctx_ref ctx) ;
+static apn_return __apn_tls_connect(const apn_ctx_ref ctx);
+static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret);
 
 apn_return apn_library_init() {
     static uint8_t library_initialized = 0;
@@ -639,6 +640,14 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
             return APN_ERROR;
         }
 
+#ifndef _WIN32
+        sock_flags = fcntl(ctx->sock, F_GETFL, 0);
+        fcntl(ctx->sock, F_SETFL, sock_flags | O_NONBLOCK);
+#else
+        sock_flags = 1;
+        ioctlsocket(ctx->sock, FIONBIO, (u_long *) &sock_flags);
+#endif
+
         __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Socket successfully created");
 
         while (addrinfo) {
@@ -683,17 +692,6 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
             OPENSSL_free(line);
             X509_free(cert);
         }
-
-        __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Set a socket to nonblocking mode");
-
-#ifndef _WIN32
-        sock_flags = fcntl(ctx->sock, F_GETFL, 0);
-        fcntl(ctx->sock, F_SETFL, sock_flags | O_NONBLOCK);
-#else
-        sock_flags = 1;
-        ioctlsocket(ctx->sock, FIONBIO, (u_long *) &sock_flags);
-#endif
-
     }
     return APN_SUCCESS;
 }
@@ -1036,6 +1034,11 @@ static apn_return __apn_tls_connect(const apn_ctx_ref ctx) {
         return APN_ERROR;
     }
 
+    SSL_CTX_set_timeout(ssl_ctx, 300);
+    SSL_CTX_set_mode(ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ENABLE_PARTIAL_WRITE);
+    SSL_CTX_set_ex_data(ssl_ctx, 0, ctx);
+    SSL_CTX_set_info_callback(ssl_ctx, __apn_ssl_info_callback);
+
     if(ctx->pkcs12_file && ctx->pkcs12_pass) {
         pkcs12_file = fopen(ctx->pkcs12_file, "r");
         if (!pkcs12_file) {
@@ -1156,4 +1159,29 @@ static apn_return __apn_tls_connect(const apn_ctx_ref ctx) {
 
     __apn_log(ctx, APN_LOG_LEVEL_INFO, "SSL connection has been established");
     return APN_SUCCESS;
+}
+
+static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret) {
+    apn_ctx_ref ctx = SSL_CTX_get_ex_data(ssl->ctx, 0);
+    if(!ctx) {
+        return;
+    }
+
+    if (where & SSL_CB_LOOP) {
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   %s:%s:%s",
+                  (where & SSL_ST_CONNECT) ? "connect" : "undef",
+                  SSL_state_string_long(ssl),
+                  SSL_get_cipher_name(ssl));
+    } else if (where & SSL_CB_EXIT) {
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   %s:%s", (where & SSL_ST_CONNECT) ? "connect" : "undef", SSL_state_string_long(ssl));
+    } else if (where & SSL_CB_ALERT) {
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   alert %s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
+    } else if (where & SSL_CB_HANDSHAKE_START) {
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   handshake started %s:%s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
+    }
+    else if (where & SSL_CB_HANDSHAKE_DONE) {
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   handshake done %s:%s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
+    }  else {
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   state %s:%s:%s", SSL_state_string_long(ssl), SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
+    }
 }
