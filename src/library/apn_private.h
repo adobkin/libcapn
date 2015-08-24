@@ -37,11 +37,12 @@ struct __apn_ctx {
     apn_log_level log_level;
     uint8_t feedback;
     apn_connection_mode mode;
-    uint32_t tokens_count;
     SOCKET sock;
     char *certificate_file;
     char *private_key_file;
     char *private_key_pass;
+    char *pkcs12_file;
+    char *pkcs12_pass;
     SSL *ssl;
     log_cb log_cb;
     invalid_token_cb invalid_token_cb;

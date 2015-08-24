@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <openssl/err.h>
+#include <openssl/pkcs12.h>
 
 #include "apn_strings.h"
 #include "apn_tokens.h"
@@ -93,6 +94,7 @@ static void __apn_parse_apns_error(char *apns_error, uint8_t *apns_error_code, u
 static void __apn_strerror_r(int errnum, char *buf, size_t buff_size);
 static apn_binary_message_ref __apn_payload_to_binary_message(const apn_ctx_ref ctx, const apn_payload_ref payload);
 static void __apn_convert_apple_error(uint8_t apple_error_code);
+static apn_return __apn_tls_connect(const apn_ctx_ref ctx) ;
 
 apn_return apn_library_init() {
     static uint8_t library_initialized = 0;
@@ -121,7 +123,7 @@ void apn_library_free() {
 #endif
 }
 
-apn_ctx_ref apn_init(const char *const cert, const char *const private_key, const char *const private_key_pass) {
+apn_ctx_ref apn_init() {
     apn_ctx_ref ctx = NULL;
     if (APN_ERROR == apn_library_init()) {
         return NULL;
@@ -133,25 +135,16 @@ apn_ctx_ref apn_init(const char *const cert, const char *const private_key, cons
     }
     ctx->sock = -1;
     ctx->ssl = NULL;
-    ctx->tokens_count = 0;
     ctx->certificate_file = NULL;
     ctx->private_key_file = NULL;
+    ctx->pkcs12_file = NULL;
+    ctx->pkcs12_pass = NULL;
     ctx->feedback = 0;
     ctx->private_key_pass = NULL;
     ctx->mode = APN_MODE_PRODUCTION;
     ctx->log_cb = NULL;
     ctx->invalid_token_cb = NULL;
     ctx->log_level = APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG;
-
-    if (APN_SUCCESS != apn_set_certificate(ctx, cert)) {
-        apn_free(&ctx);
-        return NULL;
-    }
-
-    if (APN_SUCCESS != apn_set_private_key(ctx, private_key, private_key_pass)) {
-        apn_free(&ctx);
-        return NULL;
-    }
     return ctx;
 }
 
@@ -166,6 +159,12 @@ void apn_free(apn_ctx_ref *ctx) {
         }
         if ((*ctx)->private_key_pass) {
             free((*ctx)->private_key_pass);
+        }
+        if ((*ctx)->pkcs12_file) {
+            free((*ctx)->pkcs12_file);
+        }
+        if ((*ctx)->pkcs12_pass) {
+            free((*ctx)->pkcs12_pass);
         }
         free((*ctx));
         *ctx = NULL;
@@ -191,36 +190,61 @@ void apn_close(apn_ctx_ref ctx) {
     __apn_log(ctx, APN_LOG_LEVEL_INFO,  "Connection closed");
 }
 
-apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert) {
+apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert, const char *const key, const char *const pass) {
     assert(ctx);
+
     if (ctx->certificate_file) {
         apn_strfree(&ctx->certificate_file);
     }
+    if (ctx->private_key_file) {
+        apn_strfree(&ctx->private_key_file);
+    }
+
+    if (ctx->private_key_pass) {
+        apn_strfree(&ctx->private_key_pass);
+    }
+
     if (cert && strlen(cert) > 0) {
         if (NULL == (ctx->certificate_file = apn_strndup(cert, strlen(cert)))) {
             errno = ENOMEM;
             return APN_ERROR;
         }
+
+        if (key && strlen(key) > 0) {
+            if (NULL == (ctx->private_key_file = apn_strndup(key, strlen(key)))) {
+                errno = ENOMEM;
+                return APN_ERROR;
+            }
+
+            if (pass && strlen(pass) > 0) {
+                if (NULL == (ctx->private_key_pass = apn_strndup(pass, strlen(pass)))) {
+                    errno = ENOMEM;
+                    return APN_ERROR;
+                }
+            }
+        }
     }
     return APN_SUCCESS;
 }
 
-apn_return apn_set_private_key(apn_ctx_ref ctx, const char *const key, const char *const pass) {
+apn_return apn_set_pkcs12_file(apn_ctx_ref ctx, const char *const pkcs12_file, const char *const pass) {
     assert(ctx);
-    if (ctx->private_key_file) {
-        apn_strfree(&ctx->private_key_file);
+
+    if (ctx->pkcs12_file) {
+        apn_strfree(&ctx->pkcs12_file);
     }
-    if (key && strlen(key) > 0) {
-        if (NULL == (ctx->private_key_file = apn_strndup(key, strlen(key)))) {
+
+    if (ctx->pkcs12_pass) {
+        apn_strfree(&ctx->pkcs12_pass);
+    }
+
+    if (pkcs12_file && strlen(pkcs12_file) > 0) {
+        if (NULL == (ctx->pkcs12_file = apn_strndup(pkcs12_file, strlen(pkcs12_file)))) {
             errno = ENOMEM;
             return APN_ERROR;
         }
-    }
-    if (ctx->private_key_pass) {
-        apn_strfree(&ctx->private_key_pass);
-    }
-    if (pass && strlen(pass) > 0) {
-        if (NULL == (ctx->private_key_pass = apn_strndup(pass, strlen(pass)))) {
+        assert(pass && strlen(pass) > 0);
+        if (NULL == (ctx->pkcs12_pass = apn_strndup(pass, strlen(pass)))) {
             errno = ENOMEM;
             return APN_ERROR;
         }
@@ -497,6 +521,9 @@ char *apn_error_string(int errnum) {
         case APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY:
             apn_snprintf(error, sizeof(error) - 1, "unable to use specified private key");
             break;
+        case APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12:
+            apn_snprintf(error, sizeof(error) - 1, "unable to use specified PKCS12 file");
+            break;
         case APN_ERR_COULD_NOT_INITIALIZE_CONNECTION:
             apn_snprintf(error, sizeof(error) - 1, "could not initialize connection");
             break;
@@ -561,26 +588,27 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
     struct addrinfo hints;
     SOCKET sock;
     int sock_flags = 0;
-    SSL_CTX *ssl_ctx = NULL;
-    char *password = NULL;
     int ret = 0;
     uint8_t connected = 0;
     char str_port[6];
     char ip[INET_ADDRSTRLEN];
     char *error = NULL;
+    apn_return ssl_connect_ret = APN_SUCCESS;
 
     __apn_log(ctx, APN_LOG_LEVEL_INFO, "Connecting to %s:%d...", server.host, server.port);
 
-    if (!ctx->certificate_file) {
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Certificate file not set, errno: %d", APN_ERR_CERTIFICATE_IS_NOT_SET);
-        errno = APN_ERR_CERTIFICATE_IS_NOT_SET;
-        return APN_ERROR;
-    }
+    if(!ctx->pkcs12_file) {
+        if (!ctx->certificate_file) {
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Certificate file not set, errno: %d", APN_ERR_CERTIFICATE_IS_NOT_SET);
+            errno = APN_ERR_CERTIFICATE_IS_NOT_SET;
+            return APN_ERROR;
+        }
 
-    if (!ctx->private_key_file) {
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Private key file, errno: %d", APN_ERR_PRIVATE_KEY_IS_NOT_SET);
-        errno = APN_ERR_PRIVATE_KEY_IS_NOT_SET;
-        return APN_ERROR;
+        if (!ctx->private_key_file) {
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Private key file not set, errno: %d", APN_ERR_PRIVATE_KEY_IS_NOT_SET);
+            errno = APN_ERR_PRIVATE_KEY_IS_NOT_SET;
+            return APN_ERROR;
+        }
     }
 
     if (ctx->sock == -1) {
@@ -638,87 +666,11 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
         __apn_log(ctx, APN_LOG_LEVEL_INFO, "Initializing SSL connection...");
 
         ctx->sock = sock;
-        ssl_ctx = SSL_CTX_new(TLSv1_client_method());
 
-        if (!ssl_ctx) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not initialize SSL context: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            return APN_ERROR;
+        ssl_connect_ret =__apn_tls_connect(ctx);
+        if(APN_ERROR == ssl_connect_ret) {
+            return ssl_connect_ret;
         }
-
-        if (!SSL_CTX_use_certificate_file(ssl_ctx, ctx->certificate_file, SSL_FILETYPE_PEM)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified certificate: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE;
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-
-        SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_cd);
-
-        if (ctx->private_key_pass) {
-            password = apn_strndup(ctx->private_key_pass, strlen(ctx->private_key_pass));
-            if (password == NULL) {
-                errno = ENOMEM;
-                SSL_CTX_free(ssl_ctx);
-                return APN_ERROR;
-            }
-            SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, password);
-        } else {
-            SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, NULL);
-        }
-
-        if (!SSL_CTX_use_PrivateKey_file(ssl_ctx, ctx->private_key_file, SSL_FILETYPE_PEM)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified private key: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY;
-            SSL_CTX_free(ssl_ctx);
-            if (password) {
-                free(password);
-            }
-            return APN_ERROR;
-        }
-
-        if (password) {
-            free(password);
-        }
-
-        if (!SSL_CTX_check_private_key(ssl_ctx)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified private key: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY;
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-
-        ctx->ssl = SSL_new(ssl_ctx);
-        SSL_CTX_free(ssl_ctx);
-
-        if (!ctx->ssl) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not initialize SSL");
-            errno = APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION;
-            return APN_ERROR;
-        }
-
-        ret = SSL_set_fd(ctx->ssl, ctx->sock);
-        if (-1 == ret) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to attach socket to SSL: SSL_set_fd() failed (%d)",
-                      SSL_get_error(ctx->ssl, ret));
-            errno = APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION;
-            return APN_ERROR;
-        }
-
-        ret = SSL_connect(ctx->ssl);
-        if (ret < 1) {
-            error = apn_error_string(errno);
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR,
-                      "Could not initialize SSL connection: SSL_connect() failed: %s, %s (errno: %d):",
-                      ERR_error_string((unsigned long) SSL_get_error(ctx->ssl, ret), NULL), error, errno);
-            free(error);
-            return APN_ERROR;
-        }
-
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "SSL connection has been established");
 
         X509 *cert = SSL_get_peer_certificate(ctx->ssl);
         if (cert) {
@@ -832,13 +784,13 @@ static void __apn_parse_apns_error(char *apns_error, uint8_t *apns_error_code, u
     uint8_t error_code = 0;
     memcpy(&cmd, apns_error, sizeof(uint8_t));
     apns_error += sizeof(uint8_t);
-    if (cmd == 8) {
+    if (8 == cmd) {
         memcpy(&error_code, apns_error, sizeof(uint8_t));
         apns_error += sizeof(uint8_t);
         if (apns_error_code) {
             *apns_error_code = error_code;
         }
-        if (error_code == APN_APNS_ERR_INVALID_TOKEN && id) {
+        if (APN_APNS_ERR_INVALID_TOKEN == error_code && id) {
             memcpy(&token_id, apns_error, sizeof(uint32_t));
             *id = ntohl(token_id);
         }
@@ -982,7 +934,7 @@ static apn_return __apn_send_binary_message(const apn_ctx_ref ctx,
 
             select_returned = select(ctx->sock + 1, &read_set, &write_set, NULL, &timeout);
             __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "select() returned %d", select_returned);
-        } while (select_returned == 0 || (select_returned < 0 && errno == EINTR));
+        } while (0 == select_returned || (0 > select_returned  && EINTR == errno));
 
         __APN_SELECT_ERROR(select_returned, __APN_CODE(__APN_TOKEN_INDEX))
         __API_SOCKET_READ(ctx,
@@ -1015,7 +967,7 @@ static apn_return __apn_send_binary_message(const apn_ctx_ref ctx,
             FD_SET(ctx->sock, &read_set);
             select_returned = select(ctx->sock + 1, &read_set, NULL, NULL, &timeout);
             __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "select() returned %d", select_returned);
-        } while (select_returned < 0 && errno == EINTR);
+        } while (0 > select_returned && EINTR == errno);
         __APN_SELECT_ERROR(select_returned, __APN_CODE(__APN_TOKEN_INDEX))
         __API_SOCKET_READ(ctx, &read_set, apple_error_str, bytes_read, apple_returned_error, __APN_CODE(__APN_TOKEN_INDEX), __APN_CODE())
     }
@@ -1062,4 +1014,146 @@ static void __apn_convert_apple_error(uint8_t apple_error_code) {
             errno = APN_ERR_UNKNOWN;
             break;
     }
+}
+
+static apn_return __apn_tls_connect(const apn_ctx_ref ctx) {
+    char *error = NULL;
+    FILE *pkcs12_file = NULL;
+    PKCS12 *pkcs12_cert = NULL;
+    EVP_PKEY *private_key = NULL;
+    X509 *cert = NULL;
+    char *password = NULL;
+    SSL_CTX *ssl_ctx = NULL;
+    int ret = 0;
+
+    assert(ctx);
+
+    ssl_ctx = SSL_CTX_new(TLSv1_client_method());
+
+    if (!ssl_ctx) {
+        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not initialize SSL context: %s",
+                  ERR_error_string(ERR_get_error(), NULL));
+        return APN_ERROR;
+    }
+
+    if(ctx->pkcs12_file && ctx->pkcs12_pass) {
+        pkcs12_file = fopen(ctx->pkcs12_file, "r");
+        if (!pkcs12_file) {
+            error = apn_error_string(errno);
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to open file %s: %s (errno: %d)", ctx->pkcs12_file, error,
+                      errno);
+            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12;
+            SSL_CTX_free(ssl_ctx);
+            return APN_ERROR;
+        }
+
+        d2i_PKCS12_fp(pkcs12_file, &pkcs12_cert);
+        fclose(pkcs12_file);
+
+        if (!PKCS12_parse(pkcs12_cert, ctx->pkcs12_pass, &private_key, &cert, NULL)) {
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified PKCS#12 file: %s",
+                      ERR_error_string(ERR_get_error(), NULL));
+            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12;
+            PKCS12_free(pkcs12_cert);
+            SSL_CTX_free(ssl_ctx);
+            return APN_ERROR;
+        }
+        PKCS12_free(pkcs12_cert);
+
+        if (!SSL_CTX_use_certificate(ssl_ctx, cert)) {
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified PKCS#12 file: %s",
+                      ERR_error_string(ERR_get_error(), NULL));
+            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12;
+            X509_free(cert);
+            EVP_PKEY_free(private_key);
+            SSL_CTX_free(ssl_ctx);
+            return APN_ERROR;
+        }
+        X509_free(cert);
+
+        if (!SSL_CTX_use_PrivateKey(ssl_ctx, private_key)) {
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified PKCS#12 file: %s",
+                      ERR_error_string(ERR_get_error(), NULL));
+            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12;
+            EVP_PKEY_free(private_key);
+            SSL_CTX_free(ssl_ctx);
+            return APN_ERROR;
+        }
+        EVP_PKEY_free(private_key);
+    } else {
+        if (!SSL_CTX_use_certificate_file(ssl_ctx, ctx->certificate_file, SSL_FILETYPE_PEM)) {
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified certificate: %s",
+                      ERR_error_string(ERR_get_error(), NULL));
+            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE;
+            SSL_CTX_free(ssl_ctx);
+            return APN_ERROR;
+        }
+
+        SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_cd);
+
+        if (ctx->private_key_pass) {
+            password = apn_strndup(ctx->private_key_pass, strlen(ctx->private_key_pass));
+            if (!password) {
+                errno = ENOMEM;
+                SSL_CTX_free(ssl_ctx);
+                return APN_ERROR;
+            }
+            SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, password);
+        } else {
+            SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, NULL);
+        }
+
+        if (!SSL_CTX_use_PrivateKey_file(ssl_ctx, ctx->private_key_file, SSL_FILETYPE_PEM)) {
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified private key: %s",
+                      ERR_error_string(ERR_get_error(), NULL));
+            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY;
+            if (password) {
+                free(password);
+            }
+            SSL_CTX_free(ssl_ctx);
+            return APN_ERROR;
+        }
+
+        if (password) {
+            free(password);
+        }
+
+        if (!SSL_CTX_check_private_key(ssl_ctx)) {
+            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified private key: %s",
+                      ERR_error_string(ERR_get_error(), NULL));
+            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY;
+            SSL_CTX_free(ssl_ctx);
+            return APN_ERROR;
+        }
+    }
+
+    ctx->ssl = SSL_new(ssl_ctx);
+    SSL_CTX_free(ssl_ctx);
+
+    if (!ctx->ssl) {
+        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not initialize SSL");
+        errno = APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION;
+        return APN_ERROR;
+    }
+
+    ret = SSL_set_fd(ctx->ssl, ctx->sock);
+    if (-1 == ret) {
+        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to attach socket to SSL: SSL_set_fd() failed (%d)",
+                  SSL_get_error(ctx->ssl, ret));
+        errno = APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION;
+        return APN_ERROR;
+    }
+
+    ret = SSL_connect(ctx->ssl);
+    if (ret < 1) {
+        error = apn_error_string(errno);
+        __apn_log(ctx, APN_LOG_LEVEL_ERROR,
+                  "Could not initialize SSL connection: SSL_connect() failed: %s, %s (errno: %d):",
+                  ERR_error_string((unsigned long) SSL_get_error(ctx->ssl, ret), NULL), error, errno);
+        free(error);
+        return APN_ERROR;
+    }
+
+    __apn_log(ctx, APN_LOG_LEVEL_INFO, "SSL connection has been established");
+    return APN_SUCCESS;
 }
