@@ -51,6 +51,7 @@ typedef enum __apn_errors {
     APN_ERR_PRIVATE_KEY_IS_NOT_SET,
     APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE,
     APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY,
+    APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12,
     APN_ERR_COULD_NOT_INITIALIZE_CONNECTION,
     APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION,
     APN_ERR_SSL_WRITE_FAILED,
@@ -87,7 +88,7 @@ __apn_export__ uint32_t apn_version();
 
 __apn_export__ const char *apn_version_string();
 
-__apn_export__ apn_ctx_ref apn_init(const char *const cert, const char *const private_key, const char *const private_key_pass)
+__apn_export__ apn_ctx_ref apn_init()
         __apn_attribute_warn_unused_result__;
 
 __apn_export__ void apn_free(apn_ctx_ref *ctx);
@@ -107,17 +108,11 @@ __apn_export__ void apn_set_log_cb(apn_ctx_ref ctx, log_cb funct)
 __apn_export__ void apn_set_invalid_token_cb(apn_ctx_ref ctx, invalid_token_cb funct)
         __apn_attribute_nonnull__((1,2));
 
-__apn_export__ apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert)
+__apn_export__ apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert, const char *const key, const char *const pass)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ apn_return apn_set_private_key(apn_ctx_ref ctx, const char *const key, const char *const pass)
-        __apn_attribute_nonnull__((1));
-
-__apn_export__ apn_return apn_add_token(apn_ctx_ref ctx, const char *const token)
-        __apn_attribute_nonnull__((1, 2));
-
-__apn_export__ void apn_remove_all_tokens(apn_ctx_ref ctx)
-        __apn_attribute_nonnull__((1));
+__apn_export__ apn_return apn_set_pkcs12_file(apn_ctx_ref ctx, const char *const pkcs12_file, const char *const pass)
+        __apn_attribute_nonnull__((1, 2,3));
 
 __apn_export__ apn_connection_mode apn_mode(const apn_ctx_ref ctx)
         __apn_attribute_nonnull__((1));
