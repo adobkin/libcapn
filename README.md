@@ -90,9 +90,12 @@ transported to the device.</p>
 For logging specify log level and pointer to callback-function using `apn_set_log_level()` and `apn_set_log_cb()`:
 
 ```c
-
+void loging(apn_log_level level, const char * const message, uint32_t len) {
+    printf("======> %s\n", message);
+}
 
 apn_set_log_level(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
+apn_set_log_cb(ctx, logfunc);
 
 ```
 
@@ -221,73 +224,98 @@ void (*invalid_token_cb)(const char * const token, uint32_t index)
 #include <assert.h>
 #include <capn/apn.h>
 
+void __apn_logging(apn_log_levels level, const char * const message, uint32_t len) {
+    printf("======> %s\n", message);
+}
+
+void __apn_invalid_token(const char * const token, uint32_t index) {
+    printf("======> Invalid token: %s (index: %d)\n", token, index);
+}
+
 int main() {
     apn_payload_ref payload = NULL;
     apn_ctx_ref ctx = NULL;
     time_t time_now = 0;
     char *invalid_token = NULL;
-    int ret = 0;
 
     assert(apn_library_init() == APN_SUCCESS);
 
     time(&time_now);
 
-    if(NULL == (ctx = apn_init("apns_test_cert.pem", "apns_test_key.pem", "12345678"))) {
+    if(NULL == (ctx = apn_init())) {
         printf("Unable to init context: %d\n", errno);
-        ret = 1;
-        goto finish;
+        apn_library_free();
+        return -1;
     }
 
+    apn_set_pkcs12_file(ctx, "push_test.p12", "12345678");
     apn_set_mode(ctx,  APN_MODE_PRODUCTION); //APN_MODE_PRODUCTION or APN_MODE_SANDBOX
-
-    if(APN_ERROR == apn_connect(ctx)) {
-        printf("Could not connected to Apple Push Notification Service: %s (errno: %d)\n", apn_error_string(errno), errno);
-        ret = 1;
-        goto finish;
-    }
+    apn_set_log_level(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
+    apn_set_log_cb(ctx, __apn_logging);
+    apn_set_invalid_token_cb(ctx, __apn_invalid_token);
 
     if(NULL == (payload = apn_payload_init())) {
         printf("Unable to init payload: %d\n", errno);
-        ret = 1;
-        goto finish;
+        apn_free(&ctx);
+        apn_library_free();
+        return -1;
     }
 
     apn_payload_set_badge(payload, 10); // Icon badge
     apn_payload_set_body(payload, "Test Push Message");  // Notification text
     apn_payload_set_expiry(payload, time_now + 3600); // Expires
-    apn_payload_set_category(payload, "MY_CAT"); // Notification category
     apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH);  // Notification priority
     apn_payload_add_custom_property_integer(payload, "custom_property_integer", 100); // Custom property
     
     apn_array_ref tokens = apn_array_init(2, NULL, NULL);
     if(!tokens) {
-        ret = 1;
-        goto finish;
+        apn_free(&ctx);
+        apn_payload_free(&payload);
+        apn_library_free();
+        return -1;
     }
 
     apn_array_insert(tokens, "XXXXXXXX");
     apn_array_insert(tokens, "YYYYYYYY");
     apn_array_insert(tokens, "ZZZZZZZZ");
 
-    if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token)) {
-        if(errno == APN_ERR_TOKEN_INVALID) {
-            printf("Invalid token: %s\n", invalid_token);
-        } else {
-            printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
-        }
-        ret = 1;
-        goto finish;
-    }
-
-    printf("Success!");
-
-    finish:
+    if(APN_ERROR == apn_connect(ctx)) {
+        printf("Could not connected to Apple Push Notification Service: %s (errno: %d)\n", apn_error_string(errno), errno);
         apn_free(&ctx);
         apn_payload_free(&payload);
         apn_array_free(tokens);
         apn_library_free();
+        return -1;
+    }
 
-        return ret;
+    if(APN_ERROR == apn_send2(ctx, payload, tokens)) {
+        printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
+        apn_free(&ctx);
+        apn_payload_free(&payload);
+        apn_array_free(tokens);
+        apn_library_free();
+        return -1;
+    }
+
+    // Uses apn_send
+    //if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token)) {
+    //    if(errno == APN_ERR_TOKEN_INVALID) {
+    //        printf("Invalid token: %s\n", invalid_token);
+    //    } else {
+    //        printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
+    //    }
+    //    ret = 1;
+    //    goto finish;
+    //}
+
+    printf("Success!\n");
+
+    apn_free(&ctx);
+    apn_payload_free(&payload);
+    apn_array_free(tokens);
+    apn_library_free();
+
+    return 0;
 }
 
 ```
