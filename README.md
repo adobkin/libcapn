@@ -2,7 +2,7 @@
 
 [![Build Status](http://img.shields.io/travis/adobkin/libcapn.svg?style=flat&branch=experimental)](http://travis-ci.org/adobkin/libcapn) [![MIT](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/adobkin/libcapn/blob/master/LICENSE)
 
-libcapn is a C Library to interact with the [Apple Push Notification Service](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) using simple and intuitive API. 
+libcapn is a C Library to interact with the [Apple Push Notification Service](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) (APNs for short) using simple and intuitive API.
 With the library you can easily send push notifications to iOS and OS X (>= 10.8) devices. 
 
 __THIS BRANCH IS EXPIREMENTAL__
@@ -51,27 +51,54 @@ win_build\build.bat
 		
 ## Quick Start
 
-In first step initialize library, calling `apn_library_init()`. This function must be called at least once within a program before the program calls any other other `libcapn` functions. `apn_library_init()` is not thread safe, you must not call it when any other thread in the program is running. `apn_library_init()` calls initialize functions of SSL library that are thread unsafe.
+In first step initialize library, calling `apn_library_init()`. This function must be called at least once within a program before the program 
+calls any other other `libcapn` functions. `apn_library_init()` is not thread safe, you must not call it when any other thread in the program is running. 
+`apn_library_init()` calls initialize functions of SSL library that are thread unsafe.
 
-### Connecting
+### Initializing and configure context
 
-Initialize a new apn `context`, passing path to certificate and path to private key. If private key is password protected, pass it too, otherwise pass `NULL`:
+Create a new apn `context` and specify path to certificate file and path to private key file using `apn_set_certificate()`.
+If private key is password protected, pass it too, otherwise pass `NULL`. Certificate and private key must be in PEM format.
+Alternative way to use .p12 file instead of certificate and private key. Use `apn_set_pkcs12_file()` to specify a path to .p12 file .
+If .p12 file is specified, certificate and private key will be ignored.
 
 ```c
-apn_ctx_ref ctx = apn_init("apns_test_cert.pem", "apns_test_key.pem", "12345678");
+apn_ctx_ref ctx = apn_init();
 if(!ctx) {
 	// error
 }
 
+// Uses certificate and private key (in PEM format)
+apn_set_certificate(ctx, "push_test.pem", "push_test_key.pem", "12345678");
+
+// Uses .p12 file 
+apn_set_pkcs12_file(ctx, "push_test.p12", "123");
 ```
 
-By default the library uses production environment to interact with Apple Push Notification Service (APNS). Call `apn_set_mode()` passing `APN_MODE_SANDBOX` to use sandbox environment 
+By default the library uses production environment to interact with Apple Push Notification Service (APNS). Call `apn_set_mode()` passing `APN_MODE_SANDBOX` to 
+use sandbox environment.
+
+> <p style="color: red"> Certificate and private key (or .p12 file) must conforms to the specified mode, otherwise the notifications will not be
+transported to the device.</p>
 
 ```c
  apn_set_mode(ctx,  APN_MODE_SANDBOX);
-``` 
+```
 
-To create connection to the APNS, calling `apn_connect()` 
+#### Logging
+
+For logging specify log level and pointer to callback-function using `apn_set_log_level()` and `apn_set_log_cb()`:
+
+```c
+
+
+apn_set_log_level(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
+
+```
+
+#### Connection
+
+To establishes connection to the APNS, calling `apn_connect()`:
 
 ```c
 if(APN_ERROR == apn_connect(ctx)) {
@@ -80,9 +107,16 @@ if(APN_ERROR == apn_connect(ctx)) {
 }
 ```
 
-### Sending a notification
+### Sending notifications
 
-To send a notification create a `payload` and set it properties:
+#### The notification payload
+
+Each remote notification includes a payload. The payload contains information about how the system should alert
+the user as well as any custom data you provide.
+
+For create payload you need to use `apn_payload_init()`, to set general properties, use `apn_payload_set_*()` functions. You can also specify
+custom properties using `apn_payload_add_custom_property_*()` functions:
+
 
 ```c
 apn_payload_ref payload = apn_payload_init();
@@ -92,16 +126,32 @@ if(!payload) {
 }
 
 apn_payload_set_badge(payload, 10);           
-apn_payload_set_body(payload, "Test Push Message"); 
+apn_payload_set_body(payload, "Test Push Message");
+
+// Custom property
 apn_payload_add_custom_property_integer(payload, "custom_property_integer", 100);
 ...
 ```
 
-By default the library uses default priority to send notifications. Call `apn_payload_set_priority()`, passing `APN_NOTIFICATION_PRIORITY_HIGH` to use high priority:
+> <p style="color: red">In iOS 8 and later, the maximum size allow for a payload is 2 kilobytes, prior to iOS 8
+and in OS X, the maximum payload size is 256 bytes. APNs reject any notification that exceeds this limit.<p>
+
+Payload can contain the `content-available` property. If this property is set to a value of 1, it lets the remote notification act as a “silent”
+notification. When a silent notification arrives, iOS wakes up your app in the background so that you can get new data from your server or do background
+information processing. Users aren’t told about the new or changed information that results from a silent notification.
+
+By default the library uses default priority to notifications. Call `apn_payload_set_priority()`, passing `APN_NOTIFICATION_PRIORITY_HIGH`
+to use high priority:
 
 ```c
 apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH); 
 ```
+
+When you set high priority, notifications is sent immediately on devices. The  notification must trigger an alert, sound, or badge
+on the device. It is an error to use this priority for a push that contains only the content-available key. When you set default priority - notification is sent at a time that
+conserves power on the device receiving it.
+
+#### Tokens
 
 Next, create array of tokens and add the device tokens as either a hexadecimal string to array:
 
@@ -114,16 +164,50 @@ if(tokens) {
 }
 ```
 
-To send notification to devices call `apn_send()`, passing `context`, `payload` and array of tokens:
+> <p style="color: red">Each push environment will issue a different token(s) for the same device or computer. The device token(s) for production
+is different than the development one. If you are using a production mode, you must use a production token(s) and vice versa. </p>
+
+#### Send
+
+To send notification to devices call `apn_send()`, passing `context`, `payload` and array of `tokens`:
 
 ```c
-if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token)) {
+
+uint32 invalid_token_index;
+
+if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token_index)) {
 	if(errno == APN_ERR_TOKEN_INVALID) {
-		printf("Invalid token: %s\n", token);
+		printf("Invalid token: %s\n", (const char * const) apn_array_item_at_index(tokens, invalid_token_index));
 	} else {
 		printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
 	}
 } 
+```
+
+> <p style="color: red"> The APNs drops the connection if it receives an invalid token. The APNs drops the connection if it receives an invalid token.
+Function pass out an index of array for invalid token via pointer `invalid_token_index`. You'll need to reconnect and send notification to token(s)
+following it, again.</p>
+
+You can use `apn_send2()` instead of `apn_send()`, this function automatically establishes new connection to APNs when connection is dropped.
+Function establishes new connection to APNs only when invalid token was sent, otherwise new connection will not be established.
+
+When you use this function you can take invalid token, just specify a pointer to callback-function using `apn_set_invalid_token_cb`:
+
+```c
+void invalid_token(const char * const token, uint32_t index) {
+    printf("======> Invalid token: %s (index: %d)\n", token, index);
+}
+
+...
+
+apn_ctx_ref ctx = ...
+apn_set_invalid_token_cb(ctx, invalid_token);
+```
+
+Callback function has prototype:
+
+```c
+void (*invalid_token_cb)(const char * const token, uint32_t index)
 ```
 
 ## Example
