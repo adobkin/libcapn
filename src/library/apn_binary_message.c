@@ -204,6 +204,9 @@ static apn_return __apn_binary_message_set_token(apn_binary_message_ref binary_m
     }
     if (binary_message && binary_message->token_position) {
         memcpy(binary_message->token_position, token_binary, APN_TOKEN_BINARY_SIZE);
+        if(binary_message->token_hex) {
+            free(binary_message->token_hex);
+        }
         binary_message->token_hex = apn_strndup(token_hex, APN_TOKEN_LENGTH);
     }
     return APN_SUCCESS;

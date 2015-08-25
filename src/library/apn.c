@@ -365,6 +365,8 @@ apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_a
         }
     }
 
+    apn_binary_message_free(binary_message);
+
     return ret;
 }
 
