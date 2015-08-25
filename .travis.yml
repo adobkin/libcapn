@@ -5,13 +5,20 @@ compiler:
 os:
   - linux
   - osx
+
+matrix:
+  allow_failures:
+    - os: osx
+
 before_install:
   - git submodule update --init --recursive
+
 env:
   - OPTIONS="-DCMAKE_BUILD_TYPE=Release"
+
 install:
-  - sudo apt-get update >/dev/null
-  - sudo apt-get -q install cmake
+  - test $TRAVIS_OS_NAME = "linux" && sudo apt-get update >/dev/null && sudo apt-get -q install cmake
+  
 script:  
   - mkdir build
   - cd build
