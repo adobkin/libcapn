@@ -34,10 +34,10 @@ extern "C" {
 #endif
 
 struct __apn_ctx {
-    apn_log_level log_level;
     uint8_t feedback;
     apn_connection_mode mode;
     SOCKET sock;
+    uint16_t log_level;
     char *certificate_file;
     char *private_key_file;
     char *private_key_pass;

@@ -67,17 +67,17 @@ typedef enum __apn_errors {
     APN_ERR_UNKNOWN
 } apn_errors;
 
-typedef enum __apn_log_level {
+typedef enum __apn_log_levels {
     APN_LOG_LEVEL_INFO =  1 << 0,
     APN_LOG_LEVEL_ERROR = 1 << 1,
     APN_LOG_LEVEL_DEBUG = 1 << 2
-} apn_log_level;
+} apn_log_levels;
 
 typedef struct __apn_ctx apn_ctx;
 typedef struct __apn_ctx *apn_ctx_ref;
 
 typedef void (*invalid_token_cb)(const char * const token, uint32_t index);
-typedef void (*log_cb)(apn_log_level level, const char * const log_message, uint32_t message_len);
+typedef void (*log_cb)(apn_log_levels level, const char * const log_message, uint32_t message_len);
 
 __apn_export__ apn_return apn_library_init()
         __apn_attribute_warn_unused_result__;
@@ -102,6 +102,9 @@ __apn_export__ void apn_close(apn_ctx_ref ctx)
 __apn_export__ void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode)
         __apn_attribute_nonnull__((1));
 
+__apn_export__ void apn_set_log_level(apn_ctx_ref ctx, uint16_t level)
+        __apn_attribute_nonnull__((1));
+
 __apn_export__ void apn_set_log_cb(apn_ctx_ref ctx, log_cb funct)
         __apn_attribute_nonnull__((1,2));
 
@@ -115,6 +118,9 @@ __apn_export__ apn_return apn_set_pkcs12_file(apn_ctx_ref ctx, const char *const
         __apn_attribute_nonnull__((1, 2,3));
 
 __apn_export__ apn_connection_mode apn_mode(const apn_ctx_ref ctx)
+        __apn_attribute_nonnull__((1));
+
+__apn_export__ uint16_t apn_log_level(const apn_ctx_ref ctx)
         __apn_attribute_nonnull__((1));
 
 __apn_export__ const char *apn_certificate(const apn_ctx_ref ctx)
