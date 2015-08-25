@@ -54,7 +54,6 @@
 #endif
 
 typedef enum __apn_apple_errors {
-    APN_APNS_ERR_NO_ERRORS = 0,
     APN_APNS_ERR_PROCESSING_ERROR = 1,
     APN_APNS_ERR_MISSING_DEVICE_TOKEN,
     APN_APNS_ERR_MISSING_TOPIC,
@@ -145,7 +144,7 @@ apn_ctx_ref apn_init() {
     ctx->mode = APN_MODE_PRODUCTION;
     ctx->log_cb = NULL;
     ctx->invalid_token_cb = NULL;
-    ctx->log_level = APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG;
+    ctx->log_level = APN_LOG_LEVEL_ERROR;
     return ctx;
 }
 
@@ -339,7 +338,7 @@ apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_a
                 const char * const invalid_token = (const char * const) apn_array_item_at_index(tokens, invalid_token_index);
                 __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Invalid token: %s (index: %u)", invalid_token, invalid_token_index);
                 if(ctx->invalid_token_cb) {
-                    ctx->invalid_token_cb(invalid_token);
+                    ctx->invalid_token_cb(invalid_token, invalid_token_index);
                 }
                 __apn_log(ctx, APN_LOG_LEVEL_INFO, "Reconnecting...");
                 apn_close(ctx);
@@ -723,7 +722,6 @@ static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t len
                     }
                 case SSL_ERROR_ZERO_RETURN:
                 case SSL_ERROR_NONE:
-                    apn_close(ctx);
                     errno = APN_ERR_CONNECTION_CLOSED;
                     return -1;
                 default:
@@ -765,7 +763,6 @@ static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t length) {
                 }
             case SSL_ERROR_ZERO_RETURN:
             case SSL_ERROR_NONE:
-                apn_close(ctx);
                 errno = APN_ERR_CONNECTION_CLOSED;
                 return -1;
             default:
@@ -995,22 +992,24 @@ static apn_binary_message_ref __apn_payload_to_binary_message(const apn_ctx_ref 
 }
 
 static void __apn_convert_apple_error(uint8_t apple_error_code) {
-    switch (apple_error_code) {
-        case APN_APNS_ERR_PROCESSING_ERROR:
-            errno = APN_ERR_PROCESSING_ERROR;
-            break;
-        case APN_APNS_ERR_INVALID_PAYLOAD_SIZE:
-            errno = APN_ERR_INVALID_PAYLOAD_SIZE;
-            break;
-        case APN_APNS_ERR_SERVICE_SHUTDOWN:
-            errno = APN_ERR_SERVICE_SHUTDOWN;
-            break;
-        case APN_APNS_ERR_INVALID_TOKEN:
-            errno = APN_ERR_TOKEN_INVALID;
-            break;
-        default:
-            errno = APN_ERR_UNKNOWN;
-            break;
+    if(apple_error_code > 0) {
+        switch (apple_error_code) {
+            case APN_APNS_ERR_PROCESSING_ERROR:
+                errno = APN_ERR_PROCESSING_ERROR;
+                break;
+            case APN_APNS_ERR_INVALID_PAYLOAD_SIZE:
+                errno = APN_ERR_INVALID_PAYLOAD_SIZE;
+                break;
+            case APN_APNS_ERR_SERVICE_SHUTDOWN:
+                errno = APN_ERR_SERVICE_SHUTDOWN;
+                break;
+            case APN_APNS_ERR_INVALID_TOKEN:
+                errno = APN_ERR_TOKEN_INVALID;
+                break;
+            default:
+                errno = APN_ERR_UNKNOWN;
+                break;
+        }
     }
 }
 
@@ -1035,7 +1034,6 @@ static apn_return __apn_tls_connect(const apn_ctx_ref ctx) {
     }
 
     SSL_CTX_set_timeout(ssl_ctx, 300);
-    SSL_CTX_set_mode(ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ENABLE_PARTIAL_WRITE);
     SSL_CTX_set_ex_data(ssl_ctx, 0, ctx);
     SSL_CTX_set_info_callback(ssl_ctx, __apn_ssl_info_callback);
 
@@ -1168,20 +1166,20 @@ static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret) {
     }
 
     if (where & SSL_CB_LOOP) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   %s:%s:%s",
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: %s:%s:%s",
                   (where & SSL_ST_CONNECT) ? "connect" : "undef",
                   SSL_state_string_long(ssl),
                   SSL_get_cipher_name(ssl));
     } else if (where & SSL_CB_EXIT) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   %s:%s", (where & SSL_ST_CONNECT) ? "connect" : "undef", SSL_state_string_long(ssl));
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: %s:%s", (where & SSL_ST_CONNECT) ? "connect" : "undef", SSL_state_string_long(ssl));
     } else if (where & SSL_CB_ALERT) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   alert %s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: alert %s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
     } else if (where & SSL_CB_HANDSHAKE_START) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   handshake started %s:%s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: handshake started %s:%s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
     }
     else if (where & SSL_CB_HANDSHAKE_DONE) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   handshake done %s:%s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: handshake done %s:%s:%s", (where & SSL_CB_READ) ? "read" : "write", SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
     }  else {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "   state %s:%s:%s", SSL_state_string_long(ssl), SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
+        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: state %s:%s:%s", SSL_state_string_long(ssl), SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
     }
 }

@@ -76,7 +76,7 @@ typedef enum __apn_log_level {
 typedef struct __apn_ctx apn_ctx;
 typedef struct __apn_ctx *apn_ctx_ref;
 
-typedef void (*invalid_token_cb)(const char * const token);
+typedef void (*invalid_token_cb)(const char * const token, uint32_t index);
 typedef void (*log_cb)(apn_log_level level, const char * const log_message, uint32_t message_len);
 
 __apn_export__ apn_return apn_library_init()
