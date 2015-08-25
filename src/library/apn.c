@@ -78,7 +78,7 @@ static struct __apn_apple_server __apn_apple_servers[4] = {
         {"feedback.push.apple.com",         2196}
 };
 
-static void __apn_log(apn_ctx_ref ctx, apn_log_level level, const char *const message, ...);
+static void __apn_log(apn_ctx_ref ctx, apn_log_levels level, const char *const message, ...);
 static apn_return __apn_send_binary_message(const apn_ctx_ref ctx,
                                             const apn_binary_message_ref binary_message,
                                             apn_array_ref tokens,
@@ -151,6 +151,7 @@ apn_ctx_ref apn_init() {
 void apn_free(apn_ctx_ref *ctx) {
     if (ctx && *ctx) {
         apn_close(*ctx);
+
         if ((*ctx)->certificate_file) {
             free((*ctx)->certificate_file);
         }
@@ -175,14 +176,10 @@ void apn_close(apn_ctx_ref ctx) {
     assert(ctx);
     __apn_log(ctx, APN_LOG_LEVEL_INFO,  "Connection closing...");
     if (ctx->ssl) {
-        if (0 == SSL_shutdown(ctx->ssl)) {
-            SSL_shutdown(ctx->ssl);
-        }
-
+        SSL_shutdown(ctx->ssl);
         SSL_clear(ctx->ssl);
         SSL_free(ctx->ssl);
         ctx->ssl = NULL;
-
         shutdown(ctx->sock, SHUT_RDWR);
         APN_CLOSE_SOCKET(ctx->sock);
         ctx->sock = -1;
@@ -261,6 +258,11 @@ void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode) {
     }
 }
 
+void apn_set_log_level(apn_ctx_ref ctx, uint16_t level) {
+    assert(ctx);
+    ctx->log_level = level;
+}
+
 void apn_set_log_cb(apn_ctx_ref ctx, log_cb funct) {
     assert(ctx);
     ctx->log_cb = funct;
@@ -274,6 +276,10 @@ void apn_set_invalid_token_cb(apn_ctx_ref ctx, invalid_token_cb funct) {
 apn_connection_mode apn_mode(const apn_ctx_ref ctx) {
     assert(ctx);
     return ctx->mode;
+}
+
+uint16_t apn_log_level(const apn_ctx_ref ctx) {
+    return ctx->log_level;
 }
 
 const char *apn_certificate(const apn_ctx_ref ctx) {
@@ -829,7 +835,7 @@ static void __apn_strerror_r(int errnum, char *buf, size_t buff_size) {
 #endif
 }
 
-static void __apn_log(apn_ctx_ref ctx, apn_log_level level, const char *const message, ...) {
+static void __apn_log(apn_ctx_ref ctx, apn_log_levels level, const char *const message, ...) {
     if (ctx && ctx->log_cb && (ctx->log_level & level)) {
         va_list args;
         va_start(args, message);
