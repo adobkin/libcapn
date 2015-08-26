@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2104, 2015 Anton Dobkin
+ * Copyright (c) 2013-2015 Anton Dobkin <anton.dobkin@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,18 @@
 #include "apn_payload.h"
 
 #define APN_PAYLOAD_MAX_SIZE  2048
+
+/**
+ * Types of custom property of notification payload
+ */
+typedef enum __apn_payload_custom_property_type {
+    APN_CUSTOM_PROPERTY_TYPE_BOOL,
+    APN_CUSTOM_PROPERTY_TYPE_NUMERIC,
+    APN_CUSTOM_PROPERTY_TYPE_ARRAY,
+    APN_CUSTOM_PROPERTY_TYPE_STRING,
+    APN_CUSTOM_PROPERTY_TYPE_DOUBLE,
+    APN_CUSTOM_PROPERTY_TYPE_NULL
+} apn_payload_custom_property_type;
 
 union __apn_payload_custom_value {
         int64_t numeric_value;
