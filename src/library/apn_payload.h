@@ -186,7 +186,7 @@ __apn_export__ apn_return apn_payload_set_localized_action_key(apn_payload_ref p
         __apn_attribute_nonnull__((1, 2));
 
 /**
- * Sets a filename of an image file in the application bundle.
+ * Sets a name of an image file in the application bundle.
  *
  * Filename may include or not include the extension. The image is used as the launch image when users tap
  * the action button or move the action slider. If this property is not specified, the system either
