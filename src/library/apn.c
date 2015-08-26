@@ -346,15 +346,17 @@ apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_a
                 if(ctx->invalid_token_cb) {
                     ctx->invalid_token_cb(invalid_token, invalid_token_index);
                 }
-                __apn_log(ctx, APN_LOG_LEVEL_INFO, "Reconnecting...");
-                apn_close(ctx);
-                sleep(1);
-                ret = apn_connect(ctx);
-                if(APN_ERROR == ret) {
-                    break;
-                }
+                ret= APN_ERROR;
                 if((invalid_token_index + 1) < apn_array_count(tokens)) {
+                    ret= APN_SUCCESS;
                     index = invalid_token_index + 1;
+                    __apn_log(ctx, APN_LOG_LEVEL_INFO, "Reconnecting...");
+                    apn_close(ctx);
+                    sleep(1);
+                    ret = apn_connect(ctx);
+                    if(APN_ERROR == ret) {
+                        break;
+                    }
                 } else {
                     break;
                 }
@@ -964,7 +966,7 @@ static apn_return __apn_send_binary_message(const apn_ctx_ref ctx,
     }
 
     if (!apple_returned_error) {
-        timeout.tv_sec = 5;
+        timeout.tv_sec = 1;
         do {
             FD_ZERO(&read_set);
             FD_SET(ctx->sock, &read_set);
