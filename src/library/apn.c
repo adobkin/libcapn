@@ -349,8 +349,8 @@ apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_a
                 __apn_log(ctx, APN_LOG_LEVEL_INFO, "Reconnecting...");
                 apn_close(ctx);
                 sleep(1);
-                if(APN_ERROR == apn_connect(ctx)) {
-                    ret = APN_ERROR;
+                ret = apn_connect(ctx);
+                if(APN_ERROR == ret) {
                     break;
                 }
                 if((invalid_token_index + 1) < apn_array_count(tokens)) {
