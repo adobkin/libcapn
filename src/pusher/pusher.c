@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
     } else {
         if (APN_ERROR == apn_send2(apn_ctx, payload, tokens)) {
             ret = 1;
-            fprintf(stderr, "Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
+            fprintf(stderr, "Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);
         } else {
             fprintf(stderr, "Notification was sucessfully sent!\n");
         }
