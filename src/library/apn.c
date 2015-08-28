@@ -85,7 +85,7 @@ static apn_return __apn_send_binary_message(const apn_ctx_ref ctx,
                                             uint32_t token_index,
                                             uint8_t *apple_error_code,
                                             uint32_t *invalid_token_index);
-static int __apn_password_cd(char *buf, int size, int rwflag, void *password);
+static int __apn_password_callback(char *buf, int size, int rwflag, void *password);
 static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server server);
 static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t length);
 static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t length);
@@ -142,8 +142,8 @@ apn_ctx_ref apn_init() {
     ctx->feedback = 0;
     ctx->private_key_pass = NULL;
     ctx->mode = APN_MODE_PRODUCTION;
-    ctx->log_cb = NULL;
-    ctx->invalid_token_cb = NULL;
+    ctx->log_callback = NULL;
+    ctx->invalid_token_callback = NULL;
     ctx->log_level = APN_LOG_LEVEL_ERROR;
     return ctx;
 }
@@ -263,14 +263,14 @@ void apn_set_log_level(apn_ctx_ref ctx, uint16_t level) {
     ctx->log_level = level;
 }
 
-void apn_set_log_cb(apn_ctx_ref ctx, log_cb funct) {
+void apn_set_log_cb(apn_ctx_ref ctx, log_callback funct) {
     assert(ctx);
-    ctx->log_cb = funct;
+    ctx->log_callback = funct;
 }
 
-void apn_set_invalid_token_cb(apn_ctx_ref ctx, invalid_token_cb funct) {
+void apn_set_invalid_token_cb(apn_ctx_ref ctx, invalid_token_callback funct) {
     assert(ctx);
-    ctx->invalid_token_cb = funct;
+    ctx->invalid_token_callback = funct;
 }
 
 apn_connection_mode apn_mode(const apn_ctx_ref ctx) {
@@ -343,8 +343,8 @@ apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_a
             if (apple_error_code == APN_APNS_ERR_INVALID_TOKEN) {
                 const char * const invalid_token = (const char * const) apn_array_item_at_index(tokens, invalid_token_index);
                 __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Invalid token: %s (index: %u)", invalid_token, invalid_token_index);
-                if(ctx->invalid_token_cb) {
-                    ctx->invalid_token_cb(invalid_token, invalid_token_index);
+                if(ctx->invalid_token_callback) {
+                    ctx->invalid_token_callback(invalid_token, invalid_token_index);
                 }
                 ret= APN_ERROR;
                 if((invalid_token_index + 1) < apn_array_count(tokens)) {
@@ -578,7 +578,7 @@ char *apn_error_string(int errnum) {
     return apn_strndup(error, sizeof(error));
 }
 
-static int __apn_password_cd(char *buf, int size, int rwflag, void *password) {
+static int __apn_password_callback(char *buf, int size, int rwflag, void *password) {
     (void) rwflag;
     if (!password || size <= 0) {
         return 0;
@@ -840,7 +840,7 @@ static void __apn_strerror_r(int errnum, char *buf, size_t buff_size) {
 }
 
 static void __apn_log(apn_ctx_ref ctx, apn_log_levels level, const char *const message, ...) {
-    if (ctx && ctx->log_cb && (ctx->log_level & level)) {
+    if (ctx && ctx->log_callback && (ctx->log_level & level)) {
         va_list args;
         va_start(args, message);
         int len = 0;
@@ -865,7 +865,7 @@ static void __apn_log(apn_ctx_ref ctx, apn_log_levels level, const char *const m
         vsnprintf(buffer, buff_len, message, args);
 #endif
 
-        ctx->log_cb(level, buffer, buff_len);
+        ctx->log_callback(level, buffer, buff_len);
         va_end(args);
     }
 }
@@ -1100,7 +1100,7 @@ static apn_return __apn_tls_connect(const apn_ctx_ref ctx) {
             return APN_ERROR;
         }
 
-        SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_cd);
+        SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_callback);
 
         if (ctx->private_key_pass) {
             password = apn_strndup(ctx->private_key_pass, strlen(ctx->private_key_pass));

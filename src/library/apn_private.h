@@ -43,8 +43,8 @@ struct __apn_ctx {
     char *pkcs12_file;
     char *pkcs12_pass;
     SSL *ssl;
-    log_cb log_cb;
-    invalid_token_cb invalid_token_cb;
+    log_callback log_callback;
+    invalid_token_callback invalid_token_callback;
 };
 
 
