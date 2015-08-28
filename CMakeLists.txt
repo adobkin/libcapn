@@ -236,7 +236,7 @@ ELSE(WIN32)
         ADD_EXECUTABLE("libcapn-config" "${PROJECT_BINARY_DIR}/src/config/apn_config.c")
         INSTALL(TARGETS "libcapn-config" DESTINATION ${CAPN_INSTALL_PATH_BIN})
 
-        ADD_EXECUTABLE("apn-pusher" "${PROJECT_BINARY_DIR}/src/pusher/pusher.c")
+        ADD_EXECUTABLE("apn-pusher" "${CMAKE_CURRENT_SOURCE_DIR}/src/pusher/pusher.c")
         TARGET_LINK_LIBRARIES("apn-pusher" "capn")
         INSTALL(TARGETS "apn-pusher" DESTINATION ${CAPN_INSTALL_PATH_BIN})
 
