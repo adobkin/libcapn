@@ -76,8 +76,8 @@ typedef enum __apn_log_levels {
 typedef struct __apn_ctx apn_ctx;
 typedef struct __apn_ctx *apn_ctx_ref;
 
-typedef void (*invalid_token_cb)(const char * const token, uint32_t index);
-typedef void (*log_cb)(apn_log_levels level, const char * const log_message, uint32_t message_len);
+typedef void (*invalid_token_callback)(const char * const token, uint32_t index);
+typedef void (*log_callback)(apn_log_levels level, const char * const log_message, uint32_t message_len);
 
 __apn_export__ apn_return apn_library_init()
         __apn_attribute_warn_unused_result__;
@@ -184,10 +184,10 @@ __apn_export__ void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode)
 __apn_export__ void apn_set_log_level(apn_ctx_ref ctx, uint16_t level)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ void apn_set_log_cb(apn_ctx_ref ctx, log_cb funct)
+__apn_export__ void apn_set_log_callback(apn_ctx_ref ctx, log_callback funct)
         __apn_attribute_nonnull__((1,2));
 
-__apn_export__ void apn_set_invalid_token_cb(apn_ctx_ref ctx, invalid_token_cb funct)
+__apn_export__ void apn_set_invalid_token_callback(apn_ctx_ref ctx, invalid_token_callback funct)
         __apn_attribute_nonnull__((1,2));
 
 /**

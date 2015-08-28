@@ -87,7 +87,7 @@ transported to the device.</p>
 
 #### Logging
 
-For logging specify log level and pointer to callback-function using `apn_set_log_level()` and `apn_set_log_cb()`:
+For logging specify log level and pointer to callback-function using `apn_set_log_level()` and `apn_set_log_callback()`:
 
 ```c
 void loging(apn_log_level level, const char * const message, uint32_t len) {
@@ -95,7 +95,7 @@ void loging(apn_log_level level, const char * const message, uint32_t len) {
 }
 
 apn_set_log_level(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
-apn_set_log_cb(ctx, logfunc);
+apn_set_log_callback(ctx, logfunc);
 
 ```
 
@@ -194,7 +194,7 @@ following it, again.</p>
 You can use `apn_send2()` instead of `apn_send()`, this function automatically establishes new connection to APNs when connection is dropped.
 Function establishes new connection to APNs only when invalid token was sent, otherwise new connection will not be established.
 
-When you use this function you can take invalid token, just specify a pointer to callback-function using `apn_set_invalid_token_cb`:
+When you use this function you can take invalid token, just specify a pointer to callback-function using `apn_set_invalid_token_callback`:
 
 ```c
 void invalid_token(const char * const token, uint32_t index) {
@@ -204,13 +204,13 @@ void invalid_token(const char * const token, uint32_t index) {
 ...
 
 apn_ctx_ref ctx = ...
-apn_set_invalid_token_cb(ctx, invalid_token);
+apn_set_invalid_token_callback(ctx, invalid_token);
 ```
 
 Callback function has prototype:
 
 ```c
-void (*invalid_token_cb)(const char * const token, uint32_t index)
+void (*invalid_token_callback)(const char * const token, uint32_t index)
 ```
 
 ## Example
@@ -251,8 +251,8 @@ int main() {
     apn_set_pkcs12_file(ctx, "push_test.p12", "12345678");
     apn_set_mode(ctx,  APN_MODE_PRODUCTION); //APN_MODE_PRODUCTION or APN_MODE_SANDBOX
     apn_set_log_level(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
-    apn_set_log_cb(ctx, __apn_logging);
-    apn_set_invalid_token_cb(ctx, __apn_invalid_token);
+    apn_set_log_callback(ctx, __apn_logging);
+    apn_set_invalid_token_callback(ctx, __apn_invalid_token);
 
     if(NULL == (payload = apn_payload_init())) {
         printf("Unable to init payload: %d\n", errno);
