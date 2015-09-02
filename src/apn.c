@@ -838,7 +838,7 @@ static void __apn_parse_apns_error(char *apns_error, uint32_t *id, apn_error_ref
 
         if (id) {
             memcpy(&notification_id, apns_error, sizeof (uint32_t));
-            *id = notification_id;
+            *id = ntohl(notification_id);
         }
     }
 }
