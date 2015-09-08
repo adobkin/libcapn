@@ -30,9 +30,10 @@
 extern "C" {
 #endif
 
-void *apn_realloc(void *ptr, size_t size)
+void *apn_mem_realloc(void *ptr, size_t size)
         __apn_attribute_warn_unused_result__;
 
+void apn_mem_free(void *data);
 
 #ifdef __cplusplus
 }

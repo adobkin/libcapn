@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-struct __apn_array {
+struct __apn_array_t {
     uint32_t count;
     uint32_t allocated_size;
     apn_array_dtor dtor;

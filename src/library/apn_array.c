@@ -29,10 +29,10 @@
 #include "apn_memory.h"
 #include "apn_memory.h"
 
-apn_array *apn_array_init(uint32_t minsize, apn_array_dtor dtor, apn_array_ctor ctor) {
-    apn_array *array = NULL;
+apn_array_t *apn_array_init(uint32_t minsize, apn_array_dtor dtor, apn_array_ctor ctor) {
+    apn_array_t *array = NULL;
     assert(minsize < (UINT32_MAX - 1));
-    array = malloc(sizeof(apn_array));
+    array = malloc(sizeof(apn_array_t));
     if (!array) {
         errno = ENOMEM;
         return NULL;
@@ -50,17 +50,15 @@ apn_array *apn_array_init(uint32_t minsize, apn_array_dtor dtor, apn_array_ctor 
     return array;
 }
 
-void apn_array_free(apn_array *array) {
-    apn_array_dtor dtor = NULL;
+void apn_array_free(apn_array_t *array) {
     uint32_t i = 0;
     if (!array) {
         return;
     }
     if (array->items) {
-        dtor = array->dtor;
         for (; i < array->count; i++) {
-            if (dtor) {
-                dtor(i, array->items[i]);
+            if (array->dtor) {
+                array->dtor(array->items[i]);
             }
         }
         free(array->items);
@@ -68,13 +66,13 @@ void apn_array_free(apn_array *array) {
     free(array);
 }
 
-apn_return apn_array_insert(apn_array *array, void *item) {
+apn_return apn_array_insert(apn_array_t *array, void *item) {
     void **new_items = NULL;
     assert(array);
     assert((array->count + 1) < UINT32_MAX);
 
     if (array->count == array->allocated_size) {
-        new_items = apn_realloc(array->items, sizeof(void *) * (array->allocated_size * 2));
+        new_items = apn_mem_realloc(array->items, sizeof(void *) * (array->allocated_size * 2));
         if (!new_items) {
             errno = ENOMEM;
             return APN_ERROR;
@@ -84,7 +82,7 @@ apn_return apn_array_insert(apn_array *array, void *item) {
     }
 
     if (array->ctor) {
-        array->items[array->count] = array->ctor(array->count, item);
+        array->items[array->count] = array->ctor(item);
     } else {
         array->items[array->count] = item;
     }
@@ -93,19 +91,19 @@ apn_return apn_array_insert(apn_array *array, void *item) {
     return APN_SUCCESS;
 }
 
-uint32_t apn_array_count(const apn_array *const array) {
+uint32_t apn_array_count(const apn_array_t *const array) {
     assert(array);
     return array->count;
 }
 
-apn_return apn_array_insert_at_index(apn_array *const array, uint32_t index, void *item) {
+apn_return apn_array_insert_at_index(apn_array_t *const array, uint32_t index, void *item) {
     void **new_items = NULL;
     void *data = NULL;
     assert(array);
     assert(index < array->count);
 
     if (array->count == array->allocated_size) {
-        new_items = (void **) apn_realloc(array->items, sizeof(void *) * (array->allocated_size * 2));
+        new_items = (void **) apn_mem_realloc(array->items, sizeof(void *) * (array->allocated_size * 2));
         if (!new_items) {
             errno = ENOMEM;
             return APN_ERROR;
@@ -115,38 +113,39 @@ apn_return apn_array_insert_at_index(apn_array *const array, uint32_t index, voi
     }
 
     data = array->items[index];
-    if (!data) {
-        array->count++;
-    }
-
     if (array->dtor && data) {
-        array->dtor(index, data);
+        array->dtor(data);
     }
 
-    array->items[index] = item;
+    if (array->ctor) {
+        array->items[index] = array->ctor(item);
+    } else {
+        array->items[index] = item;
+    }
+    array->count++;
     return APN_SUCCESS;
 }
 
-void *apn_array_item_at_index(const apn_array *const array, uint32_t index) {
+void *apn_array_item_at_index(const apn_array_t *const array, uint32_t index) {
     assert(array);
     assert(index < array->count);
     return array->items[index];
 }
 
-void apn_array_remove(apn_array *const array, uint32_t index) {
+void apn_array_remove(apn_array_t *const array, uint32_t index) {
     void *data = NULL;
     assert(array);
     assert(index < array->count);
 
     data = array->items[index];
     if (data && array->dtor) {
-        array->dtor(index, data);
+        array->dtor(data);
     }
     array->items[index] = NULL;
 }
 
-apn_array *apn_array_copy(const apn_array *const array) {
-    apn_array *dst = NULL;
+apn_array_t *apn_array_copy(const apn_array_t *const array) {
+    apn_array_t *dst = NULL;
     uint32_t i = 0;
 
     assert(array);

@@ -29,15 +29,16 @@
 #endif
 
 #include "apn.h"
+#include "apn_memory.h"
 #include "apn_strings.h"
 #include "apn_binary_message_private.h"
 #include "apn_paload_private.h"
 #include "apn_tokens.h"
 
-static apn_return __apn_binary_message_set_token(apn_binary_message_ref binary_message, const uint8_t * const token_binary, const char * const token_hex);
+static apn_return __apn_binary_message_set_token(apn_binary_message_t * const binary_message, const uint8_t * const token_binary, const char * const token_hex);
 
-apn_binary_message_ref apn_binary_message_init(uint32_t size) {
-    apn_binary_message_ref binary_message = malloc(sizeof(apn_binary_message));
+apn_binary_message_t *apn_binary_message_init(uint32_t size) {
+    apn_binary_message_t *binary_message = malloc(sizeof(apn_binary_message_t));
     if (!binary_message) {
         errno = ENOMEM;
         return NULL;
@@ -55,26 +56,22 @@ apn_binary_message_ref apn_binary_message_init(uint32_t size) {
     return binary_message;
 }
 
-void apn_binary_message_free(apn_binary_message_ref binary_message) {
+void apn_binary_message_free(apn_binary_message_t *binary_message) {
     if (binary_message) {
-        if (binary_message->message) {
-            free(binary_message->message);
-        }
-        if(binary_message->token_hex) {
-            free(binary_message->token_hex);
-        }
+        apn_mem_free(binary_message->message);
+        apn_mem_free(binary_message->token_hex);
         free(binary_message);
     }
 }
 
-void apn_binary_message_set_id(apn_binary_message_ref binary_message, uint32_t id) {
+void apn_binary_message_set_id(const apn_binary_message_t * const binary_message, uint32_t id) {
     uint32_t id_n = htonl(id);
     if (binary_message && binary_message->id_position) {
         memcpy(binary_message->id_position, &id_n, sizeof(uint32_t));
     }
 }
 
-void apn_binary_message_set_token(apn_binary_message_ref binary_message, const uint8_t * const token_binary) {
+void apn_binary_message_set_token(apn_binary_message_t  * const binary_message, const uint8_t * const token_binary) {
     char *token_hex = NULL;
     assert(token_binary);
     token_hex = apn_token_binary_to_hex(token_binary);
@@ -82,7 +79,7 @@ void apn_binary_message_set_token(apn_binary_message_ref binary_message, const u
     free(token_hex);
 }
 
-apn_return apn_binary_message_set_token_hex(apn_binary_message_ref binary_message, const char * const token_hex) {
+apn_return apn_binary_message_set_token_hex(apn_binary_message_t * const binary_message, const char * const token_hex) {
     uint8_t *token_binary = NULL;
     apn_return ret;
     assert(token_hex);
@@ -92,12 +89,12 @@ apn_return apn_binary_message_set_token_hex(apn_binary_message_ref binary_messag
     return ret;
 }
 
-const char * apn_binary_message_token_hex(apn_binary_message_ref binary_message) {
+const char * apn_binary_message_token_hex(apn_binary_message_t * const binary_message) {
     assert(binary_message);
     return binary_message->token_hex;
 }
 
-apn_binary_message_ref apn_create_binary_message(const apn_payload_ref payload) {
+apn_binary_message_t *apn_create_binary_message(const apn_payload_t *payload) {
     char *json = NULL;
     size_t json_size = 0;
     uint8_t *frame = NULL;
@@ -109,7 +106,7 @@ apn_binary_message_ref apn_create_binary_message(const apn_payload_ref payload) 
     uint16_t item_data_size_n = 0; // Item data size (network ordered)
     uint8_t *message_ref = NULL;
     uint32_t frame_size_n; // Frame size (network ordered)
-    apn_binary_message_ref binary_message;
+    apn_binary_message_t *binary_message;
 
     json = apn_create_json_document_from_payload(payload);
     if (!json) {
@@ -197,7 +194,7 @@ apn_binary_message_ref apn_create_binary_message(const apn_payload_ref payload) 
     return binary_message;
 }
 
-static apn_return __apn_binary_message_set_token(apn_binary_message_ref binary_message, const uint8_t * const token_binary, const char * const token_hex) {
+static apn_return __apn_binary_message_set_token(apn_binary_message_t * const binary_message, const uint8_t * const token_binary, const char * const token_hex) {
     if(!apn_hex_token_is_valid(token_hex)) {
         errno = APN_ERR_TOKEN_INVALID;
         return APN_ERROR;
