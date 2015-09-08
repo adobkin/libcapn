@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-struct __apn_binary_message {
+struct __apn_binary_message_t {
     uint32_t payload_size;
     uint32_t size;
     uint8_t *token_position;
@@ -39,10 +39,10 @@ struct __apn_binary_message {
     char *token_hex;
 };
 
-apn_binary_message_ref apn_binary_message_init(uint32_t size)
+apn_binary_message_t *apn_binary_message_init(uint32_t size)
         __apn_attribute_warn_unused_result__;
 
-void apn_binary_message_set_id(apn_binary_message_ref binary_message, uint32_t id)
+void apn_binary_message_set_id(const apn_binary_message_t * const binary_message, uint32_t id)
         __apn_attribute_nonnull__((1));
 
 #ifdef __cplusplus

@@ -63,7 +63,7 @@ Alternative way to use .p12 file instead of certificate and private key. Use `ap
 If .p12 file is specified, certificate and private key will be ignored.
 
 ```c
-apn_ctx_ref ctx = apn_init();
+apn_ctx_t ctx = apn_init();
 if(!ctx) {
 	// error
 }
@@ -122,7 +122,7 @@ custom properties using `apn_payload_add_custom_property_*()` functions:
 
 
 ```c
-apn_payload_ref payload = apn_payload_init();
+apn_payload_t payload = apn_payload_init();
 if(!payload) {
 	printf("Unable to init payload: %s (%d)\n", apn_error_string(errno), errno);
 	// error
@@ -159,7 +159,7 @@ conserves power on the device receiving it.
 Next, create array of tokens and add the device tokens as either a hexadecimal string to array:
 
 ```c
-apn_array_ref tokens = apn_array_init(2, NULL, NULL);
+apn_array_t tokens = apn_array_init(2, NULL, NULL);
 if(tokens) {
     apn_array_insert(tokens, "XXXXXXXX");
     apn_array_insert(tokens, "YYYYYYYY");
@@ -203,7 +203,7 @@ void invalid_token(const char * const token, uint32_t index) {
 
 ...
 
-apn_ctx_ref ctx = ...
+apn_ctx_t ctx = ...
 apn_set_invalid_token_callback(ctx, invalid_token);
 ```
 
@@ -233,8 +233,8 @@ void __apn_invalid_token(const char * const token, uint32_t index) {
 }
 
 int main() {
-    apn_payload_ref payload = NULL;
-    apn_ctx_ref ctx = NULL;
+    apn_payload_t payload = NULL;
+    apn_ctx_t ctx = NULL;
     time_t time_now = 0;
     char *invalid_token = NULL;
 
@@ -267,7 +267,7 @@ int main() {
     apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH);  // Notification priority
     apn_payload_add_custom_property_integer(payload, "custom_property_integer", 100); // Custom property
     
-    apn_array_ref tokens = apn_array_init(2, NULL, NULL);
+    apn_array_t tokens = apn_array_init(2, NULL, NULL);
     if(!tokens) {
         apn_free(&ctx);
         apn_payload_free(&payload);

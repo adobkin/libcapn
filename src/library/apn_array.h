@@ -29,37 +29,35 @@
 extern "C" {
 #endif
 
-typedef void *(*apn_array_ctor)(uint32_t index, const void * const data);
-typedef void (*apn_array_dtor)(uint32_t index, void *data);
+typedef void *(*apn_array_ctor)(const void * const data);
+typedef void (*apn_array_dtor)(void *data);
 
-typedef struct __apn_array apn_array;
-typedef struct __apn_array * apn_array_ref;
+typedef struct __apn_array_t apn_array_t;
 
-__apn_export__ apn_array *apn_array_init(uint32_t min_size, apn_array_dtor dtor, apn_array_ctor ctor)
+__apn_export__ apn_array_t *apn_array_init(uint32_t min_size, apn_array_dtor dtor, apn_array_ctor ctor)
         __apn_attribute_warn_unused_result__;
 
-__apn_export__ void apn_array_free(apn_array *array)
+__apn_export__ void apn_array_free(apn_array_t *array)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ apn_array *apn_array_copy(const apn_array * const array)
+__apn_export__ apn_array_t *apn_array_copy(const apn_array_t * const array)
         __apn_attribute_warn_unused_result__
         __apn_attribute_nonnull__((1));
 
-__apn_export__ apn_return apn_array_insert(apn_array *array, void *item)
+__apn_export__ apn_return apn_array_insert(apn_array_t *array, void *item)
         __apn_attribute_nonnull__((1,2));
 
-__apn_export__ uint32_t apn_array_count(const apn_array * const array)
+__apn_export__ uint32_t apn_array_count(const apn_array_t * const array)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ apn_return apn_array_insert_at_index(apn_array * const array, uint32_t index, void *item)
+__apn_export__ apn_return apn_array_insert_at_index(apn_array_t * const array, uint32_t index, void *item)
         __apn_attribute_nonnull__((1,3));
 
-__apn_export__ void * apn_array_item_at_index(const apn_array * const array, uint32_t index)
+__apn_export__ void * apn_array_item_at_index(const apn_array_t * const array, uint32_t index)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ void apn_array_remove(apn_array * const array, uint32_t index)
+__apn_export__ void apn_array_remove(apn_array_t * const array, uint32_t index)
         __apn_attribute_nonnull__((1));
-
 
 #ifdef	__cplusplus
 }

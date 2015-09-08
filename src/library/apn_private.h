@@ -32,7 +32,7 @@
 extern "C" {
 #endif
 
-struct __apn_ctx {
+struct __apn_ctx_t {
     uint8_t feedback;
     apn_connection_mode mode;
     SOCKET sock;

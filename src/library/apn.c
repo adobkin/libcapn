@@ -32,6 +32,7 @@
 #include "apn_private.h"
 #include "apn_binary_message_private.h"
 #include "apn_array_private.h"
+#include "apn_memory.h"
 
 #ifdef HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
@@ -78,22 +79,22 @@ static struct __apn_apple_server __apn_apple_servers[4] = {
         {"feedback.push.apple.com",         2196}
 };
 
-static void __apn_log(apn_ctx_ref ctx, apn_log_levels level, const char *const message, ...);
-static apn_return __apn_send_binary_message(const apn_ctx_ref ctx,
-                                            const apn_binary_message_ref binary_message,
-                                            apn_array_ref tokens,
+static void __apn_log(const apn_ctx_t * const ctx, apn_log_levels level, const char *const message, ...);
+static apn_return __apn_send_binary_message(const apn_ctx_t * const ctx,
+                                            apn_binary_message_t * const binary_message,
+                                            apn_array_t *tokens,
                                             uint32_t token_index,
                                             uint8_t *apple_error_code,
                                             uint32_t *invalid_token_index);
 static int __apn_password_callback(char *buf, int size, int rwflag, void *password);
-static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server server);
-static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t length);
-static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t length);
+static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server server);
+static int __ssl_write(const apn_ctx_t * const ctx, const uint8_t *message, size_t length);
+static int __ssl_read(const apn_ctx_t * const ctx, char *buff, size_t length);
 static void __apn_parse_apns_error(char *apns_error, uint8_t *apns_error_code, uint32_t *id);
 static void __apn_strerror_r(int errnum, char *buf, size_t buff_size);
-static apn_binary_message_ref __apn_payload_to_binary_message(const apn_ctx_ref ctx, const apn_payload_ref payload);
+static apn_binary_message_t *__apn_payload_to_binary_message(const apn_ctx_t * const ctx, const apn_payload_t *payload);
 static void __apn_convert_apple_error(uint8_t apple_error_code);
-static apn_return __apn_tls_connect(const apn_ctx_ref ctx);
+static apn_return __apn_tls_connect(apn_ctx_t * const ctx);
 static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret);
 
 apn_return apn_library_init() {
@@ -123,12 +124,12 @@ void apn_library_free() {
 #endif
 }
 
-apn_ctx_ref apn_init() {
-    apn_ctx_ref ctx = NULL;
+apn_ctx_t *apn_init() {
+    apn_ctx_t *ctx = NULL;
     if (APN_ERROR == apn_library_init()) {
         return NULL;
     }
-    ctx = malloc(sizeof(apn_ctx));
+    ctx = malloc(sizeof(apn_ctx_t));
     if (!ctx) {
         errno = ENOMEM;
         return NULL;
@@ -148,31 +149,19 @@ apn_ctx_ref apn_init() {
     return ctx;
 }
 
-void apn_free(apn_ctx_ref *ctx) {
-    if (ctx && *ctx) {
-        apn_close(*ctx);
-
-        if ((*ctx)->certificate_file) {
-            free((*ctx)->certificate_file);
-        }
-        if ((*ctx)->private_key_file) {
-            free((*ctx)->private_key_file);
-        }
-        if ((*ctx)->private_key_pass) {
-            free((*ctx)->private_key_pass);
-        }
-        if ((*ctx)->pkcs12_file) {
-            free((*ctx)->pkcs12_file);
-        }
-        if ((*ctx)->pkcs12_pass) {
-            free((*ctx)->pkcs12_pass);
-        }
-        free((*ctx));
-        *ctx = NULL;
+void apn_free(apn_ctx_t * ctx) {
+    if (ctx) {
+        apn_close(ctx);
+        apn_mem_free(ctx->certificate_file);
+        apn_mem_free(ctx->private_key_file);
+        apn_mem_free(ctx->private_key_pass);
+        apn_mem_free(ctx->pkcs12_file);
+        apn_mem_free(ctx->pkcs12_pass);
+        free(ctx);
     }
 }
 
-void apn_close(apn_ctx_ref ctx) {
+void apn_close(apn_ctx_t * const ctx) {
     assert(ctx);
     __apn_log(ctx, APN_LOG_LEVEL_INFO,  "Connection closing...");
     if (ctx->ssl) {
@@ -187,7 +176,7 @@ void apn_close(apn_ctx_ref ctx) {
     __apn_log(ctx, APN_LOG_LEVEL_INFO,  "Connection closed");
 }
 
-apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert, const char *const key, const char *const pass) {
+apn_return apn_set_certificate(apn_ctx_t * const ctx, const char *const cert, const char *const key, const char *const pass) {
     assert(ctx);
 
     if (ctx->certificate_file) {
@@ -224,7 +213,7 @@ apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert, const ch
     return APN_SUCCESS;
 }
 
-apn_return apn_set_pkcs12_file(apn_ctx_ref ctx, const char *const pkcs12_file, const char *const pass) {
+apn_return apn_set_pkcs12_file(apn_ctx_t * const ctx, const char *const pkcs12_file, const char *const pass) {
     assert(ctx);
 
     if (ctx->pkcs12_file) {
@@ -249,7 +238,7 @@ apn_return apn_set_pkcs12_file(apn_ctx_ref ctx, const char *const pkcs12_file, c
     return APN_SUCCESS;
 }
 
-void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode) {
+void apn_set_mode(apn_ctx_t * const ctx, apn_connection_mode mode) {
     assert(ctx);
     if (mode == APN_MODE_SANDBOX) {
         ctx->mode = APN_MODE_SANDBOX;
@@ -258,46 +247,46 @@ void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode) {
     }
 }
 
-void apn_set_log_level(apn_ctx_ref ctx, uint16_t level) {
+void apn_set_log_level(apn_ctx_t * const ctx, uint16_t level) {
     assert(ctx);
     ctx->log_level = level;
 }
 
-void apn_set_log_cb(apn_ctx_ref ctx, log_callback funct) {
+void apn_set_log_callback(apn_ctx_t * const ctx, log_callback funct) {
     assert(ctx);
     ctx->log_callback = funct;
 }
 
-void apn_set_invalid_token_cb(apn_ctx_ref ctx, invalid_token_callback funct) {
+void apn_set_invalid_token_callback(apn_ctx_t * const ctx, invalid_token_callback funct) {
     assert(ctx);
     ctx->invalid_token_callback = funct;
 }
 
-apn_connection_mode apn_mode(const apn_ctx_ref ctx) {
+apn_connection_mode apn_mode(const apn_ctx_t * const ctx) {
     assert(ctx);
     return ctx->mode;
 }
 
-uint16_t apn_log_level(const apn_ctx_ref ctx) {
+uint16_t apn_log_level(const apn_ctx_t * const ctx) {
     return ctx->log_level;
 }
 
-const char *apn_certificate(const apn_ctx_ref ctx) {
+const char *apn_certificate(const apn_ctx_t * const ctx) {
     assert(ctx);
     return ctx->certificate_file;
 }
 
-const char *apn_private_key(const apn_ctx_ref ctx) {
+const char *apn_private_key(const apn_ctx_t * const ctx) {
     assert(ctx);
     return ctx->private_key_file;
 }
 
-const char *apn_private_key_pass(const apn_ctx_ref ctx) {
+const char *apn_private_key_pass(const apn_ctx_t * const ctx) {
     assert(ctx);
     return ctx->private_key_pass;
 }
 
-apn_return apn_connect(const apn_ctx_ref ctx) {
+apn_return apn_connect(apn_ctx_t * const ctx) {
     struct __apn_apple_server server;
     if (ctx->mode == APN_MODE_SANDBOX) {
         server = __apn_apple_servers[0];
@@ -315,11 +304,11 @@ apn_return apn_connect(const apn_ctx_ref ctx) {
     }
 
 
-apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_array_ref tokens) {
+apn_return apn_send2(apn_ctx_t *ctx, const apn_payload_t *payload, apn_array_t *tokens) {
     apn_return ret;
     uint8_t apple_error_code = 0;
     uint32_t invalid_token_index = 0;
-    apn_binary_message *binary_message = NULL;
+    apn_binary_message_t *binary_message = NULL;
     uint32_t index = 0;
 
     assert(ctx);
@@ -372,8 +361,8 @@ apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_a
     return ret;
 }
 
-apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_array_ref tokens, char **invalid_token) {
-    apn_binary_message *binary_message = NULL;
+apn_return apn_send(const apn_ctx_t * const ctx, const apn_payload_t *payload, apn_array_t *tokens, char **invalid_token) {
+    apn_binary_message_t *binary_message = NULL;
     apn_return ret;
     uint8_t apple_error_code = 0;
     uint32_t invalid_token_index = 0;
@@ -408,7 +397,7 @@ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_ar
     return ret;
 }
 
-apn_return apn_feedback_connect(const apn_ctx_ref ctx) {
+apn_return apn_feedback_connect(apn_ctx_t * const ctx) {
     struct __apn_apple_server server;
     if (ctx->mode == APN_MODE_SANDBOX) {
         server = __apn_apple_servers[2];
@@ -419,7 +408,7 @@ apn_return apn_feedback_connect(const apn_ctx_ref ctx) {
     return __apn_connect(ctx, server);
 }
 
-apn_return apn_feedback(const apn_ctx_ref ctx, apn_array_ref *tokens) {
+apn_return apn_feedback(const apn_ctx_t * const ctx, apn_array_t **tokens) {
     char buffer[38]; /* Buffer to read data */
     char *buffer_ref = buffer; /* Pointer to buffer */
     fd_set read_set;
@@ -593,7 +582,7 @@ static int __apn_password_callback(char *buf, int size, int rwflag, void *passwo
     return (int) strlen(buf);
 }
 
-static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server server) {
+static apn_return __apn_connect(apn_ctx_t * const ctx, struct __apn_apple_server server) {
     struct addrinfo *addrinfo = NULL;
     struct addrinfo hints;
     SOCKET sock;
@@ -705,7 +694,7 @@ static apn_return __apn_connect(const apn_ctx_ref ctx, struct __apn_apple_server
     return APN_SUCCESS;
 }
 
-static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t length) {
+static int __ssl_write(const apn_ctx_t * const ctx, const uint8_t *message, size_t length) {
     int bytes_written = 0;
     int bytes_written_total = 0;
 
@@ -746,7 +735,7 @@ static int __ssl_write(const apn_ctx_ref ctx, const uint8_t *message, size_t len
     return bytes_written_total;
 }
 
-static int __ssl_read(const apn_ctx_ref ctx, char *buff, size_t length) {
+static int __ssl_read(const apn_ctx_t * const ctx, char *buff, size_t length) {
     int read;
     for (;;) {
         read = SSL_read(ctx->ssl, buff, (int) length);
@@ -839,7 +828,7 @@ static void __apn_strerror_r(int errnum, char *buf, size_t buff_size) {
 #endif
 }
 
-static void __apn_log(apn_ctx_ref ctx, apn_log_levels level, const char *const message, ...) {
+static void __apn_log(const apn_ctx_t * const ctx, apn_log_levels level, const char *const message, ...) {
     if (ctx && ctx->log_callback && (ctx->log_level & level)) {
         va_list args;
         va_start(args, message);
@@ -901,9 +890,9 @@ static void __apn_log(apn_ctx_ref ctx, apn_log_levels level, const char *const m
         return APN_ERROR;\
     }
 
-static apn_return __apn_send_binary_message(const apn_ctx_ref ctx,
-                                            const apn_binary_message_ref binary_message,
-                                            apn_array_ref tokens,
+static apn_return __apn_send_binary_message(const apn_ctx_t * const ctx,
+                                            apn_binary_message_t * const binary_message,
+                                            apn_array_t *tokens,
                                             uint32_t token_index,
                                             uint8_t *apple_error_code,
                                             uint32_t *invalid_token_index) {
@@ -986,8 +975,8 @@ static apn_return __apn_send_binary_message(const apn_ctx_ref ctx,
     return APN_SUCCESS;
 }
 
-static apn_binary_message_ref __apn_payload_to_binary_message(const apn_ctx_ref ctx, const apn_payload_ref payload) {
-    apn_binary_message *binary_message = NULL;
+static apn_binary_message_t *__apn_payload_to_binary_message(const apn_ctx_t * const ctx, const apn_payload_t * const payload) {
+    apn_binary_message_t *binary_message = NULL;
     char *error = NULL;
     __apn_log(ctx, APN_LOG_LEVEL_INFO, "Creating binary message from payload...");
     binary_message = apn_create_binary_message(payload);
@@ -1023,7 +1012,7 @@ static void __apn_convert_apple_error(uint8_t apple_error_code) {
     }
 }
 
-static apn_return __apn_tls_connect(const apn_ctx_ref ctx) {
+static apn_return __apn_tls_connect(apn_ctx_t * const ctx) {
     char *error = NULL;
     FILE *pkcs12_file = NULL;
     PKCS12 *pkcs12_cert = NULL;
@@ -1170,7 +1159,7 @@ static apn_return __apn_tls_connect(const apn_ctx_ref ctx) {
 }
 
 static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret) {
-    apn_ctx_ref ctx = SSL_CTX_get_ex_data(ssl->ctx, 0);
+    apn_ctx_t *ctx = SSL_CTX_get_ex_data(ssl->ctx, 0);
     if(!ctx) {
         return;
     }

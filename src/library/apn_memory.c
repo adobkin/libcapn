@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include "apn_memory.h"
 
-void *apn_realloc(void *ptr, size_t size) {
+void *apn_mem_realloc(void *ptr, size_t size) {
     void *new_ptr = NULL;
     if (ptr != NULL) {
         if (size == 0) {
@@ -38,4 +38,10 @@ void *apn_realloc(void *ptr, size_t size) {
         }
     }
     return malloc(size);
+}
+
+void apn_mem_free(void *data) {
+    if(data) {
+        free(data);
+    }
 }

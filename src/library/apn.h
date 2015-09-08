@@ -73,8 +73,7 @@ typedef enum __apn_log_levels {
     APN_LOG_LEVEL_DEBUG = 1 << 2
 } apn_log_levels;
 
-typedef struct __apn_ctx apn_ctx;
-typedef struct __apn_ctx *apn_ctx_ref;
+typedef struct __apn_ctx_t apn_ctx_t;
 
 typedef void (*invalid_token_callback)(const char * const token, uint32_t index);
 typedef void (*log_callback)(apn_log_levels level, const char * const log_message, uint32_t message_len);
@@ -124,37 +123,37 @@ __apn_export__ const char *apn_version_string();
 *
 * @sa apn_free()
 * @return
-*      - Pointer to new `::apn_ctx` structure on success
+*      - Pointer to new `ctx` structure on success
 *      - NULL on failure with error information stored to `errno`
 */
-__apn_export__ apn_ctx_ref apn_init()
+__apn_export__ apn_ctx_t *apn_init()
         __apn_attribute_warn_unused_result__;
 
 /**
  * Frees memory allocated for a connection context.
  *
- * @param[in, out] ctx - Pointer to pointer to `::apn_ctx` structure
+ * @param[in, out] ctx - Pointer to pointer to `ctx` structure
  *
  */
-__apn_export__ void apn_free(apn_ctx_ref *ctx);
+__apn_export__ void apn_free(apn_ctx_t *ctx);
 
 /**
  * Opens Apple Push Notification Service connection
  *
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
  * @return
  *      - ::APN_SUCCESS on success
  *      - ::APN_ERROR on failure with error information stored in `errno`
  */
-__apn_export__ apn_return apn_connect(const apn_ctx_ref ctx)
+__apn_export__ apn_return apn_connect(apn_ctx_t * const ctx)
         __apn_attribute_warn_unused_result__;
 
 /**
  * Closes Apple Push Notification/Feedback Service connection.
  *
- * @param[in] ctx - Pointer to an initialized `apn_ctx` structure
+ * @param[in] ctx - Pointer to an initialized `ctx` structure
  */
-__apn_export__ void apn_close(apn_ctx_ref ctx)
+__apn_export__ void apn_close(apn_ctx_t * const ctx)
         __apn_attribute_nonnull__((1));
 
 /**
@@ -174,26 +173,26 @@ __apn_export__ void apn_close(apn_ctx_ref ctx)
  *
  * Default mode is ::APN_MODE_PRODUCTION
  *
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
  * @param[in] mode -  Mode, must be ::APN_MODE_SANDBOX, or ::APN_MODE_PRODUCTION.
  *
  */
-__apn_export__ void apn_set_mode(apn_ctx_ref ctx, apn_connection_mode mode)
+__apn_export__ void apn_set_mode(apn_ctx_t * const ctx, apn_connection_mode mode)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ void apn_set_log_level(apn_ctx_ref ctx, uint16_t level)
+__apn_export__ void apn_set_log_level(apn_ctx_t * const ctx, uint16_t level)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ void apn_set_log_callback(apn_ctx_ref ctx, log_callback funct)
+__apn_export__ void apn_set_log_callback(apn_ctx_t *const ctx, log_callback funct)
         __apn_attribute_nonnull__((1,2));
 
-__apn_export__ void apn_set_invalid_token_callback(apn_ctx_ref ctx, invalid_token_callback funct)
+__apn_export__ void apn_set_invalid_token_callback(apn_ctx_t *const ctx, invalid_token_callback funct)
         __apn_attribute_nonnull__((1,2));
 
 /**
  * Sets path to an SSL certificate which will be used to establish secure connection
  *
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
  * @param[in] cert - Path to a SSL certificate file. Must be a valid NULL-terminated string
  * @param[in] key - Path to a private key file. Must be a valid NULL-terminated string
  * @param[in] pass - Private key passphrase. Can be NULL
@@ -202,89 +201,89 @@ __apn_export__ void apn_set_invalid_token_callback(apn_ctx_ref ctx, invalid_toke
  *      - ::APN_SUCCESS on success
  *      - ::APN_ERROR on failure with error information stored in `errno`
  */
-__apn_export__ apn_return apn_set_certificate(apn_ctx_ref ctx, const char *const cert, const char *const key, const char *const pass)
+__apn_export__ apn_return apn_set_certificate(apn_ctx_t *const ctx, const char *const cert, const char *const key, const char *const pass)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ apn_return apn_set_pkcs12_file(apn_ctx_ref ctx, const char *const pkcs12_file, const char *const pass)
+__apn_export__ apn_return apn_set_pkcs12_file(apn_ctx_t *const ctx, const char *const pkcs12_file, const char *const pass)
         __apn_attribute_nonnull__((1, 2,3));
 
 /**
  * Returns the connection mode.
  *
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
  * @return ::APN_MODE_PRODUCTION or ::APN_MODE_SANDBOX
  */
-__apn_export__ apn_connection_mode apn_mode(const apn_ctx_ref ctx)
+__apn_export__ apn_connection_mode apn_mode(const apn_ctx_t * const ctx)
         __apn_attribute_nonnull__((1));
 
-__apn_export__ uint16_t apn_log_level(const apn_ctx_ref ctx)
+__apn_export__ uint16_t apn_log_level(const apn_ctx_t * const ctx)
         __apn_attribute_nonnull__((1));
 
 /**
  * Returns a path to an SSL certificate used to establish secure connection.
  *
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
  * @return Pointer to NULL-terminated string or NULL if certificate is not set
  *
  * The returned value is read-only and must not be modified or freed
  */
-__apn_export__ const char *apn_certificate(const apn_ctx_ref ctx)
+__apn_export__ const char *apn_certificate(const apn_ctx_t * const ctx)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
 /**
 * Returns a path to private key which used to establish secure connection
 *
-* @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+* @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
 * @return Pointer to NULL-terminated string or NULL if private key is not set
 *
 * The returned value is read-only and must not be modified or freed
 */
-__apn_export__ const char *apn_private_key(const apn_ctx_ref ctx)
+__apn_export__ const char *apn_private_key(const apn_ctx_t * const ctx)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
 /**
  * Returns a private key passphrase
  *
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
  * @return  Pointer to NULL-terminated string or null if passphrase is not set
  *
  *  The returned value is read-only and must not be modified or freed
  */
-__apn_export__ const char *apn_private_key_pass(const apn_ctx_ref ctx)
+__apn_export__ const char *apn_private_key_pass(const apn_ctx_t * const ctx)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
 /**
  * Sends push notification.
  *
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
- * @param[in] payload - Pointer to `::apn_payload_ctx` structure. Cannot be NULL
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
+ * @param[in] payload - Pointer to `payload` structure. Cannot be NULL
  *
  * @return
  *      - ::APN_SUCCESS on success
  *      - ::APN_ERROR on failure with error information stored in `errno`
  */
-__apn_export__ apn_return apn_send(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_array_ref tokens, char **invalid_token)
+__apn_export__ apn_return apn_send(const apn_ctx_t * const ctx, const apn_payload_t *payload, apn_array_t *tokens, char **invalid_token)
         __apn_attribute_nonnull__((1,2,3));
 
-__apn_export__ apn_return apn_send2(const apn_ctx_ref ctx, const apn_payload_ref payload, apn_array_ref tokens)
+__apn_export__ apn_return apn_send2(apn_ctx_t * const ctx, const apn_payload_t *payload, apn_array_t *tokens)
         __apn_attribute_nonnull__((1,2,3));
 
-__apn_export__ apn_return apn_feedback(const apn_ctx_ref ctx, apn_array_ref *tokens)
+__apn_export__ apn_return apn_feedback(const apn_ctx_t * const ctx, apn_array_t **tokens)
         __apn_attribute_nonnull__((1, 2));
 
 /**
  * Opens Apple Push Feedback Service connection
  *
- * @param[in] ctx - Pointer to an initialized `::apn_ctx` structure. Cannot be NULL
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL
  *
  * @return
  *      - ::APN_SUCCESS on success
  *      - ::APN_ERROR on failure with error information stored in `errno`
  */
-__apn_export__ apn_return apn_feedback_connect(const apn_ctx_ref ctx)
+__apn_export__ apn_return apn_feedback_connect(apn_ctx_t * const ctx)
         __apn_attribute_nonnull__((1));
 
 __apn_export__ char *apn_error_string(int err_code);

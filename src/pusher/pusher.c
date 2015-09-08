@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
+#include <ctype.h>
 #include "apn.h"
 #include "apn_payload.h"
 #include "apn_strings.h"
@@ -49,12 +50,12 @@ void __apn_invalid_token(const char *const token, uint32_t index) {
     fprintf(stderr, "Invalid token: %s\n", token);
 }
 
-void __apn_token_free(uint32_t index, void *data) {
+void __apn_token_free(void *data) {
     free(data);
 }
 
-apn_array_ref __apn_split_tokens(char *const tokens) {
-    apn_array_ref array = apn_array_init(20, __apn_token_free, NULL);
+apn_array_t *__apn_split_tokens(char *const tokens) {
+    apn_array_t *array = apn_array_init(20, __apn_token_free, NULL);
     if (array) {
         char *p = strtok(tokens, ":");
         while (p) {
@@ -84,7 +85,7 @@ static void __apn_pusher_usage(void) {
     fprintf(stderr, "    -l Name of an image file in the app bundle\n");
     fprintf(stderr, "    -y Category name of notification\n");
     fprintf(stderr, "    -t Device token(s). Separate multiple tokens with ':' (required)\n");
-    fprintf(stderr, "    -t Make the operation more talkative\n");
+    fprintf(stderr, "    -v Make the operation more talkative\n");
 }
 
 int main(int argc, char **argv) {
@@ -94,8 +95,8 @@ int main(int argc, char **argv) {
     char *pass = NULL;
     char *p12 = NULL;
 
-    apn_ctx_ref apn_ctx = NULL;
-    apn_payload_ref payload = NULL;
+    apn_ctx_t *apn_ctx = NULL;
+    apn_payload_t *payload = NULL;
 
     if (argc < 2) {
         __apn_pusher_usage();
@@ -114,16 +115,16 @@ int main(int argc, char **argv) {
 
     if (NULL == (payload = apn_payload_init())) {
         printf("Unable to init payload: %d\n", errno);
-        apn_free(&apn_ctx);
+        apn_free(apn_ctx);
         apn_library_free();
         return -1;
     }
 
-    apn_array_ref tokens = NULL;
+    apn_array_t *tokens = NULL;
 
     apn_set_log_level(apn_ctx, APN_LOG_LEVEL_ERROR);
-    apn_set_log_cb(apn_ctx, __apn_logging);
-    apn_set_invalid_token_cb(apn_ctx, __apn_invalid_token);
+    apn_set_log_callback(apn_ctx, __apn_logging);
+    apn_set_invalid_token_callback(apn_ctx, __apn_invalid_token);
     apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH);
 
     const char *const opts = "ahc:p:dm:b:s:l:e:y:t:v";
@@ -218,8 +219,8 @@ int main(int argc, char **argv) {
     apn_strfree(&pass);
     apn_strfree(&p12);
 
-    apn_free(&apn_ctx);
-    apn_payload_free(&payload);
+    apn_free(apn_ctx);
+    apn_payload_free(payload);
     apn_library_free();
     apn_array_free(tokens);
     apn_library_free();
