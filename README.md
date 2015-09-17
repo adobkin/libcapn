@@ -4,7 +4,7 @@
 libcapn is a C Library to interact with the [Apple Push Notification Service](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) using simple and intuitive API. 
 With the library you can easily send push notifications to iOS and OS X (>= 10.8) devices. 
 
-> Experimental version 2.0 can be found here: https://github.com/adobkin/libcapn.git
+> Experimental version 2.0 can be found here: https://github.com/adobkin/libcapn/tree/experimental
 
 ##LICENSE##
 
