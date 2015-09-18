@@ -37,8 +37,7 @@ typedef struct __apn_array_t apn_array_t;
 __apn_export__ apn_array_t *apn_array_init(uint32_t min_size, apn_array_dtor dtor, apn_array_ctor ctor)
         __apn_attribute_warn_unused_result__;
 
-__apn_export__ void apn_array_free(apn_array_t *array)
-        __apn_attribute_nonnull__((1));
+__apn_export__ void apn_array_free(apn_array_t *array);
 
 __apn_export__ apn_array_t *apn_array_copy(const apn_array_t * const array)
         __apn_attribute_warn_unused_result__

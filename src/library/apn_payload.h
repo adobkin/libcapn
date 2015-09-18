@@ -71,8 +71,7 @@ __apn_export__ apn_payload_t *apn_payload_init()
  *
  * @param[in, out] payload - Double pointer to `payload` structure
  */
-__apn_export__ void apn_payload_free(apn_payload_t *payload)
-        __apn_attribute_nonnull__((1));
+__apn_export__ void apn_payload_free(apn_payload_t *payload);
 
 /*
 * Sets expiration time of notification.
@@ -117,7 +116,7 @@ __apn_export__ apn_return apn_payload_set_badge(apn_payload_t * const payload, i
  *      - ::APN_ERROR on failure with error information stored to `errno`
  */
 __apn_export__ apn_return apn_payload_set_sound(apn_payload_t * const payload, const char *const sound)
-        __apn_attribute_nonnull__((1, 2));
+        __apn_attribute_nonnull__((1));
 
 /**
  * Sets a content availability flag.
@@ -161,7 +160,7 @@ __apn_export__ void apn_payload_set_priority(apn_payload_t *const payload, apn_n
  *      - ::APN_ERROR on failure with error information stored to `errno`
  */
 __apn_export__ apn_return apn_payload_set_body(apn_payload_t *const payload, const char *const body)
-        __apn_attribute_nonnull__((1, 2));
+        __apn_attribute_nonnull__((1));
 
 /**
  * Sets a key used to get a localized string to use for the right button’s
@@ -180,7 +179,7 @@ __apn_export__ apn_return apn_payload_set_body(apn_payload_t *const payload, con
  *      - ::APN_ERROR on failure with error information stored to `errno`
  */
 __apn_export__ apn_return apn_payload_set_localized_action_key(apn_payload_t *const payload, const char *const key)
-        __apn_attribute_nonnull__((1, 2));
+        __apn_attribute_nonnull__((1));
 
 /**
  * Sets a name of an image file in the application bundle.
