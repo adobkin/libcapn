@@ -255,7 +255,7 @@ int main() {
 
     if(NULL == (payload = apn_payload_init())) {
         printf("Unable to init payload: %d\n", errno);
-        apn_free(&ctx);
+        apn_free(ctx);
         apn_library_free();
         return -1;
     }
@@ -268,8 +268,8 @@ int main() {
     
     apn_array_t *tokens = apn_array_init(2, NULL, NULL);
     if(!tokens) {
-        apn_free(&ctx);
-        apn_payload_free(&payload);
+        apn_free(ctx);
+        apn_payload_free(payload);
         apn_library_free();
         return -1;
     }
@@ -280,8 +280,8 @@ int main() {
 
     if(APN_ERROR == apn_connect(ctx)) {
         printf("Could not connect to Apple Push Notification Service: %s (errno: %d)\n", apn_error_string(errno), errno);
-        apn_free(&ctx);
-        apn_payload_free(&payload);
+        apn_free(ctx);
+        apn_payload_free(payload);
         apn_array_free(tokens);
         apn_library_free();
         return -1;
@@ -289,8 +289,8 @@ int main() {
 
     if(APN_ERROR == apn_send2(ctx, payload, tokens)) {
         printf("Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);
-        apn_free(&ctx);
-        apn_payload_free(&payload);
+        apn_free(ctx);
+        apn_payload_free(payload);
         apn_array_free(tokens);
         apn_library_free();
         return -1;
@@ -303,14 +303,17 @@ int main() {
     //    } else {
     //        printf("Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);
     //    }
-    //    ret = 1;
-    //    goto finish;
+    //    apn_free(ctx);
+    //    apn_payload_free(payload);
+    //    apn_array_free(tokens);
+    //    apn_library_free();
+    //    return -1;
     //}
 
     printf("Success!\n");
 
-    apn_free(&ctx);
-    apn_payload_free(&payload);
+    apn_free(ctx);
+    apn_payload_free(payload);
     apn_array_free(tokens);
     apn_library_free();
 
