@@ -84,38 +84,14 @@ int main() {
         return -1;
     }
 
-    unsigned long long i = 0;
-    while(i < 1000) {
-        printf("\n<<<<<<< %llu >>>>>>\n", i);
-        apn_payload_set_badge(payload, i); // Icon badge
-        if(APN_ERROR == apn_send2(ctx, payload, tokens)) {
-            printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
-            break;
-        }
-        i++;
-        printf("SLEEP\n");
-        sleep(300);
+    if(APN_ERROR == apn_send2(ctx, payload, tokens)) {
+        printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
+        apn_free(ctx);
+        apn_payload_free(payload);
+        apn_array_free(tokens);
+        apn_library_free();
+        return -1;
     }
-
-//    if(APN_ERROR == apn_send2(ctx, payload, tokens)) {
-//        printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
-//        apn_free(&ctx);
-//        apn_payload_free(&payload);
-//        apn_array_free(tokens);
-//        apn_library_free();
-//        return -1;
-//    }
-
-    // Uses apn_send
-    //if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token)) {
-    //    if(errno == APN_ERR_TOKEN_INVALID) {
-    //        printf("Invalid token: %s\n", invalid_token);
-    //    } else {
-    //        printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
-    //    }
-    //    ret = 1;
-    //    goto finish;
-    //}
 
     printf("Success!\n");
 
