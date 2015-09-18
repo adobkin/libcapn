@@ -5,7 +5,9 @@ compiler:
 os:
   - linux
   - osx
-
+branches:
+  only:
+    - experimental
 matrix:
   exclude:
     - os: osx
