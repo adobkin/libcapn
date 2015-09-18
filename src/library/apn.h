@@ -205,7 +205,7 @@ __apn_export__ apn_return apn_set_certificate(apn_ctx_t *const ctx, const char *
         __apn_attribute_nonnull__((1));
 
 __apn_export__ apn_return apn_set_pkcs12_file(apn_ctx_t *const ctx, const char *const pkcs12_file, const char *const pass)
-        __apn_attribute_nonnull__((1, 2,3));
+        __apn_attribute_nonnull__((1));
 
 /**
  * Returns the connection mode.

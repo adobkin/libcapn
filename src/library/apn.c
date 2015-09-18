@@ -872,9 +872,9 @@ static void __apn_log(const apn_ctx_t * const ctx, apn_log_levels level, const c
             __apn_log(__ctx, APN_LOG_LEVEL_DEBUG, "%d byte(s) has been read from a socket", __bytes_read); \
             __apple_error_flag = 1; \
         } else { \
-            char *__error = apn_error_string(errno); \
-            __apn_log(__ctx, APN_LOG_LEVEL_ERROR, "Unable to read data from a socket: %s (errno: %d)", __error, errno); \
-            free(__error); \
+            char *__error_str = apn_error_string(errno); \
+            __apn_log(__ctx, APN_LOG_LEVEL_ERROR, "Unable to read data from a socket: %s (errno: %d)", __error_str, errno); \
+            free(__error_str); \
             __code\
             return APN_ERROR; \
         } \
@@ -883,9 +883,9 @@ static void __apn_log(const apn_ctx_t * const ctx, apn_log_levels level, const c
 
 #define __APN_SELECT_ERROR(__returned_code, __code) \
     if(__returned_code < 0) { \
-        char *__error = apn_error_string(errno); \
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "select() failed: %s (errno: %d)", __error, errno); \
-        free(__error); \
+        char *__error_str = apn_error_string(errno); \
+        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "select() failed: %s (errno: %d)", __error_str, errno); \
+        free(__error_str); \
         __code \
         return APN_ERROR;\
     }

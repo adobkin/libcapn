@@ -39,11 +39,10 @@ __apn_export__ apn_binary_message_t *apn_create_binary_message(const apn_payload
 __apn_export__ void apn_binary_message_set_token(apn_binary_message_t * const binary_message, const uint8_t * const token)
         __apn_attribute_nonnull__((1,2));
 
-__apn_export__ void apn_binary_message_free(apn_binary_message_t *binary_message)
-        __apn_attribute_nonnull__((1));
+__apn_export__ void apn_binary_message_free(apn_binary_message_t *binary_message);
 
 __apn_export__ apn_return apn_binary_message_set_token_hex(apn_binary_message_t * const binary_message, const char * const token_hex)
-        __apn_attribute_nonnull__((1,2));
+        __apn_attribute_nonnull__((1, 2));
 
 __apn_export__ const char * apn_binary_message_token_hex(apn_binary_message_t * const binary_message)
         __apn_attribute_nonnull__((1));
