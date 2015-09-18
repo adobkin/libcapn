@@ -70,11 +70,6 @@ int main() {
     apn_array_insert(tokens, "1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A7845671");
     apn_array_insert(tokens, "B80D06E9830D66EAE57CA1D4E139B7407A1C8C89E05644DA991825768CF65346");
 
-    for(apn_array_set_direction(tokens, APN_ARRAY_ITERATOR_REVERSE); apn_array_has_prev(tokens) == 1; apn_array_prev(tokens)) {
-        char *token = apn_array_current_item(tokens);
-        printf("Token: %s\n", token);
-    }
-
     if(APN_ERROR == apn_connect(ctx)) {
         printf("Could not connected to Apple Push Notification Service: %s (errno: %d)\n", apn_error_string(errno), errno);
         apn_free(ctx);
