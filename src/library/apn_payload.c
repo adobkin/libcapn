@@ -296,7 +296,7 @@ apn_return apn_payload_add_custom_property_string(apn_payload_t *const payload, 
         errno = ENOMEM;
         return APN_ERROR;
     }
-    property->value.string_value.length = 0;
+    property->value.string_value.length = strlen(value);
     return apn_array_insert(payload->custom_properties, property);
 }
 
