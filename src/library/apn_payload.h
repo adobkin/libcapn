@@ -32,10 +32,6 @@
 extern "C" {
 #endif
 
-/** \addtogroup Payload
- *  @{
- */
-
 /**
  * Notification priority
  */
@@ -54,7 +50,7 @@ typedef struct __apn_payload_t apn_payload_t;
 /**
  * Creates a new notification payload context.
  *
- * This function allocates memory for payload context which should be freed - call ::apn_payload_free() function
+ * This function allocates memory for payload which should be freed - call ::apn_payload_free() function
  * for it.
  *
  * @sa apn_payload_free()
@@ -67,21 +63,21 @@ __apn_export__ apn_payload_t *apn_payload_init()
         __apn_attribute_warn_unused_result__;
 
 /**
- * Frees memory allocated for notification payload context
+ * Frees memory allocated for `payload`
  *
  * @param[in, out] payload - Double pointer to `payload` structure
  */
 __apn_export__ void apn_payload_free(apn_payload_t *payload);
 
-/*
-* Sets expiration time of notification.
-*
-* Expiration time is a fixed UNIX epoch date expressed in seconds (UTC) that identifies when the notification
-* is no longer valid and can be discarded. You can specify zero or a value less than zero
-* to request that APNs not store the notification at all. Default value is 0.
-*
-* @param[in] payload - Pointer to an initialized `payload` structure. Cannot be NULL
-* @param[in] expiry - Time in seconds
+/**
+ * Sets expiration time of notification.
+ *
+ * Expiration time is a fixed UNIX epoch date expressed in seconds (UTC) that identifies when the notification
+ * is no longer valid and can be discarded. You can specify zero or a value less than zero
+ * to request that APNs not store the notification at all. Default value is 0.
+ *
+ * @param[in] payload - Pointer to an initialized `payload` structure. Cannot be NULL
+ * @param[in] expiry - Time in seconds
 */
 __apn_export__ void apn_payload_set_expiry(apn_payload_t * const payload, time_t expiry)
         __apn_attribute_nonnull__((1));
@@ -105,8 +101,8 @@ __apn_export__ apn_return apn_payload_set_badge(apn_payload_t * const payload, i
 /**
  * Sets a name of a sound file in the application bundle.
  *
- * This sound file is played as an alert. If the sound file doesn’t exist
- * or default is specified as the value, the default alert sound is played.
+ * If the sound file doesn’t exist or default is specified as the value,
+ * the default alert sound is played.
  *
  * @param[in] payload - Pointer to an initialized `payload` structure. Cannot be NULL
  * @param[in] sound - Name of a sound file. Must be a valid UTF-8 encoded Unicode string
@@ -371,7 +367,7 @@ __apn_export__ int32_t apn_payload_badge(const apn_payload_t * const payload)
 /**
  * Returns a name of a sound file in the application bundle which played as an alert.
  *
- * @param[in] payload - Pointer to an initialized `::payload` structure. Cannot be NULL
+ * @param[in] payload - Pointer to an initialized `payload` structure. Cannot be NULL
  *
  * @return Pointer to NULL-terminated string or NULL if sound is not set
  *
@@ -445,7 +441,6 @@ __apn_export__ apn_notification_priority_t apn_payload_priority(const apn_payloa
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-/** @}*/
 
 #ifdef __cplusplus
 }

@@ -1,12 +1,30 @@
 # libcapn
 
+![](doc/images/apns.png)
+
 [![Build Status](http://img.shields.io/travis/adobkin/libcapn.svg?style=flat&branch=experimental)](http://travis-ci.org/adobkin/libcapn) [![MIT](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/adobkin/libcapn/blob/master/LICENSE)
 
 libcapn is a C Library to interact with the [Apple Push Notification Service](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) (APNs for short) using simple and intuitive API.
-With the library you can easily send push notifications to iOS and OS X (>= 10.8) devices. 
+With the library you can easily send push notifications to iOS and OS X (>= 10.8) devices.
 
 __Version 2.0.0 isn't compatible to version 1.0.x__
 
+<!-- toc -->
+* [Installation](#installation)
+  * [on *nix](#on-nix)
+  * [on Windows](#on-windows)
+* [Quick Start](#quick-start)
+  * [Initialize and configure context](#initialize-and-configure-context)
+    * [Logging](#logging)
+    * [Connection](#connection)
+  * [Sending notifications](#sending-notifications)
+    * [The notification payload](#the-notification-payload)
+    * [Tokens](#tokens)
+    * [Send](#send)
+* [Example](#example)
+    * [Send notification](#send-notification)
+
+<!-- toc stop -->
 ## Installation
 
 ### on *nix
@@ -28,7 +46,7 @@ $ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ../
 $ make
 $ sudo make install
 ```
-		
+
 ### on Windows
 
 __Requirements__
@@ -48,7 +66,7 @@ __Build instructions__
 cd C:\libcapn
 win_build\build.bat
 ```
-		
+
 ## Quick Start
 
 First, initialize the library by calling `apn_library_init()`. This function must be called at least once before any calls to other `libcapn` functions. Because `apn_library_init()` is not thread-safe, you must not call it while any other thread in the program is running. The reason is that
@@ -70,15 +88,15 @@ if(!ctx) {
 // Uses certificate and private key (in PEM format)
 apn_set_certificate(ctx, "push_test.pem", "push_test_key.pem", "12345678");
 
-// Uses .p12 file 
+// Uses .p12 file
 apn_set_pkcs12_file(ctx, "push_test.p12", "123");
 ```
 
-By default the library uses production environment to interact with Apple Push Notification Service (APNs). Call `apn_set_mode()` passing `APN_MODE_SANDBOX` to 
+By default the library uses production environment to interact with Apple Push Notification Service (APNs). Call `apn_set_mode()` passing `APN_MODE_SANDBOX` to
 use sandbox environment.
 
-> <p style="color: red"> Certificate and private key (or .p12 file) must conform to the specified mode, otherwise the notifications will not be
-transported to the device.</p>
+>Certificate and private key (or .p12 file) must conform to the specified mode, otherwise the notifications will not be
+transported to the device.
 
 ```c
  apn_set_mode(ctx,  APN_MODE_SANDBOX);
@@ -135,8 +153,8 @@ apn_payload_add_custom_property_integer(payload, "custom_property_integer", 100)
 ...
 ```
 
-> <p style="color: red">In iOS 8 and later, the maximum size allowed for a payload is 2 kilobytes; prior to iOS 8
-and in OS X, the maximum payload size is 256 bytes. APNs rejects any notification that exceeds this limit.<p>
+>In iOS 8 and later, the maximum size allowed for a payload is 2 kilobytes; prior to iOS 8
+and in OS X, the maximum payload size is 256 bytes. APNs rejects any notification that exceeds this limit.
 
 A payload may contain the `content-available` property. If this property is set to a value of 1, it lets the remote notification act as a “silent”
 notification. When a silent notification arrives, iOS wakes up your app in the background so that you can get new data from your server or do background
@@ -146,7 +164,7 @@ By default the library uses default priority to notifications. Call `apn_payload
 to use high priority:
 
 ```c
-apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH); 
+apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH);
 ```
 
 When you set high priority, notifications are sent immediately to devices. The notification must trigger an alert, sound, or badge
@@ -166,8 +184,8 @@ if(tokens) {
 }
 ```
 
-> <p style="color: red">Each push environment will issue a different token(s) for the same device or computer. The device token(s) for production
-is different from the development one. If you are using a production mode, you must use a production token(s) and vice versa. </p>
+>Each push environment will issue a different token(s) for the same device or computer. The device token(s) for production
+is different from the development one. If you are using a production mode, you must use a production token(s) and vice versa
 
 #### Send
 
@@ -183,12 +201,12 @@ if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token_index)) {
 	} else {
 		printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
 	}
-} 
+}
 ```
 
-> <p style="color: red"> The APNs drops the connection if it receives an invalid token. The APNs drops the connection if it receives an invalid token.
+>The APNs drops the connection if it receives an invalid token. The APNs drops the connection if it receives an invalid token.
 The function passes out an index of array for invalid token via pointer `invalid_token_index`. You'll need to reconnect and send notification to token(s)
-following it, again.</p>
+following it, again.
 
 You can use `apn_send2()` instead of `apn_send()`, this function automatically establishes new connection to APNs when connection is dropped.
 The function establishes new connection to APNs only when invalid token has been sent, otherwise new connection will not be established.
@@ -265,7 +283,7 @@ int main() {
     apn_payload_set_expiry(payload, time_now + 3600); // Expires
     apn_payload_set_priority(payload, APN_NOTIFICATION_PRIORITY_HIGH);  // Notification priority
     apn_payload_add_custom_property_integer(payload, "custom_property_integer", 100); // Custom property
-    
+
     apn_array_t *tokens = apn_array_init(2, NULL, NULL);
     if(!tokens) {
         apn_free(ctx);
@@ -321,4 +339,3 @@ int main() {
 }
 
 ```
-
