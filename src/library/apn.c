@@ -20,6 +20,8 @@
  * THE SOFTWARE.
  */
 
+#include "apn_platform.h"
+
 #include <errno.h>
 #include <assert.h>
 #include <openssl/err.h>
@@ -341,7 +343,6 @@ apn_return apn_send2(apn_ctx_t * const ctx, const apn_payload_t *payload, apn_ar
                     index = invalid_token_index + 1;
                     __apn_log(ctx, APN_LOG_LEVEL_INFO, "Reconnecting...");
                     apn_close(ctx);
-                    sleep(1);
                     ret = apn_connect(ctx);
                     if(APN_ERROR == ret) {
                         break;
