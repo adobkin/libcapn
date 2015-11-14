@@ -94,7 +94,7 @@ const char * apn_binary_message_token_hex(apn_binary_message_t * const binary_me
     return binary_message->token_hex;
 }
 
-apn_binary_message_t *apn_create_binary_message(const apn_payload_t *payload) {
+apn_binary_message_t *apn_create_binary_message(const apn_payload_t * const payload) {
     char *json = NULL;
     size_t json_size = 0;
     uint8_t *frame = NULL;

@@ -304,7 +304,7 @@ apn_return apn_connect(apn_ctx_t * const ctx) {
     }
 
 
-apn_return apn_send2(apn_ctx_t *ctx, const apn_payload_t *payload, apn_array_t *tokens) {
+apn_return apn_send2(apn_ctx_t * const ctx, const apn_payload_t *payload, apn_array_t *tokens) {
     apn_return ret;
     uint8_t apple_error_code = 0;
     uint32_t invalid_token_index = 0;
