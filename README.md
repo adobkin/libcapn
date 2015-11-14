@@ -7,7 +7,7 @@
 libcapn is a C Library to interact with the [Apple Push Notification Service](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) (APNs for short) using simple and intuitive API.
 With the library you can easily send push notifications to iOS and OS X (>= 10.8) devices.
 
-__Version 2.0.0 isn't compatible to version 1.0.x__
+__Version 2.0 isn't compatible with 1.0__
 
 <!-- toc -->
 * [Installation](#installation)
@@ -31,7 +31,7 @@ __Version 2.0.0 isn't compatible to version 1.0.x__
 
 __Requirements__
 
-- CMake >= 2.8
+- CMake >= 3.0.0
 - Clang 3 and later or GCC 4.6 and later
 - make
 
@@ -51,12 +51,12 @@ $ sudo make install
 
 __Requirements__
 
-- Microsoft Visual Studio >= 2008
-- CMake >= 2.8
+- Microsoft Visual Studio 14.0
+- CMake >= 3.0.0
 
 __Build instructions__
 
-1. Download the source archive from GitHub https://github.com/adobkin/libcapn/archive/experimental.zip and extract it somewhere on your disk, e.g. `C:\libcapn`
+1. Download the latest source archive from GitHub https://github.com/adobkin/libcapn/releases/latest and extract it somewhere on your disk, e.g. `C:\libcapn`
 
 2. Open command console (Win-R ==> "cmd" => Enter)
 
