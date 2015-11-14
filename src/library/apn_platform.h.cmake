@@ -69,11 +69,15 @@ typedef enum __apn_return {
 	#define __apn_attribute_warn_unused_result__
 
 	#include <winsock2.h>
+	#include <windows.h>
+    #include <ws2tcpip.h>
 
-	#define APN_CLOSE_SOCKET(__socket) closesocket(__socket)
+    #define SHUT_RDWR SD_BOTH
 	#ifndef ETIMEDOUT
 		#define ETIMEDOUT WSAETIMEDOUT
 	#endif
+
+	#define APN_CLOSE_SOCKET(__socket) closesocket(__socket)
 #else 
 	#if defined (__clang__) 
 		#define __apn_export__ __attribute__ ((visibility("default")))
@@ -98,24 +102,7 @@ typedef enum __apn_return {
 	#include <stdint.h>
 #elif defined(HAVE_INTTYPES_H)
 	#include <inttypes.h>
-#elif defined(_MSC_VER)
-	#if (_MSC_VER < 1300)
-		typedef unsigned char     uint8_t;
-		typedef unsigned short    uint16_t;
-		typedef unsigned int      uint32_t;
-		typedef signed   char     int8_t;
-	#else
-		typedef signed __int8     int8_t;
-		typedef unsigned __int8   uint8_t;
-		typedef unsigned __int16  uint16_t;
-		typedef unsigned __int32  uint32_t;
-	#endif
-	#define UINT16_MAX   _UI16_MAX
-	#define UINT32_MAX   _UI32_MAX
-		typedef unsigned    __int64     uint64_t;
-		typedef signed      __int64     int64_t;
-		typedef signed      __int32     int32_t;
-	#endif
+#endif
 
 #endif
 
