@@ -31,7 +31,7 @@ __Version 2.0 isn't compatible with 1.0__
 
 __Requirements__
 
-- CMake >= 3.0.0
+- CMake >= 2.8.5
 - Clang 3 and later or GCC 4.6 and later
 - make
 
@@ -52,7 +52,7 @@ $ sudo make install
 __Requirements__
 
 - Microsoft Visual Studio 14.0
-- CMake >= 3.0.0
+- CMake >= 2.8.5
 
 __Build instructions__
 
