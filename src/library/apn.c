@@ -828,33 +828,19 @@ static void __apn_strerror_r(int errnum, char *buf, size_t buff_size) {
 #endif
 }
 
+#define __APN_LOG_BUFFER 1024
+
 static void __apn_log(const apn_ctx_t * const ctx, apn_log_levels level, const char *const message, ...) {
     if (ctx && ctx->log_callback && (ctx->log_level & level)) {
         va_list args;
+        char buffer[__APN_LOG_BUFFER] = {0};
         va_start(args, message);
-        int len = 0;
 #ifdef _WIN32
-        len = vsnprintf_s(NULL, 0, _TRUNCATE, message, args);
+        vsnprintf_s(buffer, __APN_LOG_BUFFER, _TRUNCATE, message, args);
 #else
-        len = vsnprintf(NULL, 0, message, args);
+        vsnprintf(buffer, __APN_LOG_BUFFER, message, args);
 #endif
-        va_end(args);
-
-        if (len <= 0) {
-            return;
-        }
-
-        uint32_t buff_len = (uint32_t) (len + 1);
-        char buffer[buff_len];
-        va_start(args, message);
-
-#ifdef _WIN32
-        vsnprintf_s(buffer, buff_len, _TRUNCATE, message, args);
-#else
-        vsnprintf(buffer, buff_len, message, args);
-#endif
-
-        ctx->log_callback(level, buffer, buff_len);
+        ctx->log_callback(level, buffer, __APN_LOG_BUFFER);
         va_end(args);
     }
 }
