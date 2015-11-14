@@ -92,7 +92,7 @@ static int __ssl_write(const apn_ctx_t * const ctx, const uint8_t *message, size
 static int __ssl_read(const apn_ctx_t * const ctx, char *buff, size_t length);
 static void __apn_parse_apns_error(char *apns_error, uint8_t *apns_error_code, uint32_t *id);
 static void __apn_strerror_r(int errnum, char *buf, size_t buff_size);
-static apn_binary_message_t *__apn_payload_to_binary_message(const apn_ctx_t * const ctx, const apn_payload_t *payload);
+static apn_binary_message_t *__apn_payload_to_binary_message(const apn_ctx_t * const ctx, const apn_payload_t * const payload);
 static void __apn_convert_apple_error(uint8_t apple_error_code);
 static apn_return __apn_tls_connect(apn_ctx_t * const ctx);
 static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret);

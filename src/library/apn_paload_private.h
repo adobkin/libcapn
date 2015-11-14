@@ -79,7 +79,7 @@ struct __apn_payload_t {
     apn_array_t *custom_properties;
 };
 
-char *apn_create_json_document_from_payload(const apn_payload_t *payload)
+char *apn_create_json_document_from_payload(const apn_payload_t * const payload)
         __apn_attribute_nonnull__((1));
 
 #endif
