@@ -79,7 +79,6 @@ static void __apn_pusher_usage(void) {
     fprintf(stderr, "    -d Use sandbox mode\n");
     fprintf(stderr, "    -m Body of the alert to send in notification\n");
     fprintf(stderr, "    -a Indicates content available\n");
-    fprintf(stderr, "    -c Body of the alert to send in notification\n");
     fprintf(stderr, "    -b Badge number to set with notification\n");
     fprintf(stderr, "    -s Name of a sound file in the app bundle\n");
     fprintf(stderr, "    -l Name of an image file in the app bundle\n");
