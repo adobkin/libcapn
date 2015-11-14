@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 2.8.5)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.0.0)
 SET(CAPN_LIB_NAME "capn")
 PROJECT("libcapn" C)
 
@@ -95,6 +95,7 @@ INCLUDE(ExternalProject)
 
 INCLUDE_DIRECTORIES ("${CAPN_THIRD_PARTY_DIR}/jansson")
 INCLUDE_DIRECTORIES ("${CAPN_THIRD_PARTY_DIR}/jansson/include")
+INCLUDE_DIRECTORIES ("${OPENSSL_INCLUDE_DIR}")
 
 CONFIGURE_FILE("${CAPN_SOURCE_LIB_DIR}/apn_platform.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_platform.h")
 CONFIGURE_FILE("${CAPN_SOURCE_LIB_DIR}/apn_version.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_version.h")
@@ -170,7 +171,7 @@ IF(WIN32)
     	ADD_CUSTOM_TARGET(zip COMMAND "${PROJECT_BINARY_DIR}/win_build/createpkg.bat")
 ELSE(WIN32)
     IF(UNIX)
-	    INCLUDE (FindOpenSSL)
+	INCLUDE (FindOpenSSL)
         IF(NOT OPENSSL_FOUND)
             MESSAGE(FATAL_ERROR "openssl is not found!")
         ENDIF()
