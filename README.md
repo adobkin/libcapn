@@ -7,6 +7,8 @@ With the library you can easily send push notifications to iOS and OS X (>= 10.8
 
 __Version 2.0 isn't compatible with 1.0__
 
+## Table of Contents
+
 <!-- toc -->
 * [Installation](#installation)
   * [on *nix](#on-nix)
@@ -29,7 +31,7 @@ __Version 2.0 isn't compatible with 1.0__
 
 __Requirements__
 
-- CMake >= 2.8.5
+- [CMake](http://cmake.org) >= 2.8.5
 - Clang 3 and later or GCC 4.6 and later
 - make
 
@@ -49,12 +51,13 @@ $ sudo make install
 
 __Requirements__
 
-- Microsoft Visual Studio 14.0
-- CMake >= 2.8.5
+- [Microsoft Visual Studio 2015](https://www.visualstudio.com)
+- [CMake](http://cmake.org) >= 2.8.5
+- [Visual C++ Redistributable for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145)
 
 __Build instructions__
 
-1. Download the latest source archive from GitHub https://github.com/adobkin/libcapn/releases/latest and extract it somewhere on your disk, e.g. `C:\libcapn`
+1. [Download](https://github.com/adobkin/libcapn/releases/latest) the latest source archive from [GitHub](https://github.com/adobkin/libcapn/releases/latest) and extract it somewhere on your disk, e.g. `C:\libcapn`
 
 2. Open command console (Win-R ==> "cmd" => Enter)
 
