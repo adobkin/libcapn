@@ -1,7 +1,5 @@
 # libcapn
 
-![](doc/images/apns.png)
-
 [![Build Status](http://img.shields.io/travis/adobkin/libcapn.svg?style=flat&branch=experimental)](http://travis-ci.org/adobkin/libcapn) [![MIT](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/adobkin/libcapn/blob/master/LICENSE)
 
 libcapn is a C Library to interact with the [Apple Push Notification Service](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) (APNs for short) using simple and intuitive API.
@@ -21,8 +19,8 @@ __Version 2.0 isn't compatible with 1.0__
     * [The notification payload](#the-notification-payload)
     * [Tokens](#tokens)
     * [Send](#send)
-* [Example](#example)
-    * [Send notification](#send-notification)
+  * [Example](#example)
+* [apn-pusher](#apn-pusher)
 
 <!-- toc stop -->
 ## Installation
@@ -230,9 +228,7 @@ Callback function has the following prototype:
 void (*invalid_token_callback)(const char * const token, uint32_t index)
 ```
 
-## Example
-
-#### Send notification
+### Example
 
 ```c
 #include <stdio.h>
@@ -266,7 +262,7 @@ int main() {
     }
 
     apn_set_pkcs12_file(ctx, "push_test.p12", "12345678");
-    apn_set_mode(ctx,  APN_MODE_PRODUCTION); //APN_MODE_PRODUCTION or APN_MODE_SANDBOX
+    apn_set_mode(ctx,  APN_MODE_SANDBOX); //APN_MODE_PRODUCTION or APN_MODE_SANDBOX
     apn_set_log_level(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
     apn_set_log_callback(ctx, __apn_logging);
     apn_set_invalid_token_callback(ctx, __apn_invalid_token);
@@ -338,4 +334,30 @@ int main() {
     return 0;
 }
 
+```
+
+## apn-pusher
+
+apn-pusher - simple command line tool to send push notifications to iOS and OS X devices
+
+```sh
+apn-pusher -c ./test_push.p12 -p 12345678 -d -m 'Test' -t 1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A808832B
+```
+
+Options:
+
+```sh
+Usage: apn-pusher [OPTION]
+    -h Print this message and exit
+    -c Path to .p12 file (required)
+    -p Passphrase for .p12 file (required)
+    -d Use sandbox mode
+    -m Body of the alert to send in notification
+    -a Indicates content available
+    -b Badge number to set with notification
+    -s Name of a sound file in the app bundle
+    -l Name of an image file in the app bundle
+    -y Category name of notification
+    -t Device token(s). Separate multiple tokens with ':' (required)
+    -v Make the operation more talkative
 ```
