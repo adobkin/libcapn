@@ -183,7 +183,7 @@ apn_return apn_payload_set_launch_image(apn_payload_t *const payload, const char
     return APN_SUCCESS;
 }
 
-apn_return apn_payload_set_localized_key(apn_payload_t *const payload, const char *const key, apn_array_t *args) {
+apn_return apn_payload_set_localized_key(apn_payload_t *const payload, const char *const key, apn_array_t * const args) {
     assert(payload);
     assert(key && strlen(key) > 0);
 

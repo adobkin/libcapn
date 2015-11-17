@@ -23,9 +23,10 @@
 #ifndef __APN_PAYLOAD_H__
 #define __APN_PAYLOAD_H__
 
+#include "apn_platform.h"
+
 #include <stddef.h>
 #include <time.h>
-#include "apn_platform.h"
 #include "apn_array.h"
 
 #ifdef __cplusplus
@@ -211,7 +212,7 @@ __apn_export__ apn_return apn_payload_set_launch_image(apn_payload_t *const payl
  *      - ::APN_SUCCESS on success
  *      - ::APN_ERROR on failure with error information stored to `errno`
  */
-__apn_export__ apn_return apn_payload_set_localized_key(apn_payload_t *const payload, const char *const key, apn_array_t *args)
+__apn_export__ apn_return apn_payload_set_localized_key(apn_payload_t *const payload, const char *const key, apn_array_t * const args)
         __apn_attribute_nonnull__((1));
 
 /**
