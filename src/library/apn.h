@@ -23,8 +23,9 @@
 #ifndef __APN_H__
 #define __APN_H__
 
-#include <openssl/ssl.h>
 #include "apn_platform.h"
+
+#include <openssl/ssl.h>
 #include "apn_payload.h"
 #include "apn_binary_message.h"
 #include "apn_array.h"

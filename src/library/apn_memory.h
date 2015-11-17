@@ -23,8 +23,8 @@
 #ifndef __APN_MEMORY_H__
 #define __APN_MEMORY_H__
 
-#include <stddef.h>
 #include "apn_platform.h"
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
