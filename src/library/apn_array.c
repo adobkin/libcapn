@@ -80,14 +80,8 @@ apn_return apn_array_insert(apn_array_t *array, void *item) {
         array->items = new_items;
         array->allocated_size *= 2;
     }
-
-    if (array->ctor) {
-        array->items[array->count] = array->ctor(item);
-    } else {
-        array->items[array->count] = item;
-    }
+    array->items[array->count] = item;
     array->count++;
-
     return APN_SUCCESS;
 }
 
@@ -117,11 +111,7 @@ apn_return apn_array_insert_at_index(apn_array_t *const array, uint32_t index, v
         array->dtor(data);
     }
 
-    if (array->ctor) {
-        array->items[index] = array->ctor(item);
-    } else {
-        array->items[index] = item;
-    }
+    array->items[index] = item;
     array->count++;
     return APN_SUCCESS;
 }
@@ -157,7 +147,11 @@ apn_array_t *apn_array_copy(const apn_array_t *const array) {
 
     if (array->items) {
         for (; i < array->count; i++) {
-            if (!apn_array_insert(dst, array->items[i])) {
+            void *item = array->items[i];
+            if (array->ctor) {
+                item = array->ctor(item);
+            }
+            if (!apn_array_insert(dst, item)) {
                 apn_array_free(dst);
                 return NULL;
             }
