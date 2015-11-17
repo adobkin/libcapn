@@ -10,9 +10,27 @@ if not exist %VC_PATH% (
 	goto :eof
 )
 
-echo call "C:\Program Files\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
 call "C:\Program Files\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
-cmake . -G "NMake Makefiles"
+
+@echo.
+@echo =================================
+@echo Build Shared Library
+@echo =================================
+@echo.
+
+cmake . -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
 nmake
 nmake install
+
+@echo. 
+@echo =================================
+@echo Build Static Library
+@echo =================================
+@echo. 
+
+nmake clean
+cmake . -G "NMake Makefiles" -DBUILD_SHARED_LIBS=NO -DCMAKE_BUILD_TYPE=Release
+nmake
+nmake install
+
 nmake zip
