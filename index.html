@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Libcapn by adobkin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Libcapn</h1>
+      <h2 class="project-tagline">A simple C Library for interact with the Apple Push Notification Service</h2>
+      <a href="https://github.com/adobkin/libcapn" class="btn">View on GitHub</a>
+      <a href="https://github.com/adobkin/libcapn/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/adobkin/libcapn/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="libcapn" class="anchor" href="#libcapn" aria-hidden="true"><span class="octicon octicon-link"></span></a>libcapn</h1>
+
+<p><a href="http://travis-ci.org/adobkin/libcapn"><img src="http://img.shields.io/travis/adobkin/libcapn.svg?style=flat&amp;branch=master" alt="Build Status"></a> <a href="https://github.com/adobkin/libcapn/blob/master/LICENSE"><img src="http://img.shields.io/badge/license-MIT-red.svg?style=flat" alt="MIT"></a></p>
+
+<p>libcapn is a C Library to interact with the <a href="http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html">Apple Push Notification Service</a> (APNs for short) using simple and intuitive API.
+With the library you can easily send push notifications to iOS and OS X (&gt;= 10.8) devices.</p>
+
+<p><strong>Version 2.0 isn't compatible with 1.0</strong></p>
+
+<h2>
+<a id="table-of-contents" class="anchor" href="#table-of-contents" aria-hidden="true"><span class="octicon octicon-link"></span></a>Table of Contents</h2>
+
+
+
+<ul>
+<li>
+<a href="#installation">Installation</a>
+
+<ul>
+<li><a href="#on-nix">on *nix</a></li>
+<li><a href="#on-windows">on Windows</a></li>
+</ul>
+</li>
+<li>
+<a href="#quick-start">Quick Start</a>
+
+<ul>
+<li>
+<a href="#initialize-and-configure-context">Initialize and configure context</a>
+
+<ul>
+<li><a href="#logging">Logging</a></li>
+<li><a href="#connection">Connection</a></li>
+</ul>
+</li>
+<li>
+<a href="#sending-notifications">Sending notifications</a>
+
+<ul>
+<li><a href="#the-notification-payload">The notification payload</a></li>
+<li><a href="#tokens">Tokens</a></li>
+<li><a href="#send">Send</a></li>
+</ul>
+</li>
+<li><a href="#example">Example</a></li>
+</ul>
+</li>
+<li><a href="#apn-pusher">apn-pusher</a></li>
+</ul>
+
+
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<h3>
+<a id="on-nix" class="anchor" href="#on-nix" aria-hidden="true"><span class="octicon octicon-link"></span></a>on *nix</h3>
+
+<p><strong>Requirements</strong></p>
+
+<ul>
+<li>
+<a href="http://cmake.org">CMake</a> &gt;= 2.8.5</li>
+<li>Clang 3 and later or GCC 4.6 and later</li>
+<li>make</li>
+</ul>
+
+<p><strong>Build instructions</strong></p>
+
+<div class="highlight highlight-source-shell"><pre>$ git clone https://github.com/adobkin/libcapn.git
+$ git submodule update --init
+$ mkdir build
+$ <span class="pl-c1">cd</span> build
+$ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ../
+$ make
+$ sudo make install</pre></div>
+
+<h3>
+<a id="on-windows" class="anchor" href="#on-windows" aria-hidden="true"><span class="octicon octicon-link"></span></a>on Windows</h3>
+
+<p><strong>Requirements</strong></p>
+
+<ul>
+<li><a href="https://www.visualstudio.com">Microsoft Visual Studio 2015</a></li>
+<li>
+<a href="http://cmake.org">CMake</a> &gt;= 2.8.5</li>
+<li><a href="https://www.microsoft.com/en-us/download/details.aspx?id=48145">Visual C++ Redistributable for Visual Studio 2015</a></li>
+</ul>
+
+<p><strong>Build instructions</strong></p>
+
+<ol>
+<li><p><a href="https://github.com/adobkin/libcapn/releases/latest">Download</a> the latest source archive from <a href="https://github.com/adobkin/libcapn/releases/latest">GitHub</a> and extract it somewhere on your disk, e.g. <code>C:\libcapn</code></p></li>
+<li><p>Open command console (Win-R ==&gt; "cmd" =&gt; Enter)</p></li>
+<li><p>Go to the libcapn directory and run <code>win_build\build.bat</code></p></li>
+</ol>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">cd</span> C:<span class="pl-cce">\l</span>ibcapn
+win_build<span class="pl-cce">\b</span>uild.bat</pre></div>
+
+<h2>
+<a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Start</h2>
+
+<p>First, initialize the library by calling <code>apn_library_init()</code>. This function must be called at least once before any calls to other <code>libcapn</code> functions. Because <code>apn_library_init()</code> is not thread-safe, you must not call it while any other thread in the program is running. The reason is that
+<code>apn_library_init()</code> calls initialization functions of SSL library that are not thread-safe.</p>
+
+<h3>
+<a id="initialize-and-configure-context" class="anchor" href="#initialize-and-configure-context" aria-hidden="true"><span class="octicon octicon-link"></span></a>Initialize and configure context</h3>
+
+<p>Create a new apn <code>context</code> and specify the path to a certificate file and the path to a private key file using <code>apn_set_certificate()</code>.
+If the private key is password protected, pass it as well, otherwise pass <code>NULL</code>. The Certificate and the private key must be in PEM format.
+An alternative way is to use a .p12 file instead of a certificate and a private key. Use <code>apn_set_pkcs12_file()</code> to specify the path to a .p12 file .
+If a .p12 file is specified, certificate and private key arguments will be ignored.</p>
+
+<div class="highlight highlight-source-c"><pre><span class="pl-c1">apn_ctx_t</span> *ctx = apn_init();
+<span class="pl-k">if</span>(!ctx) {
+    <span class="pl-c">// error</span>
+}
+
+<span class="pl-c">// Uses certificate and private key (in PEM format)</span>
+<span class="pl-en">apn_set_certificate</span>(ctx, <span class="pl-s"><span class="pl-pds">"</span>push_test.pem<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>push_test_key.pem<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>12345678<span class="pl-pds">"</span></span>);
+
+<span class="pl-c">// Uses .p12 file</span>
+<span class="pl-en">apn_set_pkcs12_file</span>(ctx, <span class="pl-s"><span class="pl-pds">"</span>push_test.p12<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>123<span class="pl-pds">"</span></span>);</pre></div>
+
+<p>By default the library uses production environment to interact with Apple Push Notification Service (APNs). Call <code>apn_set_mode()</code> passing <code>APN_MODE_SANDBOX</code> to
+use sandbox environment.</p>
+
+<blockquote>
+<p>Certificate and private key (or .p12 file) must conform to the specified mode, otherwise the notifications will not be
+transported to the device.</p>
+</blockquote>
+
+<div class="highlight highlight-source-c"><pre> <span class="pl-en">apn_set_mode</span>(ctx,  APN_MODE_SANDBOX);</pre></div>
+
+<h4>
+<a id="logging" class="anchor" href="#logging" aria-hidden="true"><span class="octicon octicon-link"></span></a>Logging</h4>
+
+<p>For logging specify log level and pointer to callback-function using <code>apn_set_log_level()</code> and <code>apn_set_log_callback()</code>:</p>
+
+<div class="highlight highlight-source-c"><pre><span class="pl-k">void</span> <span class="pl-en">logfunc</span>(apn_log_level level, <span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span> message, <span class="pl-c1">uint32_t</span> len) {
+    <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>======&gt; <span class="pl-c1">%s</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, message);
+}
+
+<span class="pl-en">apn_set_log_level</span>(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
+<span class="pl-en">apn_set_log_callback</span>(ctx, logfunc);
+</pre></div>
+
+<h4>
+<a id="connection" class="anchor" href="#connection" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connection</h4>
+
+<p>To establishes connection to the APNs, calling <code>apn_connect()</code>:</p>
+
+<div class="highlight highlight-source-c"><pre><span class="pl-k">if</span>(APN_ERROR == apn_connect(ctx)) {
+    <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Could not connected to Apple Push Notification Service: <span class="pl-c1">%s</span> (errno: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, <span class="pl-c1">apn_error_string</span>(errno), errno);
+    <span class="pl-c">// error</span>
+}</pre></div>
+
+<h3>
+<a id="sending-notifications" class="anchor" href="#sending-notifications" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sending notifications</h3>
+
+<h4>
+<a id="the-notification-payload" class="anchor" href="#the-notification-payload" aria-hidden="true"><span class="octicon octicon-link"></span></a>The notification payload</h4>
+
+<p>Every remote notification includes a payload. The payload contains information about how the system should alert
+the user as well as any custom data you provide.</p>
+
+<p>To create a payload you need to use <code>apn_payload_init()</code>; to set general properties of the payload, use <code>apn_payload_set_*()</code> functions. You can also specify
+custom properties using <code>apn_payload_add_custom_property_*()</code> functions:</p>
+
+<div class="highlight highlight-source-c"><pre><span class="pl-c1">apn_payload_t</span> *payload = apn_payload_init();
+<span class="pl-k">if</span>(!payload) {
+    <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Unable to init payload: <span class="pl-c1">%s</span> (<span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, <span class="pl-c1">apn_error_string</span>(errno), errno);
+    <span class="pl-c">// error</span>
+}
+
+<span class="pl-en">apn_payload_set_badge</span>(payload, <span class="pl-c1">10</span>);           
+<span class="pl-en">apn_payload_set_body</span>(payload, <span class="pl-s"><span class="pl-pds">"</span>Test Push Message<span class="pl-pds">"</span></span>);
+
+<span class="pl-c">// Custom property</span>
+<span class="pl-en">apn_payload_add_custom_property_integer</span>(payload, <span class="pl-s"><span class="pl-pds">"</span>custom_property_integer<span class="pl-pds">"</span></span>, <span class="pl-c1">100</span>);
+...</pre></div>
+
+<blockquote>
+<p>In iOS 8 and later, the maximum size allowed for a payload is 2 kilobytes; prior to iOS 8
+and in OS X, the maximum payload size is 256 bytes. APNs rejects any notification that exceeds this limit.</p>
+</blockquote>
+
+<p>A payload may contain the <code>content-available</code> property. If this property is set to a value of 1, it lets the remote notification act as a “silent”
+notification. When a silent notification arrives, iOS wakes up your app in the background so that you can get new data from your server or do background
+information processing. Users aren’t told about the new or changed information that results from a silent notification.</p>
+
+<p>By default the library uses default priority to notifications. Call <code>apn_payload_set_priority()</code>, passing <code>APN_NOTIFICATION_PRIORITY_HIGH</code>
+to use high priority:</p>
+
+<div class="highlight highlight-source-c"><pre><span class="pl-en">apn_payload_set_priority</span>(payload, APN_NOTIFICATION_PRIORITY_HIGH);</pre></div>
+
+<p>When you set high priority, notifications are sent immediately to devices. The notification must trigger an alert, sound, or badge
+on the device. It is an error to use this priority for a push that contains only the <code>content-available</code> key. When you set default priority, notifications are sent at a time that
+conserves power on the device receiving them.</p>
+
+<h4>
+<a id="tokens" class="anchor" href="#tokens" aria-hidden="true"><span class="octicon octicon-link"></span></a>Tokens</h4>
+
+<p>Next, create array of tokens and add the device tokens as either a hexadecimal string to array:</p>
+
+<div class="highlight highlight-source-c"><pre><span class="pl-c1">apn_array_t</span> *tokens = apn_array_init(<span class="pl-c1">2</span>, <span class="pl-c1">NULL</span>, <span class="pl-c1">NULL</span>);
+<span class="pl-k">if</span>(tokens) {
+    <span class="pl-c1">apn_array_insert</span>(tokens, <span class="pl-s"><span class="pl-pds">"</span>XXXXXXXX<span class="pl-pds">"</span></span>);
+    <span class="pl-c1">apn_array_insert</span>(tokens, <span class="pl-s"><span class="pl-pds">"</span>YYYYYYYY<span class="pl-pds">"</span></span>);
+    <span class="pl-c1">apn_array_insert</span>(tokens, <span class="pl-s"><span class="pl-pds">"</span>ZZZZZZZZ<span class="pl-pds">"</span></span>);
+}</pre></div>
+
+<blockquote>
+<p>Each push environment will issue a different token(s) for the same device or computer. The device token(s) for production
+is different from the development one. If you are using a production mode, you must use a production token(s) and vice versa</p>
+</blockquote>
+
+<h4>
+<a id="send" class="anchor" href="#send" aria-hidden="true"><span class="octicon octicon-link"></span></a>Send</h4>
+
+<p>To send notification to devices call <code>apn_send()</code>, passing <code>context</code>, <code>payload</code> and array of <code>tokens</code>:</p>
+
+<div class="highlight highlight-source-c"><pre>
+uint32 invalid_token_index;
+
+<span class="pl-k">if</span>(APN_ERROR == apn_send(ctx, payload, tokens, &amp;invalid_token_index)) {
+    <span class="pl-k">if</span>(errno == APN_ERR_TOKEN_INVALID) {
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Invalid token: <span class="pl-c1">%s</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, (<span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span>) <span class="pl-c1">apn_array_item_at_index</span>(tokens, invalid_token_index));
+    } <span class="pl-k">else</span> {
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Could not sent push: <span class="pl-c1">%s</span> (errno: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, <span class="pl-c1">apn_error_string</span>(errno), errno);
+    }
+}</pre></div>
+
+<blockquote>
+<p>The APNs drops the connection if it receives an invalid token. The APNs drops the connection if it receives an invalid token.
+The function passes out an index of array for invalid token via pointer <code>invalid_token_index</code>. You'll need to reconnect and send notification to token(s)
+following it, again.</p>
+</blockquote>
+
+<p>You can use <code>apn_send2()</code> instead of <code>apn_send()</code>, this function automatically establishes new connection to APNs when connection is dropped.
+The function establishes new connection to APNs only when invalid token has been sent, otherwise new connection will not be established.</p>
+
+<p>When you use this function you can take invalid token, just specify a pointer to callback-function using <code>apn_set_invalid_token_callback</code>:</p>
+
+<div class="highlight highlight-source-c"><pre><span class="pl-k">void</span> <span class="pl-en">invalid_token</span>(<span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span> token, <span class="pl-c1">uint32_t</span> index) {
+    <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>======&gt; Invalid token: <span class="pl-c1">%s</span> (index: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, token, <span class="pl-c1">index</span>);
+}
+
+...
+
+<span class="pl-c1">apn_ctx_t</span> *ctx = ...
+<span class="pl-en">apn_set_invalid_token_callback</span>(ctx, invalid_token);</pre></div>
+
+<p>Callback function has the following prototype:</p>
+
+<div class="highlight highlight-source-c"><pre><span class="pl-k">void</span> (*invalid_token_callback)(<span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span> token, <span class="pl-c1">uint32_t</span> index)</pre></div>
+
+<h3>
+<a id="example" class="anchor" href="#example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h3>
+
+<div class="highlight highlight-source-c"><pre>#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>stdio.h<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>string.h<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>errno.h<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>assert.h<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>capn/apn.h<span class="pl-pds">&gt;</span></span>
+
+<span class="pl-k">void</span> <span class="pl-en">__apn_logging</span>(apn_log_levels level, <span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span> message, <span class="pl-c1">uint32_t</span> len) {
+    <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>======&gt; <span class="pl-c1">%s</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, message);
+}
+
+<span class="pl-k">void</span> <span class="pl-en">__apn_invalid_token</span>(<span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span> token, <span class="pl-c1">uint32_t</span> index) {
+    <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>======&gt; Invalid token: <span class="pl-c1">%s</span> (index: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, token, <span class="pl-c1">index</span>);
+}
+
+<span class="pl-k">int</span> <span class="pl-en">main</span>() {
+    <span class="pl-c1">apn_payload_t</span> *payload = <span class="pl-c1">NULL</span>;
+    <span class="pl-c1">apn_ctx_t</span> *ctx = <span class="pl-c1">NULL</span>;
+    <span class="pl-c1">time_t</span> time_now = <span class="pl-c1">0</span>;
+    <span class="pl-k">char</span> *invalid_token = <span class="pl-c1">NULL</span>;
+
+    <span class="pl-c1">assert</span>(<span class="pl-c1">apn_library_init</span>() == APN_SUCCESS);
+
+    <span class="pl-c1">time</span>(&amp;time_now);
+
+    <span class="pl-k">if</span>(<span class="pl-c1">NULL</span> == (ctx = <span class="pl-c1">apn_init</span>())) {
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Unable to init context: <span class="pl-c1">%d</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, errno);
+        <span class="pl-c1">apn_library_free</span>();
+        <span class="pl-k">return</span> -<span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-c1">apn_set_pkcs12_file</span>(ctx, <span class="pl-s"><span class="pl-pds">"</span>push_test.p12<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>12345678<span class="pl-pds">"</span></span>);
+    <span class="pl-c1">apn_set_mode</span>(ctx,  APN_MODE_SANDBOX); <span class="pl-c">//APN_MODE_PRODUCTION or APN_MODE_SANDBOX</span>
+    <span class="pl-c1">apn_set_log_level</span>(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
+    <span class="pl-c1">apn_set_log_callback</span>(ctx, __apn_logging);
+    <span class="pl-c1">apn_set_invalid_token_callback</span>(ctx, __apn_invalid_token);
+
+    <span class="pl-k">if</span>(<span class="pl-c1">NULL</span> == (payload = <span class="pl-c1">apn_payload_init</span>())) {
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Unable to init payload: <span class="pl-c1">%d</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, errno);
+        <span class="pl-c1">apn_free</span>(ctx);
+        <span class="pl-c1">apn_library_free</span>();
+        <span class="pl-k">return</span> -<span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-c1">apn_payload_set_badge</span>(payload, <span class="pl-c1">10</span>); <span class="pl-c">// Icon badge</span>
+    <span class="pl-c1">apn_payload_set_body</span>(payload, <span class="pl-s"><span class="pl-pds">"</span>Test Push Message<span class="pl-pds">"</span></span>);  <span class="pl-c">// Notification text</span>
+    <span class="pl-c1">apn_payload_set_expiry</span>(payload, time_now + <span class="pl-c1">3600</span>); <span class="pl-c">// Expires</span>
+    <span class="pl-c1">apn_payload_set_priority</span>(payload, APN_NOTIFICATION_PRIORITY_HIGH);  <span class="pl-c">// Notification priority</span>
+    <span class="pl-c1">apn_payload_add_custom_property_integer</span>(payload, <span class="pl-s"><span class="pl-pds">"</span>custom_property_integer<span class="pl-pds">"</span></span>, <span class="pl-c1">100</span>); <span class="pl-c">// Custom property</span>
+
+    <span class="pl-c1">apn_array_t</span> *tokens = <span class="pl-c1">apn_array_init</span>(<span class="pl-c1">2</span>, <span class="pl-c1">NULL</span>, <span class="pl-c1">NULL</span>);
+    <span class="pl-k">if</span>(!tokens) {
+        <span class="pl-c1">apn_free</span>(ctx);
+        <span class="pl-c1">apn_payload_free</span>(payload);
+        <span class="pl-c1">apn_library_free</span>();
+        <span class="pl-k">return</span> -<span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-c1">apn_array_insert</span>(tokens, <span class="pl-s"><span class="pl-pds">"</span>XXXXXXXX<span class="pl-pds">"</span></span>);
+    <span class="pl-c1">apn_array_insert</span>(tokens, <span class="pl-s"><span class="pl-pds">"</span>YYYYYYYY<span class="pl-pds">"</span></span>);
+    <span class="pl-c1">apn_array_insert</span>(tokens, <span class="pl-s"><span class="pl-pds">"</span>ZZZZZZZZ<span class="pl-pds">"</span></span>);
+
+    <span class="pl-k">if</span>(APN_ERROR == <span class="pl-c1">apn_connect</span>(ctx)) {
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Could not connect to Apple Push Notification Service: <span class="pl-c1">%s</span> (errno: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, <span class="pl-c1">apn_error_string</span>(errno), errno);
+        <span class="pl-c1">apn_free</span>(ctx);
+        <span class="pl-c1">apn_payload_free</span>(payload);
+        <span class="pl-c1">apn_array_free</span>(tokens);
+        <span class="pl-c1">apn_library_free</span>();
+        <span class="pl-k">return</span> -<span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-k">if</span>(APN_ERROR == <span class="pl-c1">apn_send2</span>(ctx, payload, tokens)) {
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Could not send push: <span class="pl-c1">%s</span> (errno: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, <span class="pl-c1">apn_error_string</span>(errno), errno);
+        <span class="pl-c1">apn_free</span>(ctx);
+        <span class="pl-c1">apn_payload_free</span>(payload);
+        <span class="pl-c1">apn_array_free</span>(tokens);
+        <span class="pl-c1">apn_library_free</span>();
+        <span class="pl-k">return</span> -<span class="pl-c1">1</span>;
+    }
+
+    <span class="pl-c">// Uses apn_send</span>
+    <span class="pl-c">//if(APN_ERROR == apn_send(ctx, payload, tokens, &amp;invalid_token)) {</span>
+    <span class="pl-c">//    if(errno == APN_ERR_TOKEN_INVALID) {</span>
+    <span class="pl-c">//        printf("Invalid token: %s\n", invalid_token);</span>
+    <span class="pl-c">//    } else {</span>
+    <span class="pl-c">//        printf("Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);</span>
+    <span class="pl-c">//    }</span>
+    <span class="pl-c">//    apn_free(ctx);</span>
+    <span class="pl-c">//    apn_payload_free(payload);</span>
+    <span class="pl-c">//    apn_array_free(tokens);</span>
+    <span class="pl-c">//    apn_library_free();</span>
+    <span class="pl-c">//    return -1;</span>
+    <span class="pl-c">//}</span>
+
+    <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Success!<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>);
+
+    <span class="pl-c1">apn_free</span>(ctx);
+    <span class="pl-c1">apn_payload_free</span>(payload);
+    <span class="pl-c1">apn_array_free</span>(tokens);
+    <span class="pl-c1">apn_library_free</span>();
+
+    <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+}
+</pre></div>
+
+<h2>
+<a id="apn-pusher" class="anchor" href="#apn-pusher" aria-hidden="true"><span class="octicon octicon-link"></span></a>apn-pusher</h2>
+
+<p>apn-pusher - simple command line tool to send push notifications to iOS and OS X devices</p>
+
+<div class="highlight highlight-source-shell"><pre>apn-pusher -c ./test_push.p12 -p 12345678 -d -m <span class="pl-s"><span class="pl-pds">'</span>Test<span class="pl-pds">'</span></span> -t 1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A808832B</pre></div>
+
+<p>Options:</p>
+
+<div class="highlight highlight-source-shell"><pre>Usage: apn-pusher [OPTION]
+    -h Print this message and <span class="pl-c1">exit</span>
+    -c Path to .p12 file (required)
+    -p Passphrase <span class="pl-k">for</span> <span class="pl-smi">.p12</span> file (required)
+    -d Use sandbox mode
+    -m Body of the alert to send <span class="pl-k">in</span> notification
+    -a Indicates content available
+    -b Badge number to <span class="pl-c1">set</span> with notification
+    -s Name of a sound file <span class="pl-k">in</span> the app bundle
+    -l Name of an image file <span class="pl-k">in</span> the app bundle
+    -y Category name of notification
+    -t Device token(s). Separate multiple tokens with <span class="pl-s"><span class="pl-pds">'</span>:<span class="pl-pds">'</span></span> (required)
+    -v Make the operation more talkative</pre></div>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/adobkin/libcapn">Libcapn</a> is maintained by <a href="https://github.com/adobkin">adobkin</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
