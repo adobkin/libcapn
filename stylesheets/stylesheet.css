@@ -113,6 +113,12 @@ a {
   margin-bottom: 1rem;
   font-weight: normal;
   color: #159957; }
+
+.main-content h2, .main-content h1 {
+    border-bottom: 1px solid #159957;
+    padding-bottom: 0.3em;
+}
+
 .main-content p {
   margin-bottom: 1em; }
 .main-content code {
