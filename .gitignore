@@ -18,3 +18,10 @@
 /docs/def
 /docs/html
 /docs/man
+src/library/apn_platform.h
+src/library/apn_version.h
+apn-pusher
+libcapn-config
+Makefile
+src/config/apn_config.c
+install_manifest.txt
