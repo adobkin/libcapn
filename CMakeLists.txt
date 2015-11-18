@@ -154,11 +154,6 @@ IF(WIN32)
     CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/win_build/createpkg.bat.cmake" "${PROJECT_BINARY_DIR}/win_build/createpkg.bat")
 
     INSTALL(FILES
-        ${CAPN_THIRD_PARTY_DIR}/openssl/win/bin/ssleay32.dll
-        ${CAPN_THIRD_PARTY_DIR}/openssl/win/bin/libeay32.dll
-        DESTINATION ${CAPN_INSTALL_PATH_BIN})
-          
-    INSTALL(FILES
         ${CAPN_THIRD_PARTY_DIR}/openssl/win/lib/ssleay32.lib
 	    ${CAPN_THIRD_PARTY_DIR}/openssl/win/lib/libeay32.lib
         DESTINATION ${CAPN_INSTALL_PATH_LIB})
