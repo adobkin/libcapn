@@ -1,6 +1,6 @@
 # libcapn
 
-[![Build Status](http://img.shields.io/travis/adobkin/libcapn.svg?style=flat&branch=experimental)](http://travis-ci.org/adobkin/libcapn) [![MIT](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/adobkin/libcapn/blob/master/LICENSE)
+[![Build Status](http://img.shields.io/travis/adobkin/libcapn.svg?style=flat&branch=master)](http://travis-ci.org/adobkin/libcapn) [![MIT](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/adobkin/libcapn/blob/master/LICENSE)
 
 libcapn is a C Library to interact with the [Apple Push Notification Service](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) (APNs for short) using simple and intuitive API.
 With the library you can easily send push notifications to iOS and OS X (>= 10.8) devices.
@@ -38,7 +38,7 @@ __Requirements__
 __Build instructions__
 
 ```sh
-$ git clone -b experimental https://github.com/adobkin/libcapn.git
+$ git clone https://github.com/adobkin/libcapn.git
 $ git submodule update --init
 $ mkdir build
 $ cd build
