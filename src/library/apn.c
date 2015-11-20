@@ -24,6 +24,7 @@
 
 #include <errno.h>
 #include <assert.h>
+#include <signal.h>
 #include <openssl/err.h>
 #include <openssl/pkcs12.h>
 

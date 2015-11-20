@@ -254,7 +254,7 @@ int main(int argc, char **argv) {
 
     if (p12) {
         if(rpassword) {
-            fprintf(stderr, "Enter .p12 file password: ");
+            printf("Enter .p12 file password: ");
             size_t p12_pass_len = 1024;
             p12_pass = malloc(p12_pass_len);
             if(!p12_pass) {
@@ -272,7 +272,7 @@ int main(int argc, char **argv) {
             }
         }
         fprintf(stderr, "\n");
-        if (!p12_pass || *p12_pass == '\n') {
+        if (!p12_pass || strlen(p12_pass) == 0) {
             fprintf(stderr, "Missing passphrase\n");
             ret = 1;
             goto finish;
@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Invalid tokens:\n");
             uint32_t i = 0;
             for (; i < apn_array_count(invalid_tokens); i++) {
-                fprintf(stderr, "    %u. %s\n", i, apn_array_item_at_index(invalid_tokens, i));
+                fprintf(stderr, "    %u. %s\n", i, (const char *)apn_array_item_at_index(invalid_tokens, i));
             }
             fprintf(stderr, "\n");
             apn_array_free(invalid_tokens);
