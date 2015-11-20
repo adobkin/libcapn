@@ -7,7 +7,7 @@ os:
   - osx
 branches:
   only:
-    - experimental
+    - master
 matrix:
   exclude:
     - os: osx
