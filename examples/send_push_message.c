@@ -45,6 +45,7 @@ int main() {
     apn_set_pkcs12_file(ctx, "push_test.p12", "12345678");
     apn_set_mode(ctx,  APN_MODE_SANDBOX); //APN_MODE_PRODUCTION or APN_MODE_SANDBOX
     apn_set_log_callback(ctx, __apn_logging);
+    apn_set_behavior(ctx, APN_OPTION_RECONNECT);
     apn_set_invalid_token_callback(ctx, __apn_invalid_token);
 
     if(NULL == (payload = apn_payload_init())) {
@@ -79,21 +80,28 @@ int main() {
         return -1;
     }
 
-    if(APN_ERROR == apn_send2(ctx, payload, tokens)) {
-        printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
-        apn_free(ctx);
-        apn_payload_free(payload);
-        apn_array_free(tokens);
-        apn_library_free();
-        return -1;
+    apn_array_t *invalid_tokens = NULL;
+    int ret = 0;
+    if (APN_ERROR == apn_send(ctx, payload, tokens, &invalid_tokens)) {
+        printf("Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);
+        ret = -1;
+    } else {
+        printf("Notification was successfully sent to %u device(s)\n",
+               apn_array_count(tokens) - ((invalid_tokens) ? apn_array_count(invalid_tokens) : 0));
+        if (invalid_tokens) {
+            printf("Invalid tokens:\n");
+            uint32_t i = 0;
+            for (; i < apn_array_count(invalid_tokens); i++) {
+                printf("    %u. %s\n", i, apn_array_item_at_index(invalid_tokens, i));
+            }
+            apn_array_free(invalid_tokens);
+        }
     }
-
-    printf("Success!\n");
 
     apn_free(ctx);
     apn_payload_free(payload);
     apn_array_free(tokens);
     apn_library_free();
 
-    return 0;
+    return ret;
 }

@@ -282,6 +282,7 @@ int main() {
 
     apn_set_pkcs12_file(ctx, "push_test.p12", "12345678");
     apn_set_mode(ctx,  APN_MODE_SANDBOX); //APN_MODE_PRODUCTION or APN_MODE_SANDBOX
+    apn_set_behavior(ctx, APN_OPTION_RECONNECT);
     apn_set_log_level(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
     apn_set_log_callback(ctx, __apn_logging);
     apn_set_invalid_token_callback(ctx, __apn_invalid_token);
@@ -320,47 +321,44 @@ int main() {
         return -1;
     }
 
-    if(APN_ERROR == apn_send2(ctx, payload, tokens)) {
+    apn_array_t *invalid_tokens = NULL;
+    int ret = 0;
+    if (APN_ERROR == apn_send(ctx, payload, tokens, &invalid_tokens)) {
         printf("Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);
-        apn_free(ctx);
-        apn_payload_free(payload);
-        apn_array_free(tokens);
-        apn_library_free();
-        return -1;
+        ret = -1;
+    } else {
+        printf("Notification was successfully sent to %u device(s)\n",
+            apn_array_count(tokens) - ((invalid_tokens) ? apn_array_count(invalid_tokens) : 0));
+        if (invalid_tokens) {
+    	    printf("Invalid tokens:\n");
+    	    uint32_t i = 0;
+    	    for (; i < apn_array_count(invalid_tokens); i++) {
+    	        printf("    %u. %s\n", i, apn_array_item_at_index(invalid_tokens, i));
+    	    }
+    	    apn_array_free(invalid_tokens);
+    	}
     }
-
-    // Uses apn_send
-    //if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token)) {
-    //    if(errno == APN_ERR_TOKEN_INVALID) {
-    //        printf("Invalid token: %s\n", invalid_token);
-    //    } else {
-    //        printf("Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);
-    //    }
-    //    apn_free(ctx);
-    //    apn_payload_free(payload);
-    //    apn_array_free(tokens);
-    //    apn_library_free();
-    //    return -1;
-    //}
-
-    printf("Success!\n");
 
     apn_free(ctx);
     apn_payload_free(payload);
     apn_array_free(tokens);
     apn_library_free();
 
-    return 0;
+    return ret;
 }
 
 ```
 
 ## apn-pusher
 
-apn-pusher - simple command line tool to send push notifications to iOS and OS X devices
+apn-pusher - simple command line tool to send push notifications to iOS and OS X devices:
 
 ```sh
-apn-pusher -c ./test_push.p12 -p 12345678 -d -m 'Test' -t 1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A808832B
+apn-pusher -c ./test_push.p12 -p -d -m 'Test' -t 1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A808832B:1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A808832A
+```
+
+```sh
+apn-pusher -c ./test_push.p12 -p -d -m 'Test' -T ./tokens.txt -v
 ```
 
 Options:
@@ -369,14 +367,15 @@ Options:
 Usage: apn-pusher [OPTION]
     -h Print this message and exit
     -c Path to .p12 file (required)
-    -p Passphrase for .p12 file (required)
+    -p Passphrase for .p12 file. Will be asked from the tty
     -d Use sandbox mode
     -m Body of the alert to send in notification
     -a Indicates content available
     -b Badge number to set with notification
     -s Name of a sound file in the app bundle
-    -l Name of an image file in the app bundle
+    -i Name of an image file in the app bundle
     -y Category name of notification
-    -t Device token(s). Separate multiple tokens with ':' (required)
+    -t Tokens, separated with ':' (required)
+    -T Path to file with tokens
     -v Make the operation more talkative
 ```
