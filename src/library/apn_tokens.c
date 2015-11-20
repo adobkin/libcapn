@@ -32,48 +32,44 @@
 #include <ctype.h>
 #endif
 
-uint8_t *apn_token_hex_to_binary(const char *const token) {    uint16_t i = 0;
-    uint16_t j = 0;
-    uint8_t *binary_token = NULL;
-    unsigned int binary = 0;
-	
+uint8_t *apn_token_hex_to_binary(const char *const token) {
 	assert(token);
 
-    binary_token = malloc(APN_TOKEN_BINARY_SIZE);
+    uint8_t *binary_token = malloc(APN_TOKEN_BINARY_SIZE);
     if (!binary_token) {
         errno = ENOMEM;
         return NULL;
     }
     memset(binary_token, 0, APN_TOKEN_BINARY_SIZE);
 
-    for (i = 0, j = 0; i < APN_TOKEN_BINARY_SIZE * 2; i += 2, j++) {
+    uint16_t j = 0;
+    uint16_t i = 0;
+    for (; i < APN_TOKEN_BINARY_SIZE * 2; i += 2, j++) {
         char tmp[3] = {token[i], token[i + 1], '\0'};
+        uint32_t tmp_binary = 0;
 #ifdef _WIN32
-        sscanf_s(tmp, "%x", &binary);
+        sscanf_s(tmp, "%x", &tmp_binary);
 #else
-        sscanf(tmp, "%x", &binary);
+        sscanf(tmp, "%x", &tmp_binary);
 #endif
-        binary_token[j] = (uint8_t) binary;
+        binary_token[j] = (uint8_t) tmp_binary;
     }
     return binary_token;
 }
 
 char *apn_token_binary_to_hex(const uint8_t *const binary_token) {
-    uint16_t i = 0;
-    uint32_t token_size = 0;
-    char *token = NULL;
-    char *p = NULL;
-	
     assert(binary_token);
-    
-    token_size = (APN_TOKEN_BINARY_SIZE * 2) + 1;
-    token = malloc(token_size);
+
+    uint32_t token_size = (APN_TOKEN_BINARY_SIZE * 2) + 1;
+    char *token = malloc(token_size);
     if (!token) {
         errno = ENOMEM;
         return NULL;
     }
-    p = token;
-    for (i = 0; i < APN_TOKEN_BINARY_SIZE; i++) {
+    char *p = token;
+
+    uint16_t i = 0;
+    for (; i < APN_TOKEN_BINARY_SIZE; i++) {
 #ifdef _WIN32
         _snprintf_s(p, token_size, 3, "%2.2hhX", (unsigned char) binary_token[i]);
 #else
@@ -81,19 +77,14 @@ char *apn_token_binary_to_hex(const uint8_t *const binary_token) {
 #endif
         p += 2;
     }
-    
     return token;
 }
 
 uint8_t apn_hex_token_is_valid(const char *const token) {
-    char *p = NULL;
-	size_t token_length = 0;
-
 	assert(token);
 
-    p = (char *) token;
-    token_length = strlen(token);
-
+    char *p = (char *) token;
+    size_t token_length = strlen(token);
     if(token_length < APN_TOKEN_LENGTH || token_length > APN_TOKEN_LENGTH) {
         return 0;
     }

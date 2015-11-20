@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #include "apn_strings.h"
 
@@ -35,13 +36,14 @@ char *apn_strndup(const char *str, size_t len) {
     char *p = NULL;
     size_t str_copy_len = 0;
 	
-	assert(str && len > 0);
+	assert(str);
 
     str_copy_len = len + 1;
     str_copy = malloc(str_copy_len * sizeof(char));
     p = str_copy;
 
     if(!str_copy) {
+        errno = ENOMEM;
         return NULL;
     }
     while (--str_copy_len != 0) {
@@ -120,29 +122,42 @@ int apn_snprintf(char * s, size_t n, const char * format, ...) {
     return ret;
 }
 
-void apn_strncpy(char *dst, const char * const src, size_t dst_len, size_t src_len) {
-    size_t tmp_src_len = 0;
-    char *buff = dst;
-    const char *s = src;
-	
+void apn_substr(char *dst, const char *src, size_t dst_size, size_t start, size_t stop) {
+    assert(src);
+    assert(dst);
+    if (dst_size == 0) {
+        return;
+    }
+    size_t count = stop - start;
+    if (count >= (dst_size - 1)) {
+        count = dst_size;
+    }
+    apn_strncpy(dst, src + start, dst_size, count);
+}
+
+void apn_strncpy(char *dst, const char * const src, size_t dst_size, size_t src_size) {
 	assert(dst);
     assert(src);
 
-    if (dst_len == 0) {
-        return;
-    }
-    if (src_len == 0) {
-        *buff = '\0';
+    if (dst_size == 0) {
         return;
     }
 
-    if (dst_len <= src_len) {
-        tmp_src_len = dst_len - 1;
-    } else {
-        tmp_src_len = src_len;
+    char *buff = dst;
+
+    if (src_size == 0) {
+        *buff = '\0';
+        return;
     }
-    if (tmp_src_len > 0) {
-        while (tmp_src_len-- != 0) {
+    size_t tmp_src_size = 0;
+    if (dst_size <= src_size) {
+        tmp_src_size = src_size - 1;
+    } else {
+        tmp_src_size = src_size;
+    }
+    if (tmp_src_size > 0) {
+        const char *s = src;
+        while (tmp_src_size-- != 0) {
             if ((*buff++ = *s++) == '\0') {
                 return;
             }

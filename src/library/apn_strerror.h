@@ -20,37 +20,13 @@
  * THE SOFTWARE.
  */
 
-#ifndef __APN_PRIVATE_H__
-#define __APN_PRIVATE_H__
+#ifndef __APN_STRERROR_H__
+#define __APN_STRERROR_H__
 
-#include <stddef.h>
-#include <time.h>
 #include "apn_platform.h"
-#include "apn.h"
+#include "apn_strings.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct __apn_ctx_t {
-    uint8_t feedback;
-    uint16_t log_level;
-    apn_connection_mode mode;
-    SOCKET sock;
-    uint32_t options;
-    char *certificate_file;
-    char *private_key_file;
-    char *private_key_pass;
-    char *pkcs12_file;
-    char *pkcs12_pass;
-    SSL *ssl;
-    log_callback log_callback;
-    invalid_token_callback invalid_token_callback;
-};
-
-
-#ifdef __cplusplus
-}
-#endif
+void apn_strerror(int errnum, char *buf, size_t buff_size)
+    __apn_attribute_nonnull__((2));
 
 #endif

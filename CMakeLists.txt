@@ -101,14 +101,14 @@ CONFIGURE_FILE("${CAPN_SOURCE_LIB_DIR}/apn_platform.h.cmake" "${PROJECT_BINARY_D
 CONFIGURE_FILE("${CAPN_SOURCE_LIB_DIR}/apn_version.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_version.h")
 
 SET(CAPN_SOURCE_FILES
-    ${CAPN_SOURCE_LIB_DIR}/apn_memory.c
-    ${CAPN_SOURCE_LIB_DIR}/apn.c
-    ${CAPN_SOURCE_LIB_DIR}/apn_strings.c
-    ${CAPN_SOURCE_LIB_DIR}/apn_payload.c
-    ${CAPN_SOURCE_LIB_DIR}/apn_tokens.c
-    ${CAPN_SOURCE_LIB_DIR}/apn_binary_message.c
-    ${CAPN_SOURCE_LIB_DIR}/apn_array.c
-)
+        ${CAPN_SOURCE_LIB_DIR}/apn_memory.c
+        ${CAPN_SOURCE_LIB_DIR}/apn.c
+        ${CAPN_SOURCE_LIB_DIR}/apn_strings.c
+        ${CAPN_SOURCE_LIB_DIR}/apn_payload.c
+        ${CAPN_SOURCE_LIB_DIR}/apn_tokens.c
+        ${CAPN_SOURCE_LIB_DIR}/apn_binary_message.c
+        ${CAPN_SOURCE_LIB_DIR}/apn_array.c
+        ${CAPN_SOURCE_LIB_DIR}/apn_strerror.c)
 
 SET(CAPN_PUBLIC_HEADER_FILES
     ${CAPN_SOURCE_LIB_DIR}/apn.h

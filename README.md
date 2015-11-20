@@ -78,7 +78,7 @@ First, initialize the library by calling `apn_library_init()`. This function mus
 Create a new apn `context` and specify the path to a certificate file and the path to a private key file using `apn_set_certificate()`.
 If the private key is password protected, pass it as well, otherwise pass `NULL`. The Certificate and the private key must be in PEM format.
 An alternative way is to use a .p12 file instead of a certificate and a private key. Use `apn_set_pkcs12_file()` to specify the path to a .p12 file .
-If a .p12 file is specified, certificate and private key arguments will be ignored.
+If a .p12 file is specified, certificate and private key will be ignored.
 
 ```c
 apn_ctx_t *ctx = apn_init();
@@ -102,6 +102,18 @@ transported to the device.
 ```c
  apn_set_mode(ctx,  APN_MODE_SANDBOX);
 ```
+
+To specify behavior call `apn_set_behavior()`. Function takes one or more bit flags as a parameter:
+
+```c
+ apn_set_behavior(apn_ctx, APN_OPTION_RECONNECT | APN_OPTION_LOG_STDERR);
+ ```
+
+Available flags:
+
+ - `APN_OPTION_RECONNECT` -  Automatically establish new connection when connection is dropped. New connection will be established if error occurs: `APN_ERR_SERVICE_SHUTDOWN`, `APN_ERR_TOKEN_INVALID`, `APN_ERR_CONNECTION_CLOSED`.  Otherwise new connection will not be established
+
+ - `APN_OPTION_LOG_STDERR` - Print log messages to standard error
 
 #### Logging
 
@@ -190,29 +202,33 @@ is different from the development one. If you are using a production mode, you m
 
 #### Send
 
-To send notification to devices call `apn_send()`, passing `context`, `payload` and array of `tokens`:
+To send notification to devices call `apn_send()`, passing `context`, `payload`, array of device `tokens` and pointer to a invalid tokens array. The array should be freed - call `apn_array_free()`:
 
 ```c
 
-uint32 invalid_token_index;
+apn_array_t *invalid_tokens = NULL;
 
-if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_token_index)) {
-	if(errno == APN_ERR_TOKEN_INVALID) {
-		printf("Invalid token: %s\n", (const char * const) apn_array_item_at_index(tokens, invalid_token_index));
-	} else {
-		printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno);
-	}
+if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_tokens))  {
+		printf("Could not sent push: %s (errno: %d)\n", apn_error_string(errno), errno)
+} else {
+    if (invalid_tokens) {
+        printf, "Invalid tokens:\n");
+        uint32_t i = 0;
+        for (; i < apn_array_count(invalid_tokens); i++) {
+            printf("    %u. %s\n", i, apn_array_item_at_index(invalid_tokens, i));
+        }
+        apn_array_free(invalid_tokens);
+    }
 }
 ```
 
->The APNs drops the connection if it receives an invalid token. The APNs drops the connection if it receives an invalid token.
+> The APNs drops the connection if it receives an invalid token.
 The function passes out an index of array for invalid token via pointer `invalid_token_index`. You'll need to reconnect and send notification to token(s)
 following it, again.
 
-You can use `apn_send2()` instead of `apn_send()`, this function automatically establishes new connection to APNs when connection is dropped.
-The function establishes new connection to APNs only when invalid token has been sent, otherwise new connection will not be established.
+If flag `APN_OPTION_RECONNECT` is specified, the `apn_send()` automatically establishes new connection to APNs when connection is dropped
 
-When you use this function you can take invalid token, just specify a pointer to callback-function using `apn_set_invalid_token_callback`:
+Advanced, you can take invalid token, just specify a pointer to callback-function using `apn_set_invalid_token_callback`:
 
 ```c
 void invalid_token(const char * const token, uint32_t index) {
@@ -225,7 +241,7 @@ apn_ctx_t *ctx = ...
 apn_set_invalid_token_callback(ctx, invalid_token);
 ```
 
-Callback function has the following prototype:
+The callback function will be called for each invalid token. Function has the following prototype:
 
 ```c
 void (*invalid_token_callback)(const char * const token, uint32_t index)

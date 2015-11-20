@@ -66,25 +66,22 @@ void apn_binary_message_free(apn_binary_message_t *binary_message) {
 
 void apn_binary_message_set_id(const apn_binary_message_t * const binary_message, uint32_t id) {
     uint32_t id_n = htonl(id);
-    if (binary_message && binary_message->id_position) {
+    if (NULL != binary_message && NULL != binary_message->id_position) {
         memcpy(binary_message->id_position, &id_n, sizeof(uint32_t));
     }
 }
 
 void apn_binary_message_set_token(apn_binary_message_t  * const binary_message, const uint8_t * const token_binary) {
-    char *token_hex = NULL;
     assert(token_binary);
-    token_hex = apn_token_binary_to_hex(token_binary);
+    char *token_hex = apn_token_binary_to_hex(token_binary);
     __apn_binary_message_set_token(binary_message, token_binary, token_hex);
     free(token_hex);
 }
 
 apn_return apn_binary_message_set_token_hex(apn_binary_message_t * const binary_message, const char * const token_hex) {
-    uint8_t *token_binary = NULL;
-    apn_return ret;
     assert(token_hex);
-    token_binary = apn_token_hex_to_binary(token_hex);
-    ret = __apn_binary_message_set_token(binary_message, token_binary, token_hex);
+    uint8_t *token_binary = apn_token_hex_to_binary(token_hex);
+    apn_return ret = __apn_binary_message_set_token(binary_message, token_binary, token_hex);
     free(token_binary);
     return ret;
 }

@@ -47,7 +47,10 @@ void apn_strfree(char **str)
 int apn_snprintf(char * s, size_t n, const char * format, ...)
         __apn_attribute_nonnull__((1,3));
 
-void apn_strncpy(char *dst, const char * const src, size_t dst_len, size_t src_len)
+void apn_strncpy(char *dst, const char * const src, size_t dst_size, size_t src_size)
+        __apn_attribute_nonnull__((1,2));
+
+void apn_substr(char *dst, const char *src, size_t dst_size, size_t start, size_t stop)
         __apn_attribute_nonnull__((1,2));
 
 #ifdef	__cplusplus

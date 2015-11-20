@@ -44,20 +44,20 @@ union __apn_payload_custom_value_t {
     int64_t numeric_value;
     double double_value;
     struct {
-            char *value;
-            size_t length;
+        char *value;
+        size_t length;
     } string_value;
     uint8_t bool_value;
     struct {
-            char **array;
-            uint32_t array_size;
+        char **array;
+        uint32_t array_size;
     } array_value;
 };
 
 struct __apn_payload_custom_property_t {
-    char *name;
     apn_payload_custom_value_t value;
     apn_payload_custom_property_type_t value_type;
+    char *name;
 };
 
 struct __apn_payload_alert_t {

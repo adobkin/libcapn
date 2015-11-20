@@ -40,6 +40,19 @@ typedef enum __apn_connection_mode {
     APN_MODE_SANDBOX = 1
 } apn_connection_mode;
 
+enum __apn_option {
+    /**
+     * Automatically establish new connection when connection is dropped.
+     * New connection will be established if error occurs: APN_ERR_SERVICE_SHUTDOWN, APN_ERR_TOKEN_INVALID,
+     * APN_ERR_CONNECTION_CLOSED.  Otherwise new connection will not be established
+     */
+    APN_OPTION_RECONNECT = 1 << 1,
+    /**
+     * Print log messages to standard error
+     */
+    APN_OPTION_LOG_STDERR = 1 << 2
+};
+
 typedef enum __apn_errors {
     APN_ERR_FAILED_INIT = 9000,
 
@@ -269,8 +282,37 @@ __apn_export__ void apn_set_invalid_token_callback(apn_ctx_t *const ctx, invalid
 __apn_export__ apn_return apn_set_certificate(apn_ctx_t *const ctx, const char *const cert, const char *const key, const char *const pass)
         __apn_attribute_nonnull__((1));
 
+/**
+ * Sets path to a PKCS12 file which will be used to establish secure connection.
+ * If the PKCS12 file is specified, certificate and private key will be ignored.
+ *
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL.
+ * @param[in] cert - Path to a PKCS12 file. Must be a valid NULL-terminated string.
+ * @param[in] pass - Passphrase for a PKCS12 file. Can be NULL.
+ *
+ * @return
+ *      - ::APN_SUCCESS on success.
+ *      - ::APN_ERROR on failure with error information stored in `errno`.
+ */
 __apn_export__ apn_return apn_set_pkcs12_file(apn_ctx_t *const ctx, const char *const pkcs12_file, const char *const pass)
         __apn_attribute_nonnull__((1));
+
+/**
+ *  Sets behavior.
+ *
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL.
+ * @param[in] options - Options, bit mask.
+ */
+__apn_export__ void apn_set_behavior(apn_ctx_t * const ctx, uint32_t options)
+        __apn_attribute_nonnull__((1));
+
+/**
+ * Returns current behavior.
+ *
+ * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL.
+ */
+__apn_export__ uint32_t apn_behavior(const apn_ctx_t *const ctx)
+    __apn_attribute_nonnull__((1));
 
 /**
  * Returns the connection mode.
@@ -325,15 +367,13 @@ __apn_export__ const char *apn_private_key_pass(const apn_ctx_t * const ctx)
  *
  * @param[in] ctx - Pointer to an initialized `ctx` structure. Cannot be NULL.
  * @param[in] payload - Pointer to `payload` structure. Cannot be NULL.
+ * @param[in, out] invalid_tokens - Array of invalid tokens. Each item is string.
  *
  * @return
  *      - ::APN_SUCCESS on success.
  *      - ::APN_ERROR on failure with error information stored in `errno`.
  */
-__apn_export__ apn_return apn_send(const apn_ctx_t * const ctx, const apn_payload_t *payload, apn_array_t *tokens, char **invalid_token)
-        __apn_attribute_nonnull__((1,2,3));
-
-__apn_export__ apn_return apn_send2(apn_ctx_t * const ctx, const apn_payload_t *payload, apn_array_t *tokens)
+__apn_export__ apn_return apn_send(apn_ctx_t * const ctx, const apn_payload_t *payload, apn_array_t *tokens, apn_array_t **invalid_tokens)
         __apn_attribute_nonnull__((1,2,3));
 
 /**
