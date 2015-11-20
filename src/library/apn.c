@@ -24,7 +24,9 @@
 
 #include <errno.h>
 #include <assert.h>
+#ifndef _WIN32
 #include <signal.h>
+#endif
 #include <openssl/err.h>
 #include <openssl/pkcs12.h>
 
@@ -170,12 +172,16 @@ void apn_close(apn_ctx_t *const ctx) {
     assert(ctx);
     __apn_log(ctx, APN_LOG_LEVEL_INFO, "Connection closing...");
     if (ctx->ssl) {
+#ifndef _WIN32
         signal(SIGPIPE, SIG_IGN);
+#endif
         if (!SSL_shutdown(ctx->ssl)) {
             shutdown(ctx->sock, SHUT_RDWR);
             SSL_shutdown(ctx->ssl);
         }
+#ifndef _WIN32
         signal(SIGPIPE, SIG_DFL);
+#endif
         APN_CLOSE_SOCKET(ctx->sock);
         SSL_free(ctx->ssl);
         ctx->ssl = NULL;
@@ -330,7 +336,11 @@ apn_return apn_send(apn_ctx_t *const ctx, const apn_payload_t *payload, apn_arra
         if (1 == auto_reconnect) {
             __apn_log(ctx, APN_LOG_LEVEL_INFO, "Reconnecting...");
             apn_close(ctx);
-            sleep(1);
+#ifndef _WIN32
+    	    sleep(1);
+#else
+	    Sleep(1000);
+#endif
             if (APN_ERROR == (ret = apn_connect(ctx))) {
                 break;
             }
