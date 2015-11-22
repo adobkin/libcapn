@@ -111,8 +111,7 @@ To specify behavior call `apn_set_behavior()`. Function takes one or more bit fl
 
 Available flags:
 
- - `APN_OPTION_RECONNECT` -  Automatically establish new connection when connection is dropped. New connection will be established if error occurs: `APN_ERR_SERVICE_SHUTDOWN`, `APN_ERR_TOKEN_INVALID`, `APN_ERR_CONNECTION_CLOSED`.  Otherwise new connection will not be established
-
+ - `APN_OPTION_RECONNECT` -  Automatically establish new connection when connection is dropped. 
  - `APN_OPTION_LOG_STDERR` - Print log messages to standard error
 
 #### Logging
@@ -222,8 +221,7 @@ if(APN_ERROR == apn_send(ctx, payload, tokens, &invalid_tokens))  {
 }
 ```
 
-> The APNs drops the connection if it receives an invalid token.
-The function passes out an index of array for invalid token via pointer `invalid_token_index`. You'll need to reconnect and send notification to token(s)
+> The APNs drops the connection if it receives an invalid token. You'll need to reconnect and send notification to token(s)
 following it, again.
 
 If flag `APN_OPTION_RECONNECT` is specified, the `apn_send()` automatically establishes new connection to APNs when connection is dropped
