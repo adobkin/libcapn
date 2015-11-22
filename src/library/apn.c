@@ -24,11 +24,6 @@
 
 #include <errno.h>
 #include <assert.h>
-#ifndef _WIN32
-#include <signal.h>
-#endif
-#include <openssl/err.h>
-#include <openssl/pkcs12.h>
 
 #include "apn_strings.h"
 #include "apn_tokens.h"
@@ -39,24 +34,26 @@
 #include "apn_array_private.h"
 #include "apn_memory.h"
 #include "apn_strerror.h"
+#include "apn_log.h"
+#include "apn_ssl.h"
 
-#ifdef HAVE_SYS_FCNTL_H
+#ifdef APN_HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef APN_HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_NETINET_IN_H
+#ifdef APN_HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
-#ifdef HAVE_ARPA_INET_H
+#ifdef APN_HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 
-#ifdef HAVE_NETDB_H
+#ifdef APN_HAVE_NETDB_H
 #include <netdb.h>
 #endif
 
@@ -85,35 +82,26 @@ static struct __apn_apple_server __apn_apple_servers[4] = {
         {"feedback.push.apple.com",         2196}
 };
 
-static void __apn_log(const apn_ctx_t *const ctx, apn_log_levels level, const char *const message, ...);
 static apn_return __apn_send_binary_message(const apn_ctx_t *const ctx,
                                             apn_binary_message_t *const binary_message,
                                             apn_array_t *tokens,
                                             uint32_t token_index,
                                             uint8_t *apple_error_code,
                                             uint32_t *invalid_token_index);
-static int __apn_password_callback(char *buf, int size, int rwflag, void *password);
 static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server server);
-static int __ssl_write(const apn_ctx_t *const ctx, const uint8_t *message, size_t length);
-static int __ssl_read(const apn_ctx_t *const ctx, char *buff, size_t length);
 static void __apn_parse_apns_error(char *apns_error, uint8_t *apns_error_code, uint32_t *id);
 static apn_binary_message_t *__apn_payload_to_binary_message(const apn_ctx_t *const ctx,
                                                              const apn_payload_t *const payload);
 static int __apn_convert_apple_error(uint8_t apple_error_code);
-static apn_return __apn_tls_connect(apn_ctx_t *const ctx);
-static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret);
 static void __apn_invalid_token_dtor(char *const token);
 
 apn_return apn_library_init() {
     static uint8_t library_initialized = 0;
-#ifdef _WIN32
-    WSADATA wsa_data;
-#endif
     if (!library_initialized) {
-        SSL_load_error_strings();
-        SSL_library_init();
+        apn_ssl_init();
         library_initialized = 1;
 #ifdef _WIN32
+        WSADATA wsa_data;
         if(WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
             errno = APN_ERR_FAILED_INIT;
             return APN_ERROR;
@@ -124,8 +112,7 @@ apn_return apn_library_init() {
 }
 
 void apn_library_free() {
-    ERR_free_strings();
-    EVP_cleanup();
+    apn_ssl_free();
 #ifdef _WIN32
     WSACleanup();
 #endif
@@ -170,24 +157,14 @@ void apn_free(apn_ctx_t *ctx) {
 
 void apn_close(apn_ctx_t *const ctx) {
     assert(ctx);
-    __apn_log(ctx, APN_LOG_LEVEL_INFO, "Connection closing...");
-    if (ctx->ssl) {
-#ifndef _WIN32
-        signal(SIGPIPE, SIG_IGN);
-#endif
-        if (!SSL_shutdown(ctx->ssl)) {
-            shutdown(ctx->sock, SHUT_RDWR);
-            SSL_shutdown(ctx->ssl);
-        }
-#ifndef _WIN32
-        signal(SIGPIPE, SIG_DFL);
-#endif
-        APN_CLOSE_SOCKET(ctx->sock);
-        SSL_free(ctx->ssl);
-        ctx->ssl = NULL;
-        ctx->sock = -1;
+    if(-1 == ctx->sock) {
+        return;
     }
-    __apn_log(ctx, APN_LOG_LEVEL_INFO, "Connection closed");
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Connection closing...");
+    apn_ssl_close(ctx);
+    APN_CLOSE_SOCKET(ctx->sock);
+    ctx->sock = -1;
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Connection closed");
 }
 
 apn_return apn_set_certificate(apn_ctx_t *const ctx, const char *const cert, const char *const key,
@@ -305,7 +282,7 @@ apn_return apn_connect(apn_ctx_t *const ctx) {
 
 #define __APN_CHECK_CONNECTION(__ctx) \
     if (!__ctx->ssl || __ctx->feedback) {\
-        __apn_log(__ctx, APN_LOG_LEVEL_ERROR, "Connection was not opened");\
+        apn_log(__ctx, APN_LOG_LEVEL_ERROR, "Connection was not opened");\
         errno = APN_ERR_NOT_CONNECTED;\
         return APN_ERROR;\
     }
@@ -325,16 +302,17 @@ apn_return apn_send(apn_ctx_t *const ctx, const apn_payload_t *payload, apn_arra
         return APN_ERROR;
     }
 
-    __apn_log(ctx, APN_LOG_LEVEL_INFO, "Sending notification to %d device(s)...", apn_array_count(tokens));
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Sending notification to %d device(s)...", apn_array_count(tokens));
 
     apn_array_t *_invalid_tokens = NULL;
     uint32_t start_index = 0;
     uint8_t auto_reconnect = 0;
 
     apn_return ret = APN_SUCCESS;
-    for (; ;) {
+
+    for (;;) {
         if (1 == auto_reconnect) {
-            __apn_log(ctx, APN_LOG_LEVEL_INFO, "Reconnecting...");
+            apn_log(ctx, APN_LOG_LEVEL_INFO, "Reconnecting...");
             apn_close(ctx);
 #ifndef _WIN32
     	    sleep(1);
@@ -357,7 +335,7 @@ apn_return apn_send(apn_ctx_t *const ctx, const apn_payload_t *payload, apn_arra
             if (errcode == APN_ERR_TOKEN_INVALID) {
                 const char *const invalid_token = (const char *const) apn_array_item_at_index(tokens,
                                                                                               invalid_token_index);
-                __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Invalid token: %s (index: %u)", invalid_token,
+                apn_log(ctx, APN_LOG_LEVEL_ERROR, "Invalid token: %s (index: %u)", invalid_token,
                           invalid_token_index);
                 if (invalid_tokens) {
                     if (!_invalid_tokens) {
@@ -375,20 +353,19 @@ apn_return apn_send(apn_ctx_t *const ctx, const apn_payload_t *payload, apn_arra
             }
 
             char *error_string = apn_error_string(errcode);
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not send notification: %s (errno: %d)", error_string, errcode);
+            apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not send notification: %s (errno: %d)", error_string, errcode);
             apn_strfree(&error_string);
 
             start_index = (errcode == APN_ERR_TOKEN_INVALID) ? invalid_token_index + 1 : invalid_token_index;
 
             uint32_t options = apn_behavior(ctx);
-
             if (start_index < apn_array_count(tokens)) {
                 if (options & APN_OPTION_RECONNECT &&
                     (errcode == APN_ERR_CONNECTION_CLOSED
                      || errcode == APN_ERR_SERVICE_SHUTDOWN
+                     || errcode == APN_ERR_NETWORK_TIMEDOUT
+                     || errcode == APN_ERR_NETWORK_UNREACHABLE
                      || (errcode == APN_ERR_TOKEN_INVALID))) {
-
-                    start_index = invalid_token_index + 1;
                     auto_reconnect = 1;
                     continue;
                 }
@@ -457,7 +434,7 @@ apn_return apn_feedback(const apn_ctx_t *const ctx, apn_array_t **tokens) {
 
         if (FD_ISSET(ctx->sock, &read_set)) {
             char buffer[38];
-            int bytes_read = __ssl_read(ctx, buffer, sizeof(buffer));
+            int bytes_read = apn_ssl_read(ctx, buffer, sizeof(buffer));
             if (bytes_read < 0) {
                 return APN_ERROR;
             } else if (bytes_read > 0) {
@@ -507,7 +484,7 @@ char *apn_error_string(int errnum) {
         case APN_ERR_CONNECTION_CLOSED:
             apn_snprintf(error, sizeof(error) - 1, "connection was closed");
             break;
-        case APN_ERR_CONNECTION_TIMEDOUT:
+        case APN_ERR_NETWORK_TIMEDOUT:
             apn_snprintf(error, sizeof(error) - 1, "connection timed out");
             break;
         case APN_ERR_NETWORK_UNREACHABLE:
@@ -526,7 +503,7 @@ char *apn_error_string(int errnum) {
             apn_snprintf(error, sizeof(error) - 1, "private key is not set");
             break;
         case APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE:
-            apn_snprintf(error, sizeof(error) - 1, "unable to use specified SSL certificate");
+            apn_snprintf(error, sizeof(error) - 1, "unable to use specified certificate");
             break;
         case APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY:
             apn_snprintf(error, sizeof(error) - 1, "unable to use specified private key");
@@ -534,11 +511,11 @@ char *apn_error_string(int errnum) {
         case APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12:
             apn_snprintf(error, sizeof(error) - 1, "unable to use specified PKCS12 file");
             break;
-        case APN_ERR_COULD_NOT_INITIALIZE_CONNECTION:
-            apn_snprintf(error, sizeof(error) - 1, "could not initialize connection");
+        case APN_ERR_UNABLE_TO_ESTABLISH_CONNECTION:
+            apn_snprintf(error, sizeof(error) - 1, "unable to establish connection");
             break;
-        case APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION:
-            apn_snprintf(error, sizeof(error) - 1, "could not initialize ssl connection");
+        case APN_ERR_UNABLE_TO_ESTABLISH_SSL_CONNECTION:
+            apn_snprintf(error, sizeof(error) - 1, "unable to establish ssl connection");
             break;
         case APN_ERR_SSL_WRITE_FAILED:
             apn_snprintf(error, sizeof(error) - 1, "SSL_write failed");
@@ -578,39 +555,24 @@ char *apn_error_string(int errnum) {
     return apn_strndup(error, sizeof(error));
 }
 
-static int __apn_password_callback(char *buf, int size, int rwflag, void *password) {
-    (void) rwflag;
-    if (!password || size <= 0) {
-        return 0;
-    }
-#ifdef _WIN32
-    strncpy_s(buf, size, (char *) password, size);
-#else
-    strncpy(buf, (char *) password, (size_t) size);
-#endif
-    buf[size - 1] = '\0';
-
-    return (int) strlen(buf);
-}
-
 static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server server) {
-    __apn_log(ctx, APN_LOG_LEVEL_INFO, "Connecting to %s:%d...", server.host, server.port);
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Connecting to %s:%d...", server.host, server.port);
 
     if (!ctx->pkcs12_file) {
         if (!ctx->certificate_file) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Certificate file not set (errno: %d)", APN_ERR_CERTIFICATE_IS_NOT_SET);
+            apn_log(ctx, APN_LOG_LEVEL_ERROR, "Certificate file not set (errno: %d)", APN_ERR_CERTIFICATE_IS_NOT_SET);
             errno = APN_ERR_CERTIFICATE_IS_NOT_SET;
             return APN_ERROR;
         }
         if (!ctx->private_key_file) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Private key file not set (errno: %d)", APN_ERR_PRIVATE_KEY_IS_NOT_SET);
+            apn_log(ctx, APN_LOG_LEVEL_ERROR, "Private key file not set (errno: %d)", APN_ERR_PRIVATE_KEY_IS_NOT_SET);
             errno = APN_ERR_PRIVATE_KEY_IS_NOT_SET;
             return APN_ERROR;
         }
     }
 
     if (ctx->sock == -1) {
-        __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Resolving server hostname...");
+        apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Resolving server hostname...");
 
         struct addrinfo hints;
         memset(&hints, 0, sizeof(hints));
@@ -623,19 +585,17 @@ static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server 
 
         struct addrinfo *addrinfo = NULL;
         if (0 != getaddrinfo(server.host, str_port, &hints, &addrinfo)) {
-            char *error = apn_error_string(errno);
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to resolve hostname: getaddrinfo() failed: %s (errno: %d)",
-                      error, errno);
-            free(error);
+            apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to resolve hostname: getaddrinfo() failed");
+            errno  = APN_ERR_UNABLE_TO_ESTABLISH_CONNECTION;
             return APN_ERROR;
         }
 
-        __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Creating socket...");
+        apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Creating socket...");
 
         SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sock < 0) {
             char *error = apn_error_string(errno);
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to create socket: socket() failed: %s (errno: %d)", error,
+            apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to create socket: socket() failed: %s (errno: %d)", error,
                       errno);
             free(error);
             return APN_ERROR;
@@ -648,16 +608,16 @@ static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server 
         int sock_flags = 1;
         ioctlsocket(ctx->sock, FIONBIO, (u_long *) &sock_flags);
 #endif
-        __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Socket successfully created");
+        apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Socket successfully created");
 
         uint8_t connected = 0;
         while (addrinfo) {
             char ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) addrinfo->ai_addr)->sin_addr, ip, sizeof(ip));
-            __apn_log(ctx, APN_LOG_LEVEL_INFO, "Trying to connect to %s...", ip);
+            apn_log(ctx, APN_LOG_LEVEL_INFO, "Trying to connect to %s...", ip);
             if (connect(sock, addrinfo->ai_addr, addrinfo->ai_addrlen) < 0) {
                 char *error = apn_error_string(errno);
-                __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not to connect to: %s (errno: %d)", error, errno);
+                apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not to connect to: %s (errno: %d)", error, errno);
                 free(error);
             } else {
                 connected = 1;
@@ -669,109 +629,19 @@ static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server 
         freeaddrinfo(addrinfo);
 
         if (!connected) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to establish connection");
+            errno = APN_ERR_UNABLE_TO_ESTABLISH_CONNECTION;
+            apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to establish connection");
+            apn_close(ctx);
             return APN_ERROR;
         }
 
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "Connection has been established");
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "Initializing SSL connection...");
+        apn_log(ctx, APN_LOG_LEVEL_INFO, "Connection has been established");
+        apn_log(ctx, APN_LOG_LEVEL_INFO, "Initializing SSL connection...");
         ctx->sock = sock;
 
-        if (APN_ERROR == __apn_tls_connect(ctx)) {
-            return APN_ERROR;
-        }
-
-        X509 *cert = SSL_get_peer_certificate(ctx->ssl);
-        if (cert) {
-            char *line = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
-            __apn_log(ctx, APN_LOG_LEVEL_INFO, "Certificate subject name: %s", line);
-            OPENSSL_free(line);
-
-            line = X509_NAME_oneline(X509_get_issuer_name(cert), NULL, 0);
-            __apn_log(ctx, APN_LOG_LEVEL_INFO, "Certificate issuer name: %s", line);
-            OPENSSL_free(line);
-            X509_free(cert);
-        }
+        return apn_ssl_connect(ctx);
     }
     return APN_SUCCESS;
-}
-
-static int __ssl_write(const apn_ctx_t *const ctx, const uint8_t *message, size_t length) {
-    int bytes_written = 0;
-    int bytes_written_total = 0;
-
-    while (length > 0) {
-        bytes_written = SSL_write(ctx->ssl, message, (int) length);
-        if (bytes_written <= 0) {
-            switch (SSL_get_error(ctx->ssl, bytes_written)) {
-                case SSL_ERROR_WANT_WRITE:
-                case SSL_ERROR_WANT_READ:
-                    continue;
-                case SSL_ERROR_SYSCALL:
-                    switch (errno) {
-                        case EINTR:
-                            continue;
-                        case EPIPE:
-                            errno = APN_ERR_NETWORK_UNREACHABLE;
-                            return -1;
-                        case ETIMEDOUT:
-                            errno = APN_ERR_CONNECTION_TIMEDOUT;
-                            return -1;
-                        default:
-                            errno = APN_ERR_SSL_WRITE_FAILED;
-                            return -1;
-                    }
-                case SSL_ERROR_ZERO_RETURN:
-                case SSL_ERROR_NONE:
-                    errno = APN_ERR_CONNECTION_CLOSED;
-                    return -1;
-                default:
-                    errno = APN_ERR_SSL_WRITE_FAILED;
-                    return -1;
-            }
-        }
-        message += bytes_written;
-        bytes_written_total += bytes_written;
-        length -= bytes_written;
-    }
-    return bytes_written_total;
-}
-
-static int __ssl_read(const apn_ctx_t *const ctx, char *buff, size_t length) {
-    int read;
-    for (; ;) {
-        read = SSL_read(ctx->ssl, buff, (int) length);
-        if (read > 0) {
-            break;
-        }
-        switch (SSL_get_error(ctx->ssl, read)) {
-            case SSL_ERROR_WANT_WRITE:
-            case SSL_ERROR_WANT_READ:
-                continue;
-            case SSL_ERROR_SYSCALL:
-                switch (errno) {
-                    case EINTR:
-                        continue;
-                    case EPIPE:
-                        errno = APN_ERR_NETWORK_UNREACHABLE;
-                        return -1;
-                    case ETIMEDOUT:
-                        errno = APN_ERR_CONNECTION_TIMEDOUT;
-                        return -1;
-                    default:
-                        errno = APN_ERR_SSL_READ_FAILED;
-                        return -1;
-                }
-            case SSL_ERROR_ZERO_RETURN:
-            case SSL_ERROR_NONE:
-                errno = APN_ERR_CONNECTION_CLOSED;
-                return -1;
-            default:
-                errno = APN_ERR_SSL_READ_FAILED;
-                return -1;
-        }
-    }
-    return read;
 }
 
 static void __apn_parse_apns_error(char *apns_error, uint8_t *apns_error_code, uint32_t *id) {
@@ -793,43 +663,6 @@ static void __apn_parse_apns_error(char *apns_error, uint8_t *apns_error_code, u
     }
 }
 
-#define __APN_LOG_BUFFER 1024
-
-static void __apn_log(const apn_ctx_t *const ctx, apn_log_levels level, const char *const message, ...) {
-    if (ctx && ((ctx->log_callback || ctx->options & APN_OPTION_LOG_STDERR) && (ctx->log_level & level))) {
-        va_list args;
-        va_start(args, message);
-
-        char buffer[__APN_LOG_BUFFER] = {0};
-#ifdef _WIN32
-        vsnprintf_s(buffer, __APN_LOG_BUFFER, _TRUNCATE, message, args);
-#else
-        vsnprintf(buffer, __APN_LOG_BUFFER, message, args);
-#endif
-
-        if(ctx->log_callback && (ctx->log_level & level)) {
-            ctx->log_callback(level, buffer, __APN_LOG_BUFFER);
-        }
-
-        if(ctx->options & APN_OPTION_LOG_STDERR) {
-            const char *prefix = NULL;
-            switch (level) {
-                case APN_LOG_LEVEL_INFO:
-                    prefix = "inf";
-                    break;
-                case APN_LOG_LEVEL_ERROR:
-                    prefix = "err";
-                    break;
-                case APN_LOG_LEVEL_DEBUG:
-                    prefix = "dbg";
-                    break;
-            }
-            fprintf(stderr, "[%s] %s\n", prefix, buffer);
-        }
-        va_end(args);
-    }
-}
-
 #define APN_MACRO_BREAK1 break;
 #define APN_MACRO_BREAK0
 #define APN_LOOP_BREAK(__loop) APN_MACRO_BREAK##__loop
@@ -837,16 +670,16 @@ static void __apn_log(const apn_ctx_t *const ctx, apn_log_levels level, const ch
 #define __API_SOCKET_READ(__ctx, __read_set, __buffer, __apple_error_flag, __loop, __current_tix, __invalid_tix) \
     __apple_error_flag = 0; \
     if (FD_ISSET(__ctx->sock, __read_set)) { \
-        __apn_log(__ctx, APN_LOG_LEVEL_DEBUG, "Socket has data for read"); \
-        __apn_log(__ctx, APN_LOG_LEVEL_DEBUG, "Reading data from a socket..."); \
-        int __bytes_read = __ssl_read(__ctx, __buffer, sizeof(__buffer)); \
+        apn_log(__ctx, APN_LOG_LEVEL_DEBUG, "Socket has data for read"); \
+        apn_log(__ctx, APN_LOG_LEVEL_DEBUG, "Reading data from a socket..."); \
+        int __bytes_read = apn_ssl_read(__ctx, __buffer, sizeof(__buffer)); \
         if (0 < __bytes_read) { \
-            __apn_log(__ctx, APN_LOG_LEVEL_DEBUG, "%d byte(s) has been read from a socket", __bytes_read); \
+            apn_log(__ctx, APN_LOG_LEVEL_DEBUG, "%d byte(s) has been read from a socket", __bytes_read); \
             __apple_error_flag = 1; \
             APN_LOOP_BREAK(__loop) \
         } else { \
             char *__error_str = apn_error_string(errno); \
-            __apn_log(__ctx, APN_LOG_LEVEL_ERROR, "Unable to read data from a socket: %s (errno: %d)", __error_str, errno); \
+            apn_log(__ctx, APN_LOG_LEVEL_ERROR, "Unable to read data from a socket: %s (errno: %d)", __error_str, errno); \
             free(__error_str); \
             if(__invalid_tix) {\
                 *__invalid_tix = __current_tix;\
@@ -858,7 +691,7 @@ static void __apn_log(const apn_ctx_t *const ctx, apn_log_levels level, const ch
 #define __APN_SELECT_ERROR(__returned_code) \
     if(__returned_code < 0) { \
         char *__error_str = apn_error_string(errno); \
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "select() failed: %s (errno: %d)", __error_str, errno); \
+        apn_log(ctx, APN_LOG_LEVEL_ERROR, "select() failed: %s (errno: %d)", __error_str, errno); \
         free(__error_str); \
         return APN_ERROR;\
     }
@@ -884,7 +717,7 @@ static apn_return __apn_send_binary_message(const apn_ctx_t *const ctx,
         apn_binary_message_set_id(binary_message, i);
         apn_binary_message_set_token_hex(binary_message, token);
 
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "Sending notificaton to device with token %s...", token);
+        apn_log(ctx, APN_LOG_LEVEL_INFO, "Sending notificaton to device with token %s...", token);
 
         do {
             FD_ZERO(&write_set);
@@ -892,24 +725,24 @@ static apn_return __apn_send_binary_message(const apn_ctx_t *const ctx,
             FD_SET(ctx->sock, &write_set);
             FD_SET(ctx->sock, &read_set);
             select_returned = select(ctx->sock + 1, &read_set, &write_set, NULL, &timeout);
-            __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "select() returned %d", select_returned);
+            apn_log(ctx, APN_LOG_LEVEL_DEBUG, "select() returned %d", select_returned);
         } while (0 == select_returned || (0 > select_returned && EINTR == errno));
 
         __APN_SELECT_ERROR(select_returned)
         __API_SOCKET_READ(ctx, &read_set, apple_error_str, apple_returned_error, 1, i, invalid_token_index)
 
         if (FD_ISSET(ctx->sock, &write_set)) {
-            __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Socket is ready for writing");
-            int bytes_written = __ssl_write(ctx, binary_message->message, binary_message->size);
+            apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Socket is ready for writing");
+            int bytes_written = apn_ssl_write(ctx, binary_message->message, binary_message->size);
             if (0 >= bytes_written) {
                 char *error = apn_error_string(errno);
-                __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to write data to a socket: %s (errno: %d)", error, errno);
+                apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to write data to a socket: %s (errno: %d)", error, errno);
                 free(error);
                 return APN_ERROR;
             }
-            __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "%d byte(s) has been written to a socket");
+            apn_log(ctx, APN_LOG_LEVEL_DEBUG, "%d byte(s) has been written to a socket");
         }
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "Notification has been sent");
+        apn_log(ctx, APN_LOG_LEVEL_INFO, "Notification has been sent");
     }
 
     if (!apple_returned_error) {
@@ -918,16 +751,16 @@ static apn_return __apn_send_binary_message(const apn_ctx_t *const ctx,
             FD_ZERO(&read_set);
             FD_SET(ctx->sock, &read_set);
             select_returned = select(ctx->sock + 1, &read_set, NULL, NULL, &timeout);
-            __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "select() returned %d", select_returned);
+            apn_log(ctx, APN_LOG_LEVEL_DEBUG, "select() returned %d", select_returned);
         } while (0 > select_returned && EINTR == errno);
 
         __APN_SELECT_ERROR(select_returned)
         __API_SOCKET_READ(ctx, &read_set, apple_error_str, apple_returned_error, 0, i, invalid_token_index)
     }
     if (apple_returned_error) {
-        __apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Parsing Apple response...", *apple_error_code);
+        apn_log(ctx, APN_LOG_LEVEL_DEBUG, "Parsing Apple response...", *apple_error_code);
         __apn_parse_apns_error(apple_error_str, apple_error_code, invalid_token_index);
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Apple returned error code %d", *apple_error_code);
+        apn_log(ctx, APN_LOG_LEVEL_ERROR, "Apple returned error code %d", *apple_error_code);
         return APN_ERROR;
     }
     return APN_SUCCESS;
@@ -935,15 +768,15 @@ static apn_return __apn_send_binary_message(const apn_ctx_t *const ctx,
 
 static apn_binary_message_t *__apn_payload_to_binary_message(const apn_ctx_t *const ctx,
                                                              const apn_payload_t *const payload) {
-    __apn_log(ctx, APN_LOG_LEVEL_INFO, "Creating binary message from payload...");
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Creating binary message from payload...");
     apn_binary_message_t *binary_message = apn_create_binary_message(payload);
     if (!binary_message) {
         char *error = apn_error_string(errno);
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to create binary message: %s (errno: %d)", error, errno);
+        apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to create binary message: %s (errno: %d)", error, errno);
         free(error);
         return NULL;
     }
-    __apn_log(ctx, APN_LOG_LEVEL_INFO, "Binary message sucessfully created");
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Binary message sucessfully created");
     return binary_message;
 }
 
@@ -964,169 +797,6 @@ static int __apn_convert_apple_error(uint8_t apple_error_code) {
         }
     }
     return 0;
-}
-
-static apn_return __apn_tls_connect(apn_ctx_t *const ctx) {
-    assert(ctx);
-
-    SSL_CTX *ssl_ctx = NULL;
-    if (NULL == (ssl_ctx = SSL_CTX_new(TLSv1_client_method()))) {
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not initialize SSL context: %s",
-                  ERR_error_string(ERR_get_error(), NULL));
-        return APN_ERROR;
-    }
-
-    SSL_CTX_set_ex_data(ssl_ctx, 0, ctx);
-    SSL_CTX_set_info_callback(ssl_ctx, __apn_ssl_info_callback);
-
-    if (ctx->pkcs12_file && ctx->pkcs12_pass) {
-        FILE *pkcs12_file = fopen(ctx->pkcs12_file, "r");
-        if (!pkcs12_file) {
-            char *error = apn_error_string(errno);
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to open file %s: %s (errno: %d)", ctx->pkcs12_file, error,
-                      errno);
-            free(error);
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12;
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-
-        PKCS12 *pkcs12_cert = NULL;
-        d2i_PKCS12_fp(pkcs12_file, &pkcs12_cert);
-        fclose(pkcs12_file);
-
-        EVP_PKEY *private_key = NULL;
-        X509 *cert = NULL;
-
-        if (!PKCS12_parse(pkcs12_cert, ctx->pkcs12_pass, &private_key, &cert, NULL)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified PKCS#12 file: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12;
-            PKCS12_free(pkcs12_cert);
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-        PKCS12_free(pkcs12_cert);
-
-        if (!SSL_CTX_use_certificate(ssl_ctx, cert)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified PKCS#12 file: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12;
-            X509_free(cert);
-            EVP_PKEY_free(private_key);
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-        X509_free(cert);
-
-        if (!SSL_CTX_use_PrivateKey(ssl_ctx, private_key)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified PKCS#12 file: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12;
-            EVP_PKEY_free(private_key);
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-        EVP_PKEY_free(private_key);
-    } else {
-        if (!SSL_CTX_use_certificate_file(ssl_ctx, ctx->certificate_file, SSL_FILETYPE_PEM)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified certificate: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE;
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-
-        SSL_CTX_set_default_passwd_cb(ssl_ctx, __apn_password_callback);
-        char *password = NULL;
-        if (ctx->private_key_pass) {
-            password = apn_strndup(ctx->private_key_pass, strlen(ctx->private_key_pass));
-            if (!password) {
-                SSL_CTX_free(ssl_ctx);
-                return APN_ERROR;
-            }
-            SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, password);
-        } else {
-            SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, NULL);
-        }
-
-        if (!SSL_CTX_use_PrivateKey_file(ssl_ctx, ctx->private_key_file, SSL_FILETYPE_PEM)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified private key: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY;
-            apn_strfree(&password);
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-
-        apn_strfree(&password);
-
-        if (!SSL_CTX_check_private_key(ssl_ctx)) {
-            __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to use specified private key: %s",
-                      ERR_error_string(ERR_get_error(), NULL));
-            errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_PRIVATE_KEY;
-            SSL_CTX_free(ssl_ctx);
-            return APN_ERROR;
-        }
-    }
-
-    ctx->ssl = SSL_new(ssl_ctx);
-    SSL_CTX_free(ssl_ctx);
-
-    if (!ctx->ssl) {
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not initialize SSL");
-        errno = APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION;
-        return APN_ERROR;
-    }
-
-    int ret = 0;
-
-    if (-1 == (ret = SSL_set_fd(ctx->ssl, ctx->sock))) {
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to attach socket to SSL: SSL_set_fd() failed (%d)",
-                  SSL_get_error(ctx->ssl, ret));
-        errno = APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION;
-        return APN_ERROR;
-    }
-
-    if (1 > (ret = SSL_connect(ctx->ssl))) {
-        char *error = apn_error_string(errno);
-        __apn_log(ctx, APN_LOG_LEVEL_ERROR,
-                  "Could not initialize SSL connection: SSL_connect() failed: %s, %s (errno: %d):",
-                  ERR_error_string((unsigned long) SSL_get_error(ctx->ssl, ret), NULL), error, errno);
-        free(error);
-        return APN_ERROR;
-    }
-    __apn_log(ctx, APN_LOG_LEVEL_INFO, "SSL connection has been established");
-    return APN_SUCCESS;
-}
-
-static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret) {
-    apn_ctx_t *ctx = SSL_CTX_get_ex_data(ssl->ctx, 0);
-    if (!ctx) {
-        return;
-    }
-    if (where & SSL_CB_LOOP) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: %s:%s:%s",
-                  (where & SSL_ST_CONNECT) ? "connect" : "undef",
-                  SSL_state_string_long(ssl),
-                  SSL_get_cipher_name(ssl));
-    } else if (where & SSL_CB_EXIT) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: %s:%s", (where & SSL_ST_CONNECT) ? "connect" : "undef",
-                  SSL_state_string_long(ssl));
-    } else if (where & SSL_CB_ALERT) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: alert %s:%s", (where & SSL_CB_READ) ? "read" : "write",
-                  SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
-    } else if (where & SSL_CB_HANDSHAKE_START) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: handshake started %s:%s:%s", (where & SSL_CB_READ) ? "read" : "write",
-                  SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
-    }
-    else if (where & SSL_CB_HANDSHAKE_DONE) {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: handshake done %s:%s:%s", (where & SSL_CB_READ) ? "read" : "write",
-                  SSL_state_string_long(ssl), SSL_alert_desc_string_long(ret));
-    } else {
-        __apn_log(ctx, APN_LOG_LEVEL_INFO, "ssl: state %s:%s:%s", SSL_state_string_long(ssl),
-                  SSL_alert_type_string_long(ret), SSL_alert_desc_string_long(ret));
-    }
 }
 
 static void __apn_invalid_token_dtor(char *const token) {

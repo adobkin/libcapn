@@ -23,40 +23,21 @@
 #ifndef __APN_PLATFORM_H__
 #define __APN_PLATFORM_H__
 
-#ifndef HAVE_UNISTD_H
-#cmakedefine HAVE_UNISTD_H
-#endif
-#ifndef HAVE_INTTYPES_H
-#cmakedefine HAVE_INTTYPES_H
-#endif
-#ifndef HAVE_STDINT_H
-#cmakedefine HAVE_STDINT_H
-#endif
-#ifndef HAVE_NETINET_IN_H
-#cmakedefine HAVE_NETINET_IN_H
-#endif
-#ifndef HAVE_ARPA_INET_H
-#cmakedefine HAVE_ARPA_INET_H
-#endif
-#ifndef HAVE_NETDB_H
-#cmakedefine HAVE_NETDB_H
-#endif
-#ifndef HAVE_CTYPE_H
-#cmakedefine HAVE_CTYPE_H
-#endif
-#ifndef HAVE_SYS_FCNTL_H
-#cmakedefine HAVE_SYS_FCNTL_H
-#endif
-#ifndef HAVE_STRINGS_H
-#cmakedefine HAVE_STRINGS_H
-#endif
-#ifndef HAVE_NETINET_IN_H
-#cmakedefine HAVE_NETINET_IN_H
-#endif
+#cmakedefine APN_HAVE_UNISTD_H
+#cmakedefine APN_HAVE_INTTYPES_H
+#cmakedefine APN_HAVE_STDINT_H
+#cmakedefine APN_HAVE_NETINET_IN_H
+#cmakedefine APN_HAVE_ARPA_INET_H
+#cmakedefine APN_HAVE_NETDB_H
+#cmakedefine APN_HAVE_CTYPE_H
+#cmakedefine APN_HAVE_SYS_FCNTL_H
+#cmakedefine APN_HAVE_STRINGS_H
+#cmakedefine APN_HAVE_NETINET_IN_H
+#cmakedefine APN_HAVE_SYS_SOCKET_H
 
-#cmakedefine HAVE_STRERROR_R
-#cmakedefine HAVE_GLIBC_STRERROR_R
-#cmakedefine HAVE_POSIX_STRERROR_R
+#cmakedefine APN_HAVE_STRERROR_R
+#cmakedefine APN_HAVE_GLIBC_STRERROR_R
+#cmakedefine APN_HAVE_POSIX_STRERROR_R
 
 typedef enum __apn_return {
     APN_SUCCESS,
@@ -92,15 +73,15 @@ typedef enum __apn_return {
 	typedef int SOCKET;
 #endif
 
-#ifdef HAVE_MALLOC_H
+#ifdef APN_HAVE_MALLOC_H
 #include <malloc.h>
 #endif
 
 #include <limits.h>
 
-#if defined(HAVE_STDINT_H)
+#if defined(APN_HAVE_STDINT_H)
 	#include <stdint.h>
-#elif defined(HAVE_INTTYPES_H)
+#elif defined(APN_HAVE_INTTYPES_H)
 	#include <inttypes.h>
 #endif
 

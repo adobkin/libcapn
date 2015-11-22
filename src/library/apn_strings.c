@@ -189,7 +189,13 @@ apn_array_t * apn_strsplit(char * const string, const char * const delim) {
     assert(delim);
     apn_array_t *array = apn_array_init(10, (apn_array_dtor)__apn_str_dtor, NULL);
     if(array) {
-        char *token = strtok(string, delim);
+        char *token = NULL;
+#ifdef _WIN32
+        char *context = NULL;
+        token = strtok_s(string, delim, &context);
+#else
+        token = strtok(string, delim);
+#endif
         while (token) {
             char *substr = apn_strndup(token, strlen(token));
             if(!substr) {
@@ -197,8 +203,13 @@ apn_array_t * apn_strsplit(char * const string, const char * const delim) {
                 return NULL;
             }
             apn_array_insert(array, substr);
-            token = strtok(0, delim);
+#ifdef _WIN32
+            token = strtok_s(NULL, delim, &context);
+#else
+            token = strtok(NULL, delim);
+#endif
         }
     }
     return array;
 }
+

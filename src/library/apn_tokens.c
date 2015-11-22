@@ -20,17 +20,14 @@
  * THE SOFTWARE.
  */
 
+#include "apn_tokens.h"
+
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#include "apn_tokens.h"
-
-#ifdef HAVE_CTYPE_H
 #include <ctype.h>
-#endif
 
 uint8_t *apn_token_hex_to_binary(const char *const token) {
 	assert(token);

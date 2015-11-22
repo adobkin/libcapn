@@ -23,7 +23,7 @@
 #include <errno.h>
 #include "apn_strerror.h"
 
-#ifdef HAVE_STRERROR_R
+#ifdef APN_HAVE_STRERROR_R
 #if(!defined(HAVE_POSIX_STRERROR_R) && !defined(HAVE_GLIBC_STRERROR_R) || defined(HAVE_POSIX_STRERROR_R) && defined(HAVE_GLIBC_STRERROR_R))
 #    error "strerror_r MUST be either POSIX, glibc or vxworks-style"
 #  endif
@@ -36,13 +36,13 @@ void apn_strerror(int errnum, char *buf, size_t buff_size) {
             apn_snprintf(buf, buff_size, "Error code %d", errnum);
         }
     }
-#elif defined(HAVE_STRERROR_R) && defined(HAVE_POSIX_STRERROR_R)
+#elif defined(APN_HAVE_STRERROR_R) && defined(APN_HAVE_POSIX_STRERROR_R)
     if (0 != strerror_r(errnum, buf, buff_size)) {
         if (buf[0] == '\0') {
             apn_snprintf(buf, buff_size, "Error code %d", errnum);
         }
     }
-#elif defined(HAVE_STRERROR_R) && defined(HAVE_GLIBC_STRERROR_R)
+#elif defined(APN_HAVE_STRERROR_R) && defined(APN_HAVE_GLIBC_STRERROR_R)
     char tmp_buff[256];
     char *str_error = strerror_r(errnum, tmp_buff, sizeof(tmp_buff));
     if(str_error) {

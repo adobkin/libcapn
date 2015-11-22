@@ -24,7 +24,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#ifdef HAVE_NETINET_IN_H
+#ifdef APN_HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
@@ -35,7 +35,8 @@
 #include "apn_paload_private.h"
 #include "apn_tokens.h"
 
-static apn_return __apn_binary_message_set_token(apn_binary_message_t * const binary_message, const uint8_t * const token_binary, const char * const token_hex);
+static apn_return __apn_binary_message_set_token(apn_binary_message_t *const binary_message,
+                                                 const uint8_t *const token_binary, const char *const token_hex);
 
 apn_binary_message_t *apn_binary_message_init(uint32_t size) {
     apn_binary_message_t *binary_message = malloc(sizeof(apn_binary_message_t));
@@ -64,21 +65,21 @@ void apn_binary_message_free(apn_binary_message_t *binary_message) {
     }
 }
 
-void apn_binary_message_set_id(const apn_binary_message_t * const binary_message, uint32_t id) {
+void apn_binary_message_set_id(const apn_binary_message_t *const binary_message, uint32_t id) {
     uint32_t id_n = htonl(id);
     if (NULL != binary_message && NULL != binary_message->id_position) {
         memcpy(binary_message->id_position, &id_n, sizeof(uint32_t));
     }
 }
 
-void apn_binary_message_set_token(apn_binary_message_t  * const binary_message, const uint8_t * const token_binary) {
+void apn_binary_message_set_token(apn_binary_message_t *const binary_message, const uint8_t *const token_binary) {
     assert(token_binary);
     char *token_hex = apn_token_binary_to_hex(token_binary);
     __apn_binary_message_set_token(binary_message, token_binary, token_hex);
     free(token_hex);
 }
 
-apn_return apn_binary_message_set_token_hex(apn_binary_message_t * const binary_message, const char * const token_hex) {
+apn_return apn_binary_message_set_token_hex(apn_binary_message_t *const binary_message, const char *const token_hex) {
     assert(token_hex);
     uint8_t *token_binary = apn_token_hex_to_binary(token_hex);
     apn_return ret = __apn_binary_message_set_token(binary_message, token_binary, token_hex);
@@ -86,12 +87,12 @@ apn_return apn_binary_message_set_token_hex(apn_binary_message_t * const binary_
     return ret;
 }
 
-const char * apn_binary_message_token_hex(apn_binary_message_t * const binary_message) {
+const char *apn_binary_message_token_hex(apn_binary_message_t *const binary_message) {
     assert(binary_message);
     return binary_message->token_hex;
 }
 
-apn_binary_message_t *apn_create_binary_message(const apn_payload_t * const payload) {
+apn_binary_message_t *apn_create_binary_message(const apn_payload_t *const payload) {
     char *json = NULL;
     size_t json_size = 0;
     uint8_t *frame = NULL;
@@ -117,12 +118,12 @@ apn_binary_message_t *apn_create_binary_message(const apn_payload_t * const payl
         return NULL;
     }
 
-    frame_size = (uint32_t) (((sizeof(uint8_t) + sizeof(uint16_t)) * 5)
-                + APN_TOKEN_BINARY_SIZE
-                + json_size
-                + sizeof(uint32_t)
-                + sizeof(uint32_t)
-                + sizeof(uint8_t));
+    frame_size = (uint32_t)(((sizeof(uint8_t) + sizeof(uint16_t)) * 5)
+                            + APN_TOKEN_BINARY_SIZE
+                            + json_size
+                            + sizeof(uint32_t)
+                            + sizeof(uint32_t)
+                            + sizeof(uint8_t));
 
     frame_size_n = htonl(frame_size);
     frame = malloc(frame_size);
@@ -132,7 +133,7 @@ apn_binary_message_t *apn_create_binary_message(const apn_payload_t * const payl
     }
     frame_ref = frame;
 
-    binary_message = apn_binary_message_init((uint32_t) (frame_size + sizeof(uint32_t) + sizeof(uint8_t)));
+    binary_message = apn_binary_message_init((uint32_t)(frame_size + sizeof(uint32_t) + sizeof(uint8_t)));
     if (!binary_message) {
         return NULL;
     }
@@ -185,20 +186,22 @@ apn_binary_message_t *apn_create_binary_message(const apn_payload_t * const payl
     memcpy(message_ref, frame, frame_size);
 
     binary_message->token_position = message_ref + (sizeof(uint8_t) + sizeof(uint16_t));
-    binary_message->id_position = binary_message->token_position + (APN_TOKEN_BINARY_SIZE + ((sizeof(uint8_t) + sizeof(uint16_t)) * 2) + json_size);
+    binary_message->id_position = binary_message->token_position +
+                                  (APN_TOKEN_BINARY_SIZE + ((sizeof(uint8_t) + sizeof(uint16_t)) * 2) + json_size);
 
     free(frame);
     return binary_message;
 }
 
-static apn_return __apn_binary_message_set_token(apn_binary_message_t * const binary_message, const uint8_t * const token_binary, const char * const token_hex) {
-    if(!apn_hex_token_is_valid(token_hex)) {
+static apn_return __apn_binary_message_set_token(apn_binary_message_t *const binary_message,
+                                                 const uint8_t *const token_binary, const char *const token_hex) {
+    if (!apn_hex_token_is_valid(token_hex)) {
         errno = APN_ERR_TOKEN_INVALID;
         return APN_ERROR;
     }
     if (binary_message && binary_message->token_position) {
         memcpy(binary_message->token_position, token_binary, APN_TOKEN_BINARY_SIZE);
-        if(binary_message->token_hex) {
+        if (binary_message->token_hex) {
             free(binary_message->token_hex);
         }
         binary_message->token_hex = apn_strndup(token_hex, APN_TOKEN_LENGTH);

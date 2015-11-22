@@ -65,7 +65,7 @@ typedef enum __apn_errors {
     /** Connection was closed. */
     APN_ERR_CONNECTION_CLOSED,
 
-    APN_ERR_CONNECTION_TIMEDOUT,
+    APN_ERR_NETWORK_TIMEDOUT,
     APN_ERR_NETWORK_UNREACHABLE,
 
     /** Invalid device token. */
@@ -89,11 +89,8 @@ typedef enum __apn_errors {
     /** Unable to use specified PKSC12 file to set up a secure connection. */
     APN_ERR_UNABLE_TO_USE_SPECIFIED_PKCS12,
 
-    /** Could not initialize connection. */
-    APN_ERR_COULD_NOT_INITIALIZE_CONNECTION,
-
-    /** Could not initialize SSL connection. */
-    APN_ERR_COULD_NOT_INITIALIZE_SSL_CONNECTION,
+    APN_ERR_UNABLE_TO_ESTABLISH_CONNECTION,
+    APN_ERR_UNABLE_TO_ESTABLISH_SSL_CONNECTION,
 
     /** SSL_write failed. */
     APN_ERR_SSL_WRITE_FAILED,
