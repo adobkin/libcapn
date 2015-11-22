@@ -289,14 +289,17 @@ int main(int argc, char **argv) {
     }
 
     if (APN_ERROR == apn_connect(apn_ctx)) {
-        fprintf(stderr, "Could not connected to Apple Push Notification Service: %s (errno: %d)\n",
-                apn_error_string(errno), errno);
+        char *error = apn_error_string(errno);
+        fprintf(stderr, "Could not connected to Apple Push Notification Service: %s (errno: %d)\n", error, errno);
         ret = 1;
+        free(error);
     } else {
         apn_array_t *invalid_tokens = NULL;
         if (APN_ERROR == apn_send(apn_ctx, payload, tokens, &invalid_tokens)) {
             ret = 1;
-            fprintf(stderr, "Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);
+            char *error = apn_error_string(errno);
+            fprintf(stderr, "Could not send push: %s (errno: %d)\n", error, errno);
+            free(error);
         } else {
             fprintf(stderr, "Notification was sucessfully sent to %u device(s)\n",
                     apn_array_count(tokens) - ((invalid_tokens) ? apn_array_count(invalid_tokens) : 0));
