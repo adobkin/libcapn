@@ -24,6 +24,7 @@
 #define	__APN_STRINGS_H__
 
 #include "apn_platform.h"
+#include "apn_array.h"
 #include <string.h>
 
 #ifdef HAVE_STRINGS_H
@@ -52,6 +53,13 @@ void apn_strncpy(char *dst, const char * const src, size_t dst_size, size_t src_
 
 void apn_substr(char *dst, const char *src, size_t dst_size, size_t start, size_t stop)
         __apn_attribute_nonnull__((1,2));
+
+void apn_strcat(char * dst, const char *src, size_t dst_size, size_t src_size)
+        __apn_attribute_nonnull__((1,2));
+
+apn_array_t * apn_strsplit(char * const string, const char * const delim)
+        __apn_attribute_nonnull__((1,2))
+        __apn_attribute_warn_unused_result__;
 
 #ifdef	__cplusplus
 }

@@ -165,3 +165,40 @@ void apn_strncpy(char *dst, const char * const src, size_t dst_size, size_t src_
     }
     *buff = '\0';
 }
+
+void apn_strcat(char * dst, const char *src, size_t dst_size, size_t src_size) {
+    assert(dst);
+    assert(src);
+    if (dst_size == 0) {
+        return;
+    }
+    char *buff = dst;
+    while (*buff != '\0') {
+        buff++;
+    }
+    size_t size = dst_size - (buff - dst);
+    apn_strncpy(buff, src, size, src_size);
+}
+
+static void __apn_str_dtor(char *const token) {
+    free(token);
+}
+
+apn_array_t * apn_strsplit(char * const string, const char * const delim) {
+    assert(string);
+    assert(delim);
+    apn_array_t *array = apn_array_init(10, (apn_array_dtor)__apn_str_dtor, NULL);
+    if(array) {
+        char *token = strtok(string, delim);
+        while (token) {
+            char *substr = apn_strndup(token, strlen(token));
+            if(!substr) {
+                apn_array_free(array);
+                return NULL;
+            }
+            apn_array_insert(array, substr);
+            token = strtok(0, delim);
+        }
+    }
+    return array;
+}
