@@ -24,7 +24,7 @@
 #include "apn_strerror.h"
 
 #ifdef APN_HAVE_STRERROR_R
-#if(!defined(HAVE_POSIX_STRERROR_R) && !defined(HAVE_GLIBC_STRERROR_R) || defined(HAVE_POSIX_STRERROR_R) && defined(HAVE_GLIBC_STRERROR_R))
+#if(!defined(APN_HAVE_POSIX_STRERROR_R) && !defined(APN_HAVE_GLIBC_STRERROR_R) || defined(APN_HAVE_POSIX_STRERROR_R) && defined(APN_HAVE_GLIBC_STRERROR_R))
 #    error "strerror_r MUST be either POSIX, glibc or vxworks-style"
 #  endif
 #endif

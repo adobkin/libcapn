@@ -21,6 +21,7 @@
  */
 
 #include "apn_platform.h"
+#include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
 

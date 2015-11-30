@@ -24,10 +24,10 @@
 #define __APN_PAYLOAD_H__
 
 #include "apn_platform.h"
+#include "apn_array.h"
 
 #include <stddef.h>
 #include <time.h>
-#include "apn_array.h"
 
 #ifdef __cplusplus
 extern "C" {

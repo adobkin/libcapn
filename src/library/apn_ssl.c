@@ -35,6 +35,7 @@
 
 #include <errno.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #define __APN_X509_ENTRY_BUF_SIZE 1024
 #define __APN_X509_ENTRY_CN "CN"

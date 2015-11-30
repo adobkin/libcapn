@@ -21,8 +21,8 @@
  */
 
 #include "apn_tokens.h"
+#include "apn_strings.h"
 
-#include <string.h>
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>

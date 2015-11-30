@@ -24,11 +24,11 @@
 #define __APN_H__
 
 #include "apn_platform.h"
+#include "apn_binary_message.h"
+#include "apn_payload.h"
+#include "apn_array.h"
 
 #include <openssl/ssl.h>
-#include "apn_payload.h"
-#include "apn_binary_message.h"
-#include "apn_array.h"
 
 #ifdef __cplusplus
 extern "C" {

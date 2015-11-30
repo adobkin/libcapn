@@ -27,13 +27,11 @@
 #include "src/jansson.h"
 #include "apn_strings.h"
 #include "apn_memory.h"
-#include "apn.h"
+#include "apn_private.h"
 #include "apn_array.h"
 #include "apn_paload_private.h"
-
-#ifdef APN_HAVE_STRINGS_H
-#include <strings.h>
-#endif
+#include "apn_binary_message_private.h"
+#include "apn_log.h"
 
 #ifdef _WIN32
 #define strcasecmp _stricmp
