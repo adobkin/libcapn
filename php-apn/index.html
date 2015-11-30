@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en"  itemscope itemtype="http://schema.org/SoftwareApplication">
+  <head>
+  <meta charset="utf-8" />
+  <meta name="author" content="Anton Dobkin" />
+  <meta name="keywords" content="php, php extensions, php-apn, libcapn, apns, push notifications, apple push, apple push notifications, library, ios, os x, mac, iphone push, ios push" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="php-apn is a PHP module for sending push notifications to iOS and OS X devices from within your PHP code">
+  <meta name="twitter:url" content="http://libcapn.org/php-apn/index.html">
+  <meta name="twitter:description" content="PHP 5.3+ module for sending push notifications to iOS and OS X devices from within your PHP code">
+  <meta name="twitter:site" content="@a_dobkin" />
+  <meta name="twitter:creator" content="@a_dobkin" />
+
+  <meta property="og:type"   content="website" /> 
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:title" content="php-apn is a PHP module for sending push notifications to iOS and OS X devices from within your PHP code" />
+  <meta property="og:url" content="http://libcapn.org/php-apn/index.html" />
+  <meta property="og:site_name" content="php-apn" />
+  <meta property="article:author" content="https://plus.google.com/u/0/115562253749604441634" />
+  <meta property="og:image"  content="https://s-static.ak.fbcdn.net/images/devsite/attachment_blank.png" />
+
+  <link rel="author" href="https://plus.google.com/u/0/115562253749604441634" />
+  <link rel="canonical" href="http://libcapn.org/php-apn/index.html" />
+
+  <link href="assets/css/bootstrap.css" rel="stylesheet">
+  <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+  <link href="assets/css/style.css" rel="stylesheet">
+  <link href="assets/css/font-awesome.css" rel="stylesheet">
+  <link href="http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300|Bree+Serif" rel="stylesheet" type="text/css">
+  <link href="assets/js/google-code-prettify/prettify.css" rel="stylesheet">
+  <!--[if IE]>
+      <link href="http://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+      <link href="http://fonts.googleapis.com/css?family=Open+Sans:300italic" rel="stylesheet" type="text/css">
+      <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic" rel="stylesheet" type="text/css">
+      <link href="http://fonts.googleapis.com/css?family=Open+Sans:600italic" rel="stylesheet" type="text/css">
+      <link href="http://fonts.googleapis.com/css?family=Open+Sans:700italic" rel="stylesheet" type="text/css">
+      <link href="http://fonts.googleapis.com/css?family=Open+Sans:300" rel="stylesheet" type="text/css">
+      <link href="http://fonts.googleapis.com/css?family=Open+Sans:400" rel="stylesheet" type="text/css">
+      <link href="http://fonts.googleapis.com/css?family=Open+Sans:600" rel="stylesheet" type="text/css">
+      <link href="http://fonts.googleapis.com/css?family=Bree+Serif:400" rel="stylesheet" type="text/css">
+      <![endif]-->
+  <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+  <!--[if lt IE 9]>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+      <![endif]-->
+  <!--[if IE 7]>
+  	  <link rel="stylesheet" href="assets/css/font-awesome-ie7.css">
+  	<![endif]-->
+
+    <title>php-apn is a PHP module for sending push notifications to iOS and OS X devices from within your PHP code</title>
+  </head>
+  <body>
+    <header class="masthead">
+    	<div class="container">  	
+        <br /><br />
+        <h1 class="font-bree-serif" itemprop="name">php-apn</h1>
+        <p class="font-open-sans-normal">PHP 5.3+ module for sending push notifications to iOS and OS X devices from within your PHP code</p>
+        <p class="jumbo"> <a href="https://github.com/adobkin/php-apn" class="btn btn-inverse btn-large font-open-sans-normal"><strong>View on GitHub</strong></a> 
+        <a itemprop="downloadUrl" href="/download/php-apn/php-apn-1.0.3-src.tar.gz" class="btn btn-success btn-large font-open-sans-normal"><strong>Download</strong><small> (v1.0.3)</small></a></p>
+        <p class="share"> 
+          <a href="https://twitter.com/a_dobkin" class="twitter-follow-button" data-show-count="false">Follow @a_dobkin</a>
+          <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://libcapn.org/php-apn">Tweet</a>
+          <iframe src="http://ghbtns.com/github-btn.html?user=adobkin&repo=php-apn&type=watch&count=true"
+  allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20"></iframe>
+            <iframe src="http://ghbtns.com/github-btn.html?user=adobkin&repo=php-apn&type=fork&count=true"
+  allowtransparency="true" frameborder="0" scrolling="0" width="95" height="20"></iframe>
+          <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');   </script>
+        </p>
+      </div>
+    </header><!--end header -->
+
+    <div class="main-content">
+      <div class="container">
+        <div class="row" id="content">
+          <div class="span12">
+            <section class="sec-header">
+              <h3 class="font-bree-serif">Overview</h3>
+              <p>php-apn is a PHP module, wrapping libcapn C library to introduce simple yet powerful interface for sending push notifications to iOS and OS X (>= 10.8) devices from within your PHP code, making integration with Apple Push Notification Service as easy as possible</p>
+              <p>The module is licensed under the <a href="http://www.php.net/license/3_01.txt">PHP 3.01</a> license.</p>
+            </section>
+
+            <section class="sec-header">
+              <h3 class="font-bree-serif">Current releases</h3>
+              <ul>
+                <li>The current release is <span itemprop="softwareVersion">1.0.3</span>, released on 2014-02-20</li>
+                <li>Older release is 1.0.2, released on 2013-05-29</li>
+              </ul>
+            </section>
+                
+            <section class="sec-header">
+            	<h3 class="font-bree-serif">Requirements</h3>
+            	<ul>
+                <li>capn library 1.0.x (<a href="http://libcapn.org">http://libcapn.org</a>)</li>
+                <li>capn library headers (to build extension)</li>
+                <li>PHP 5.3+ SDK (to build extension)</li>
+                <li>libtool (to build extension)</li>
+              </ul>
+            </section>
+
+            <section class="sec-header">
+              <div class="row">
+                <div class="span6">
+                  <h3 class="font-bree-serif">Documentations</h3>
+                  <ul>
+                    <li><a href="http://libcapn.org/php-apn/doc/html">API Functions</a></li>
+                  </ul>
+                </div>
+                <div class="span6">
+                  <h3 class="font-bree-serif">Examples</h3>
+                  <ul>
+                    <li><a href="http://libcapn.org/php-apn/doc/html/examples.html">Send Push Notification</a></li>
+                    <li><a href="http://libcapn.org/php-apn/doc/html/examples.html#feedback">Use Feedback Sevice</a></li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section class="sec-header">
+              <div class="row">
+                <div class="span6">
+                  <h3 class="font-bree-serif">Source Code</h3>
+                  <p>The source repository is hosted at GitHub: <a href="https://github.com/adobkin/php-apn">https://github.com/adobkin/php-apn</a></p>
+                  <p>You can retrieve the source code through the standard Git client with:</p>
+    <pre class="prettyprint">git clone git://github.com/adobkin/php-apn php-apn</pre>
+                  <h3 class="font-bree-serif">PECL Repository</h3>
+    <pre class="prettyprint">pecl install apn</pre>
+                </div>
+                        
+                <div class="span6">
+                  <h3 class="font-bree-serif">Download</h3>
+                  <div class="row">
+                    <div class="span3">
+                      <p><strong> Version 1.0.3:</strong></p>
+                      <ul>
+                        <li><a href="https://github.com/adobkin/php-apn/archive/1.0.3.tar.gz">Download source</a></li>
+                        <li>Windows:
+                          <ul>
+                            <li><a href="http://windows.php.net/downloads/pecl/releases/apn/1.0.3/php_apn-1.0.3-5.5-nts-vc11-x86.zip">PHP 5.5 Non Thread Safe (NTS) x86</a></li>
+                            <li><a href="http://windows.php.net/downloads/pecl/releases/apn/1.0.3/php_apn-1.0.3-5.5-ts-vc11-x86.zip">PHP 5.5 Thread Safe (TS) x86</a></li>
+                            <li><a href="http://windows.php.net/downloads/pecl/releases/apn/1.0.3/php_apn-1.0.3-5.5-nts-vc11-x64.zip">PHP 5.5 Non Thread Safe (NTS) x64</a></li>
+                            <li><a href="http://windows.php.net/downloads/pecl/releases/apn/1.0.3/php_apn-1.0.3-5.5-ts-vc11-x64.zip">PHP 5.5 Thread Safe (TS) x64</a></li>
+                            <li><a href="http://windows.php.net/downloads/pecl/releases/apn/1.0.3/php_apn-1.0.3-5.4-nts-vc9-x86.zip">PHP 5.4, Non Thread Safe (NTS) x86</a></li>
+                            <li><a href="http://windows.php.net/downloads/pecl/releases/apn/1.0.3/php_apn-1.0.3-5.4-ts-vc9-x86.zip">PHP 5.4 Thread Safe (TS) x86</a></li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="span3">
+                      <p><strong>Documentations</strong></p>
+                      <ul>
+                        <li><a href="http://libcapn.org/php-apn/doc/html/php-apn-api-documentation.zip">Download documentation</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+             </div> <!-- end span12-->
+          </div><!-- end row-->
+        </div><!-- end container-->
+    </div><!--end main-content-->
+<footer>
+    <div class="container">
+    <div class="row">
+        <div class="span6">
+          <p>&copy; 2013-2014 <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span itemprop="name">
+          <a href="https://plus.google.com/115562253749604441634?rel=author">Anton Dobkin</a></span></span>. All Rights Reserved</p>
+        </div>
+    </div><!--end row-->  
+    </div><!--end container-->  
+</footer>
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="assets/js/jquery.js"></script>
+<script src="assets/js/bootstrap.min.js"></script>
+<script src="assets/js/google-code-prettify/prettify.js"></script>
+<script type="text/javascript" src="assets/js/respond.js"></script>
+<script type="text/javascript">
+$(function(){
+	//Load Goodle Code Pretiffy		   
+	window.prettyPrint && prettyPrint();
+	//Tab function
+	$('#pluginTab a').click(function (e) {
+		e.preventDefault();
+		$(this).tab('show');
+	});
+	//FAQ autosuggest
+	$('.typeahead').typeahead();
+	//tooltip init
+	$("a.tip").tooltip();	
+	//footer link to got top
+	gotoTop();
+	function gotoTop(){
+		 // scroll body to 0px on click
+			$('a#top').on('click',function () {
+				$('body,html').animate({
+					scrollTop: 0
+				}, 800);
+				return false;
+			});
+	 };
+});
+</script>
+</body>
+</html>
