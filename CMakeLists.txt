@@ -71,8 +71,8 @@ INCLUDE(ExternalProject)
 
 ExternalProject_Add(
     jansson
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/jansson"
-    #GIT_REPOSITORY git://github.com/akheron/jansson.git
+    #SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/jansson"
+    GIT_REPOSITORY git://github.com/akheron/jansson.git
     BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/jansson"
     INSTALL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/jansson"
     CMAKE_COMMAND cmake .
