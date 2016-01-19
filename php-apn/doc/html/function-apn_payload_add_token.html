@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="generator" content="ApiGen 3.0dev" />
+
+	<title>Function apn_payload_add_token | php-apn</title>
+
+	<script type="text/javascript" src="resources/combined.js?1707327685"></script>
+	<script type="text/javascript" src="elementlist.js?3881258325"></script>
+	<link rel="stylesheet" type="text/css" media="all" href="resources/bootstrap.min.css?260161822" />
+	
+	<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js?skin=desert"></script>
+	
+	<link rel="stylesheet" type="text/css" media="all" href="resources/style.css?705143680" />
+
+</head>
+
+<body>
+	<div id="navigation" class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container">
+				<a href="index.html" class="brand">php-apn</a>
+				<div class="nav-collapse">
+					<ul class="nav">
+						<li class="active">
+<span>Function</span>						</li>
+
+
+						
+						
+						
+						<li class="divider-vertical"></li>
+
+						<li>
+						<a href="examples.html" title="Examples"><span>Examples</span></a></li>
+
+						<li>
+							<a href="php-apn-api-documentation.zip" title="Download documentation as ZIP archive"><span>Download</span></a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="left">
+	<div id="menu">
+		<form id="search" class="form-search">
+			<input type="hidden" name="cx" value="" />
+			<input type="hidden" name="ie" value="UTF-8" />
+			<input type="text" name="q" class="search-query" placeholder="Search" />
+		</form>
+
+
+		<div id="groups">
+		</div>
+
+
+		<div id="elements">
+
+
+
+
+
+			<h3>Functions</h3>
+			<ul>
+				<li><a href="function-apn_add_token.html">apn_add_token</a></li>
+				<li><a href="function-apn_add_tokens.html">apn_add_tokens</a></li>
+				<li><a href="function-apn_close.html">apn_close</a></li>
+				<li><a href="function-apn_connect.html">apn_connect</a></li>
+				<li><a href="function-apn_feedback.html">apn_feedback</a></li>
+				<li><a href="function-apn_feedback_connect.html">apn_feedback_connect</a></li>
+				<li><a href="function-apn_free.html">apn_free</a></li>
+				<li><a href="function-apn_init.html">apn_init</a></li>
+				<li class="active"><a href="function-apn_payload_add_token.html">apn_payload_add_token</a></li>
+				<li><a href="function-apn_payload_add_tokens.html">apn_payload_add_tokens</a></li>
+				<li><a href="function-apn_payload_free.html">apn_payload_free</a></li>
+				<li><a href="function-apn_payload_init.html">apn_payload_init</a></li>
+				<li><a href="function-apn_payload_set_array.html">apn_payload_set_array</a></li>
+				<li><a href="function-apn_payload_set_badge.html">apn_payload_set_badge</a></li>
+				<li><a href="function-apn_payload_set_body.html">apn_payload_set_body</a></li>
+				<li><a href="function-apn_payload_set_expiry.html">apn_payload_set_expiry</a></li>
+				<li><a href="function-apn_payload_set_launch_image.html">apn_payload_set_launch_image</a></li>
+				<li><a href="function-apn_payload_set_localized_action_key.html">apn_payload_set_localized_action_key</a></li>
+				<li><a href="function-apn_payload_set_localized_key.html">apn_payload_set_localized_key</a></li>
+				<li><a href="function-apn_payload_set_sound.html">apn_payload_set_sound</a></li>
+				<li><a href="function-apn_send.html">apn_send</a></li>
+				<li><a href="function-apn_set_array.html">apn_set_array</a></li>
+				<li><a href="function-apn_set_certificate.html">apn_set_certificate</a></li>
+				<li><a href="function-apn_set_mode.html">apn_set_mode</a></li>
+				<li><a href="function-apn_set_private_key.html">apn_set_private_key</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+<div id="splitter"></div>
+
+<div id="right">
+	<div id="rightInner">
+<div id="content" class="function">
+	<h1>Function apn_payload_add_token</h1>
+
+
+	<div class="description">
+	
+<p>Adds a device token to payload</p>
+
+<p>Device token are used for identification of targets which will receive the
+notification</p>
+
+	</div>
+
+	<div class="alert alert-info">
+		
+		
+				<b>Category:</b>
+				Apple Push Notification Payload<br />
+				<b>License:</b>
+				<a href="http://www.php.net/license/3_01.txt">PHP 3.01</a><br />
+				<b>Since:</b>
+				1.0.0<br />
+				<b>See:</b>
+				<code><code><a href="function-apn_add_tokens.html">apn_add_tokens()</a></code></code><br />
+				<b>See:</b>
+				<code><code><a href="function-apn_payload_add_tokens.html">apn_payload_add_tokens()</a></code></code><br />
+		<b>Located at</b> <a href="source-function-apn_payload_add_token.html#321-336" title="Go to source code">documentation.php</a><br />
+	</div>
+
+
+	<h2>Parameters summary</h2>
+	<table class="summary table table-bordered table-striped" id="parameters">
+	<tr id="$payload">
+		<td class="name"><code>resource</code></td>
+		<td class="value"><code><var>$payload</var></code></td>
+		<td>Apple Push Notification Resource returned by apn_payload_init(). If a
+non-resource is used for the apn, an error of level E_WARNING will be emitted</td>
+	</tr>
+	<tr id="$token">
+		<td class="name"><code>string</code></td>
+		<td class="value"><code><var>$token</var></code></td>
+		<td>Device token</td>
+	</tr>
+	</table>
+
+	<h2>Return value summary</h2>
+	<table class="summary table table-bordered table-striped" id="returns">
+	<tr>
+		<td class="name"><code>
+			boolean
+		</code></td>
+		<td>
+			Returns TRUE on success or FALSE on failure
+		</td>
+	</tr>
+	</table>
+
+
+</div>
+	</div>
+
+	<div id="footer">
+		php-apn API documentation generated by <a href="http://apigen.org">ApiGen 3.0dev</a>
+	</div>
+</div>
+</body>
+</html>

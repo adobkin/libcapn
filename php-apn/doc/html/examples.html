@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="generator" content="ApiGen 3.0dev" />
+
+	<title>Examples | php-apn</title>
+
+	<script type="text/javascript" src="resources/combined.js"></script>
+	<script type="text/javascript" src="elementlist.js"></script>
+	<link rel="stylesheet" type="text/css" media="all" href="resources/bootstrap.min.css?260161822" />
+	
+	<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js?skin=desert"></script>
+	
+	<link rel="stylesheet" type="text/css" media="all" href="resources/style.css?705143680" />
+
+</head>
+
+<body>
+	<div id="navigation" class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container">
+				<a href="index.html" class="brand">php-apn</a>
+				<div class="nav-collapse">
+					<ul class="nav">
+
+
+						
+						
+						
+						<li class="divider-vertical"></li>
+
+						<li class="active">
+						<a href="examples.html" title="Examples"><span>Examples</span></a></li>
+
+						<li>
+							<a href="php-apn-api-documentation.zip" title="Download documentation as ZIP archive"><span>Download</span></a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="left">
+	<div id="menu">
+		<form id="search" class="form-search">
+			<input type="hidden" name="cx" value="" />
+			<input type="hidden" name="ie" value="UTF-8" />
+			<input type="text" name="q" class="search-query" placeholder="Search" />
+		</form>
+
+
+		<div id="groups">
+		</div>
+
+
+		<div id="elements">
+
+
+
+
+
+			<h3>Functions</h3>
+			<ul>
+				<li><a href="function-apn_add_token.html">apn_add_token</a></li>
+				<li><a href="function-apn_add_tokens.html">apn_add_tokens</a></li>
+				<li><a href="function-apn_close.html">apn_close</a></li>
+				<li><a href="function-apn_connect.html">apn_connect</a></li>
+				<li><a href="function-apn_feedback.html">apn_feedback</a></li>
+				<li><a href="function-apn_feedback_connect.html">apn_feedback_connect</a></li>
+				<li><a href="function-apn_free.html">apn_free</a></li>
+				<li><a href="function-apn_init.html">apn_init</a></li>
+				<li><a href="function-apn_payload_add_token.html">apn_payload_add_token</a></li>
+				<li><a href="function-apn_payload_add_tokens.html">apn_payload_add_tokens</a></li>
+				<li><a href="function-apn_payload_free.html">apn_payload_free</a></li>
+				<li><a href="function-apn_payload_init.html">apn_payload_init</a></li>
+				<li><a href="function-apn_payload_set_array.html">apn_payload_set_array</a></li>
+				<li><a href="function-apn_payload_set_badge.html">apn_payload_set_badge</a></li>
+				<li><a href="function-apn_payload_set_body.html">apn_payload_set_body</a></li>
+				<li><a href="function-apn_payload_set_expiry.html">apn_payload_set_expiry</a></li>
+				<li><a href="function-apn_payload_set_launch_image.html">apn_payload_set_launch_image</a></li>
+				<li><a href="function-apn_payload_set_localized_action_key.html">apn_payload_set_localized_action_key</a></li>
+				<li><a href="function-apn_payload_set_localized_key.html">apn_payload_set_localized_key</a></li>
+				<li><a href="function-apn_payload_set_sound.html">apn_payload_set_sound</a></li>
+				<li><a href="function-apn_send.html">apn_send</a></li>
+				<li><a href="function-apn_set_array.html">apn_set_array</a></li>
+				<li><a href="function-apn_set_certificate.html">apn_set_certificate</a></li>
+				<li><a href="function-apn_set_mode.html">apn_set_mode</a></li>
+				<li><a href="function-apn_set_private_key.html">apn_set_private_key</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+<div id="splitter"></div>
+
+<div id="right">
+	<div id="rightInner">
+<div id="content" class="examples">
+	<h1>Examples</h1>
+
+	<ol>
+<li><a href="examples.html#send_push">Send Push Notification</a></li>
+<li><a href="examples.html#feedback">Feedback Service</a></li>
+</ol>
+
+	<h2><a name="send_push"></a>Send Push Notification</h2>
+	<pre class="prettyprint">// APNS contex
+$apn = apn_init();
+apn_set_array($apn, array(
+      'certificate' => 'apns-dev-cert.pem',
+      'private_key' => 'apns-dev-key.pem',
+      'private_key_pass' => 'qwerty',
+      'mode' => APN_SANDBOX
+  ));
+
+// Notification Payload context
+$payload = apn_payload_init();
+apn_payload_set_array($payload, array(
+      'body' => 'This push was sent using PHP && php-apn',
+      'sound' => 'default',
+      'badge' => 34,
+      'tokens' => array (
+    	  'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+          'YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY'
+      )
+));
+apn_payload_add_custom_property($payload, 'test', 56);
+
+$error = NULL;
+$errcode = 0;
+
+// Opening Apple Push Notification Service connection...
+if(apn_connect($apn, $error, $errcode)) {
+    // and if ok, try send push notification....
+    if(!apn_send($apn, $payload, $error, $errcode)) {
+        echo 'Could not sent push notification: ' . $error;
+    }
+} else {
+    echo 'Could not connected to Apple Push Notification Servece: ' . $error;
+}
+
+apn_close($apn);
+apn_payload_free($payload);
+apn_free($apn);</pre>
+
+<a name="feedback"></a><h2>Feedback Service</h2>
+
+<pre class="prettyprint"><// APNS contex
+$apn = apn_init();
+apn_set_array($apn, array(
+      'certificate' => 'apns-dev-cert.pem',
+      'private_key' => 'apns-dev-key.pem',
+      'private_key_pass' => 'qwerty',
+      'mode' => APN_SANDBOX
+  ));
+
+$error = NULL;
+$errcode = 0;
+
+if(apn_feedback_connect($apn, $error, $errcode)) {
+    $tokens = apn_feedback($apn, $error, $errcode);
+    if(!is_array($tokens)) {
+        echo 'Failed to obtain device tokens: ' . $error;
+    } else {
+      foreach($tokens as $token) {
+          echo 'Token: '.$token;
+      }
+    }
+} else {
+    echo 'Failed to connect to Apple Push Feedback Service: ' . $error;
+}
+
+apn_close($apn);
+apn_free($apn);
+</pre
+
+</div>
+	</div>
+
+	<div id="footer">
+		php-apn API documentation generated by <a href="http://apigen.org">ApiGen 3.0dev</a>
+	</div>
+</div>
+</body>
+</html>
