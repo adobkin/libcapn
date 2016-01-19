@@ -10,7 +10,7 @@ The library is licensed under the [MIT](http://www.opensource.org/licenses/mit-l
 
 ##DOCUMENTATION##
 
-- [View documentation](http://libcapn.org/doc/html/index.html)
+- [View documentation](http://libcapn.org/doc/1.0/index.html)
 
 ##BINDINGS##
 
@@ -19,7 +19,7 @@ The library is licensed under the [MIT](http://www.opensource.org/licenses/mit-l
 
 ##EXAMPLE##
 
-- [Send Push Notification](http://libcapn.org/doc/html/send_push_8c-example.html)
-- [Feedback Service](http://libcapn.org/doc/html/feedback_8c-example.html)
+- [Send Push Notification](http://libcapn.org/doc/1.0/send_push_8c-example.html)
+- [Feedback Service](http://libcapn.org/doc/1.0/feedback_8c-example.html)
 
 
