@@ -1,0 +1,5 @@
+<map id="__apn_payload" name="__apn_payload">
+<area shape="rect" id="node2" href="$apn_8h.html#struct____apn__binary__token" title="{__apn_binary_token\n||}" alt="" coords="356,225,497,306"/>
+<area shape="rect" id="node5" href="$group__payload.html#struct____apn__payload__alert" title="Payload alert. " alt="" coords="119,225,264,306"/>
+<area shape="rect" id="node10" href="$group__payload.html#struct____apn__payload__custom__property" title="Custom property. " alt="" coords="913,217,1076,314"/>
+</map>
