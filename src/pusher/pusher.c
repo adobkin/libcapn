@@ -280,6 +280,8 @@ int main(int argc, char **argv) {
         apn_set_pkcs12_file(apn_ctx, p12, p12_pass);
     } else {
         fprintf(stderr, "Missing .p12 file\n");
+        ret = 1;
+        goto finish;
     }
 
     if (!tokens || apn_array_count(tokens) == 0) {
