@@ -123,6 +123,8 @@ typedef enum __apn_errors {
     When you receive this status code, stop using this connection and open a new connection. */
     APN_ERR_SERVICE_SHUTDOWN,
 
+    APN_ERR_SSL_INVALID_CERTIFICATE,
+
     /** Unknown error */
     APN_ERR_UNKNOWN
 

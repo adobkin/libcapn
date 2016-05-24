@@ -37,27 +37,37 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define __APN_X509_ENTRY_BUF_SIZE 1024
-#define __APN_X509_ENTRY_CN "CN"
+#define APN_CERT_EXTENSION_PRODUCTION "1.2.840.113635.100.6.3.2"
+#define APN_CERT_EXTENSION_SANDBOX    "1.2.840.113635.100.6.3.1"
 
-static char *__apn_ssl_cert_entry_string(X509_NAME *name)
+typedef enum __apn_cert_mode {
+    APN_CERT_MODE_UNKNOWN = 0,
+    APN_CERT_MODE_SANDBOX = 1 << 1,
+    APN_CERT_MODE_PRODUCTION = 1 << 2,
+    APN_CERT_MODE_ALL = APN_CERT_MODE_SANDBOX | APN_CERT_MODE_PRODUCTION
+} apn_cert_mode;
+
+static uint32_t __apn_cert_mode(X509 *const cert)
         __apn_attribute_nonnull__((1));
 
-static char *__apn_cert_subject_string(X509 *cert)
+static const char *__apn_cert_mode_string(uint32_t mode);
+
+static char *__apn_ssl_cert_entry_string(X509_NAME *const name)
+        __apn_attribute_nonnull__((1));
+
+static char *__apn_cert_subject_string(X509 *const cert)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-static char * __apn_cert_issuer_string(X509 *cert)
+static char *__apn_cert_issuer_string(X509 *const cert)
         __apn_attribute_nonnull__((1))
         __apn_attribute_warn_unused_result__;
 
-static char *__apn_cert_entry_value_string_by_nib(X509_NAME *name, const char * const nid)
-        __apn_attribute_nonnull__((1,2))
-        __apn_attribute_warn_unused_result__;
+static uint8_t __apn_cert_expired(X509 *const cert, time_t *const expires)
+        __apn_attribute_nonnull__((1));
 
-static char *__apn_cert_subject_value_by_nib(X509 *cert, const char * const nid)
-        __apn_attribute_nonnull__((1,2))
-        __apn_attribute_warn_unused_result__;
+static time_t __apn_asn1_tome_to_time_t(ASN1_TIME *asn1_time)
+        __apn_attribute_nonnull__((1));
 
 static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret)
         __apn_attribute_nonnull__((1));
@@ -88,7 +98,7 @@ apn_return apn_ssl_connect(apn_ctx_t *const ctx) {
     SSL_CTX_set_ex_data(ssl_ctx, 0, ctx);
     SSL_CTX_set_info_callback(ssl_ctx, __apn_ssl_info_callback);
 
-    X509 *cert = NULL;
+    X509 * cert = NULL;
 
     if (ctx->pkcs12_file && ctx->pkcs12_pass) {
         FILE *pkcs12_file = NULL;
@@ -168,7 +178,7 @@ apn_return apn_ssl_connect(apn_ctx_t *const ctx) {
             SSL_CTX_free(ssl_ctx);
             fclose(cert_file);
             errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE;
-            return EXIT_FAILURE;
+            return APN_ERROR;
         }
         fclose(cert_file);
 
@@ -217,34 +227,43 @@ apn_return apn_ssl_connect(apn_ctx_t *const ctx) {
         }
     }
 
-    if(cert) {
-        char *subject = __apn_cert_subject_string(cert);
-        apn_log(ctx, APN_LOG_LEVEL_INFO, "Local certificate subject: %s", subject);
+    char *subject = __apn_cert_subject_string(cert);
+    char *issuer = __apn_cert_issuer_string(cert);
 
-        char *issuer = __apn_cert_issuer_string(cert);
-        apn_log(ctx, APN_LOG_LEVEL_INFO, "Local certificate issuer: %s", issuer);
+    time_t expires = 0;
+    uint8_t expired = __apn_cert_expired(cert, &expires);
 
-        free(subject);
-        free(issuer);
+    X509_free(cert);
 
-        char *cn = __apn_cert_subject_value_by_nib(cert, __APN_X509_ENTRY_CN);
-        X509_free(cert);
-        if(cn) {
-            uint8_t invalid_cert = 0;
-            if(apn_mode(ctx) == APN_MODE_PRODUCTION && 0 != strncmp("Apple Production", cn, 16)) {
-                invalid_cert = 1;
-                apn_log(ctx, APN_LOG_LEVEL_ERROR, "Invalid certificate. You are using a PRODUCTION mode, but certificate was created for usage in SANDBOX");
-            } else if (apn_mode(ctx) == APN_MODE_SANDBOX && 0 != strncmp("Apple Development", cn, 17)) {
-                invalid_cert = 1;
-                apn_log(ctx, APN_LOG_LEVEL_ERROR, "Invalid certificate. You are using a SANDBOX mode, but certificate was created for usage in PRODUCTION");
-            }
-            free(cn);
-            if(1 == invalid_cert) {
-                SSL_CTX_free(ssl_ctx);
-                errno = APN_ERR_UNABLE_TO_USE_SPECIFIED_CERTIFICATE;
-                return APN_ERROR;
-            }
-        }
+    uint32_t cert_mode = __apn_cert_mode(cert);
+
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Certificate subject: %s", subject);
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Certificate issuer: %s", issuer);
+    apn_log(ctx, APN_LOG_LEVEL_INFO, "Certificate mode: %s (%d)",
+            __apn_cert_mode_string(cert_mode), cert_mode);
+
+    free(subject);
+    free(issuer);
+
+    if (expired) {
+        apn_log(ctx, APN_LOG_LEVEL_ERROR, "Certificate is expired");
+        goto invalid_cert;
+    } else {
+        char str_time[20];
+        strftime(str_time, sizeof(str_time), "%Y-%m-%d %H:%M:%S", gmtime(&expires));
+        apn_log(ctx, APN_LOG_LEVEL_INFO, "Certificate expires at %s", str_time);
+    }
+
+    if (apn_mode(ctx) == APN_MODE_PRODUCTION && !(cert_mode & APN_CERT_MODE_PRODUCTION)) {
+        apn_log(ctx, APN_LOG_LEVEL_ERROR,
+                "Invalid certificate. You are using a PRODUCTION mode, but certificate was created for usage in %s",
+                __apn_cert_mode_string(cert_mode));
+        goto invalid_cert;
+    } else if (apn_mode(ctx) == APN_MODE_SANDBOX && !(cert_mode & APN_CERT_MODE_SANDBOX)) {
+        apn_log(ctx, APN_LOG_LEVEL_ERROR,
+                "Invalid certificate. You are using a SANDBOX mode, but certificate was created for usage in %s",
+                __apn_cert_mode_string(cert_mode));
+        goto invalid_cert;
     }
 
     ctx->ssl = SSL_new(ssl_ctx);
@@ -275,19 +294,14 @@ apn_return apn_ssl_connect(apn_ctx_t *const ctx) {
     }
     apn_log(ctx, APN_LOG_LEVEL_INFO, "SSL connection has been established");
 
-    X509 *remote_cert = SSL_get_peer_certificate(ctx->ssl);
-    if (remote_cert) {
-        char *subject = __apn_cert_subject_string(remote_cert);
-        apn_log(ctx, APN_LOG_LEVEL_INFO, "Remote certificate subject: %s", subject);
 
-        char *issuer = __apn_cert_issuer_string(remote_cert);
-        apn_log(ctx, APN_LOG_LEVEL_INFO, "Remote certificate issuer: %s", issuer);
-
-        free(subject);
-        free(issuer);
-        X509_free(remote_cert);
-    }
     return APN_SUCCESS;
+
+
+    invalid_cert:
+    SSL_CTX_free(ssl_ctx);
+    errno = APN_ERR_SSL_INVALID_CERTIFICATE;
+    return APN_ERROR;
 }
 
 int apn_ssl_write(const apn_ctx_t *const ctx, const uint8_t *message, size_t length) {
@@ -385,52 +399,6 @@ void apn_ssl_close(apn_ctx_t *const ctx) {
     }
 }
 
-
-static char *__apn_ssl_cert_entry_string(X509_NAME *name) {
-    char subject_entry_buffer[__APN_X509_ENTRY_BUF_SIZE] = {0};
-    int entry_count = X509_NAME_entry_count(name);
-    for (int i = 0; i < entry_count; i++) {
-        X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, i);
-
-        ASN1_OBJECT *entry_object = X509_NAME_ENTRY_get_object(entry);
-        const char *entry_name = OBJ_nid2sn(OBJ_obj2nid(entry_object));
-        const unsigned char *entry_value = ASN1_STRING_data(X509_NAME_ENTRY_get_data(entry));
-
-        apn_strcat(subject_entry_buffer, entry_name, __APN_X509_ENTRY_BUF_SIZE, strlen(entry_name));
-        apn_strcat(subject_entry_buffer, "=", __APN_X509_ENTRY_BUF_SIZE, 1);
-        apn_strcat(subject_entry_buffer, (const char *)entry_value, __APN_X509_ENTRY_BUF_SIZE, strlen((const char *)entry_value));
-        if(i + 1 < entry_count) {
-            apn_strcat(subject_entry_buffer, ", ", __APN_X509_ENTRY_BUF_SIZE, 2);
-        }
-    }
-    return apn_strndup(subject_entry_buffer, strlen(subject_entry_buffer));
-}
-
-static char * __apn_cert_subject_string(X509 *cert) {
-    return __apn_ssl_cert_entry_string(X509_get_subject_name(cert));
-}
-
-static char * __apn_cert_issuer_string(X509 *cert) {
-    return __apn_ssl_cert_entry_string(X509_get_issuer_name(cert));
-}
-
-static char *__apn_cert_entry_value_string_by_nib(X509_NAME *name, const char * const nid_str) {
-    int nid = OBJ_txt2nid(nid_str);
-    int index = X509_NAME_get_index_by_NID(name, nid, -1);
-    if(index != -1) {
-        X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, index);
-        const unsigned char *entry_value = ASN1_STRING_data(X509_NAME_ENTRY_get_data(entry));
-        if(entry_value) {
-            return apn_strndup((const char *)entry_value, strlen((const char *)entry_value));
-        }
-    }
-    return NULL;
-}
-
-static char *__apn_cert_subject_value_by_nib(X509 *cert, const char * const nid_str) {
-    return __apn_cert_entry_value_string_by_nib(X509_get_subject_name(cert), nid_str);
-}
-
 static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret) {
     apn_ctx_t *ctx = SSL_CTX_get_ex_data(ssl->ctx, 0);
     if (!ctx) {
@@ -473,4 +441,141 @@ static int __apn_ssl_password_callback(char *buf, int size, int rwflag, void *pa
     buf[size - 1] = '\0';
 
     return (int) strlen(buf);
+}
+
+static char *__apn_ssl_cert_entry_string(X509_NAME *const name) {
+    char subject_entry_buffer[BUFSIZ] = {0};
+    int entry_count = X509_NAME_entry_count(name);
+    for (int i = 0; i < entry_count; i++) {
+        X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, i);
+
+        ASN1_OBJECT *entry_object = X509_NAME_ENTRY_get_object(entry);
+        const char *entry_name = OBJ_nid2sn(OBJ_obj2nid(entry_object));
+        const unsigned char *entry_value = ASN1_STRING_data(X509_NAME_ENTRY_get_data(entry));
+
+        apn_strcat(subject_entry_buffer, entry_name, BUFSIZ, strlen(entry_name));
+        apn_strcat(subject_entry_buffer, "=", BUFSIZ, 1);
+        apn_strcat(subject_entry_buffer, (const char *) entry_value, BUFSIZ,
+                   strlen((const char *) entry_value));
+        if (i + 1 < entry_count) {
+            apn_strcat(subject_entry_buffer, ", ", BUFSIZ, 2);
+        }
+    }
+    return apn_strndup(subject_entry_buffer, strlen(subject_entry_buffer));
+}
+
+static char *__apn_cert_subject_string(X509 *const cert) {
+    return __apn_ssl_cert_entry_string(X509_get_subject_name(cert));
+}
+
+static char *__apn_cert_issuer_string(X509 *const cert) {
+    return __apn_ssl_cert_entry_string(X509_get_issuer_name(cert));
+}
+
+static uint8_t __apn_cert_expired(X509 *const cert, time_t *const expires) {
+    if (cert) {
+        time_t not_after = __apn_asn1_tome_to_time_t(X509_get_notAfter(cert));
+        if (expires) {
+            *expires = not_after;
+        }
+        time_t now = time(NULL);
+        return (uint8_t)(now > not_after);
+    }
+    return 1;
+}
+
+static time_t __apn_asn1_tome_to_time_t(ASN1_TIME *asn1_time) {
+    time_t time = 0;
+    const char *string_time = (const char *) asn1_time->data;
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+
+    if (asn1_time) {
+        size_t pos = 0;
+
+        size_t i = 0;
+        for (; i < 6; i++) {
+            int numbers = (i == 0 && asn1_time->type == V_ASN1_GENERALIZEDTIME) ? 4 : 2;
+            int number = 0;
+
+            int j = 0;
+            for (; j < numbers; j++) {
+                int num = string_time[pos] - 48;
+                if ((numbers == 2 && j == 0) || (numbers == 4 && j == 2)) {
+                    num *= 10;
+                } else if (numbers == 4 && j == 0) {
+                    num *= 1000;
+                } else if (numbers == 4 && j == 1) {
+                    num *= 100;
+                }
+
+                number += num;
+                pos++;
+            }
+
+            switch (i) {
+                case 0:
+                    tm.tm_year = number;
+                    if (numbers == 2) {
+                        tm.tm_year += tm.tm_year < 70 ? 100 : 0;
+                    } else {
+                        tm.tm_year -= 1900;
+                    }
+                    break;
+                case 1:
+                    tm.tm_mon = number - 1;
+                    break;
+                case 2:
+                    tm.tm_mday = number;
+                    break;
+                case 3:
+                    tm.tm_hour = number;
+                    break;
+                case 4:
+                    tm.tm_min = number;
+                    break;
+                case 5:
+                    tm.tm_sec = number;
+                    break;
+                default:
+                    break;
+
+            }
+        }
+        time = mktime(&tm);
+    }
+    return time;
+}
+
+static uint32_t __apn_cert_mode(X509 *const cert) {
+    uint32_t mode = APN_CERT_MODE_UNKNOWN;
+    STACK_OF(X509_EXTENSION) *extensions = cert->cert_info->extensions;
+    if (extensions) {
+        for (int i = 0; i < sk_X509_EXTENSION_num(extensions); i++) {
+            X509_EXTENSION *extension = sk_X509_EXTENSION_value(extensions, i);
+            ASN1_OBJECT *extension_object = X509_EXTENSION_get_object(extension);
+            if (!extension_object) {
+                continue;
+            }
+            char name[256];
+            OBJ_obj2txt(name, sizeof(name), extension_object, 1);
+            if (0 == strcasecmp(name, APN_CERT_EXTENSION_PRODUCTION)) {
+                mode |= APN_CERT_MODE_PRODUCTION;
+            } else if (0 == strcasecmp(name, APN_CERT_EXTENSION_SANDBOX)) {
+                mode |= APN_CERT_MODE_SANDBOX;
+            }
+        }
+    }
+    return mode;
+}
+
+static const char *__apn_cert_mode_string(uint32_t mode) {
+    if (mode == APN_CERT_MODE_ALL) {
+        return "PRODUCTION & SANDBOX (UNIVERSAL)";
+    } else if (mode & APN_CERT_MODE_SANDBOX) {
+        return "SANDBOX";
+    } else if (mode & APN_CERT_MODE_PRODUCTION) {
+        return "PRODUCTION";
+    }
+    return "<UNKNOWN>";
 }
