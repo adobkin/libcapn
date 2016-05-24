@@ -30,7 +30,7 @@
 #cmakedefine APN_HAVE_ARPA_INET_H
 #cmakedefine APN_HAVE_NETDB_H
 #cmakedefine APN_HAVE_CTYPE_H
-#cmakedefine APN_HAVE_SYS_FCNTL_H
+#cmakedefine APN_HAVE_FCNTL_H
 #cmakedefine APN_HAVE_STRINGS_H
 #cmakedefine APN_HAVE_NETINET_IN_H
 #cmakedefine APN_HAVE_SYS_SOCKET_H

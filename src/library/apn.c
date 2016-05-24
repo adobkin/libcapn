@@ -37,8 +37,8 @@
 #include "apn_log.h"
 #include "apn_ssl.h"
 
-#ifdef APN_HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
+#ifdef APN_HAVE_FCNTL_H
+#include <fcntl.h>
 #endif
 
 #ifdef APN_HAVE_UNISTD_H
