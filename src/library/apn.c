@@ -740,7 +740,7 @@ static apn_return __apn_send_binary_message(const apn_ctx_t *const ctx,
                 free(error);
                 return APN_ERROR;
             }
-            apn_log(ctx, APN_LOG_LEVEL_DEBUG, "%d byte(s) has been written to a socket");
+            apn_log(ctx, APN_LOG_LEVEL_DEBUG, "%d byte(s) has been written to a socket", bytes_written);
         }
         apn_log(ctx, APN_LOG_LEVEL_INFO, "Notification has been sent");
     }
