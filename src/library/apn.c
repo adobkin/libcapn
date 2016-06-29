@@ -22,6 +22,7 @@
 
 #include "apn_platform.h"
 
+#include <pthread.h>
 #include <errno.h>
 #include <assert.h>
 
@@ -95,19 +96,16 @@ static apn_binary_message_t *__apn_payload_to_binary_message(const apn_ctx_t *co
 static int __apn_convert_apple_error(uint8_t apple_error_code);
 static void __apn_invalid_token_dtor(char *const token);
 
+static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 apn_return apn_library_init() {
-    static uint8_t library_initialized = 0;
-    if (!library_initialized) {
-        apn_ssl_init();
-        library_initialized = 1;
+    pthread_once(&once_control, apn_ssl_init);
 #ifdef _WIN32
-        WSADATA wsa_data;
-        if(WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
-            errno = APN_ERR_FAILED_INIT;
-            return APN_ERROR;
-        }
-#endif
+    WSADATA wsa_data;
+    if(WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
+        errno = APN_ERR_FAILED_INIT;
+        return APN_ERROR;
     }
+#endif
     return APN_SUCCESS;
 }
 
