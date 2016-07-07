@@ -12,30 +12,27 @@
   <body>
     <section class="page-header">
       <h1 class="project-name">Libcapn</h1>
-      <h2 class="project-tagline">A simple C Library for interact with the Apple Push Notification Service</h2>
+      <h2 class="project-tagline">A simple C Library for interact with the Apple Push Notification Service (APNs)</h2>
       <a href="https://github.com/adobkin/libcapn" class="btn">View on GitHub</a>
-      <a href="https://github.com/adobkin/libcapn/archive/2.0.0-beta.zip" class="btn">Download source</a>
-      <a href="https://github.com/adobkin/libcapn/releases/download/2.0.0-beta/libcapn-2.0.0-beta-win32.zip" class="btn">Download Win32 lib</a>
+      <a href="https://github.com/adobkin/libcapn/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/adobkin/libcapn/tarball/master" class="btn">Download .tar.gz</a>
     </section>
 
     <section class="main-content">
       <h1>
-<a id="libcapn" class="anchor" href="#libcapn" aria-hidden="true"><span class="octicon octicon-link"></span></a>libcapn</h1>
+<a id="libcapn" class="anchor" href="#libcapn" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>libcapn</h1>
 
-<p><a href="http://travis-ci.org/adobkin/libcapn"><img src="http://img.shields.io/travis/adobkin/libcapn.svg?style=flat&amp;branch=master" alt="Build Status"></a>
-<a href="https://github.com/adobkin/libcapn/blob/master/LICENSE"><img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat" alt="MIT"></a>
-<img src="http://img.shields.io/github/release/adobkin/libcapn-blue.svg?style=flat" alt="">
-</p>
+<p><a href="http://travis-ci.org/adobkin/libcapn"><img src="http://img.shields.io/travis/adobkin/libcapn.svg?style=flat&amp;branch=master" alt="Build Status"></a> <a href="https://github.com/adobkin/libcapn/blob/master/LICENSE"><img src="http://img.shields.io/badge/license-MIT-red.svg?style=flat" alt="MIT"></a></p>
 
 <p>libcapn is a C Library to interact with the <a href="http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html">Apple Push Notification Service</a> (APNs for short) using simple and intuitive API.
 With the library you can easily send push notifications to iOS and OS X (&gt;= 10.8) devices.</p>
 
-<h1>Releases</h1>
-<p>The latest release is <a href="https://github.com/adobkin/libcapn/releases/tag/2.0.0-beta">v2.0.0 beta1</a>, released on 2015-11-18</p>
-
 <p><strong>Version 2.0 isn't compatible with 1.0</strong></p>
 
-<h1>Usage</h1>
+<h2>
+<a id="table-of-contents" class="anchor" href="#table-of-contents" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Table of Contents</h2>
+
+
 
 <ul>
 <li>
@@ -74,11 +71,12 @@ With the library you can easily send push notifications to iOS and OS X (&gt;= 1
 </ul>
 
 
+
 <h2>
-<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
 
 <h3>
-<a id="on-nix" class="anchor" href="#on-nix" aria-hidden="true"><span class="octicon octicon-link"></span></a>on *nix</h3>
+<a id="on-nix" class="anchor" href="#on-nix" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>on *nix</h3>
 
 <p><strong>Requirements</strong></p>
 
@@ -100,7 +98,7 @@ $ make
 $ sudo make install</pre></div>
 
 <h3>
-<a id="on-windows" class="anchor" href="#on-windows" aria-hidden="true"><span class="octicon octicon-link"></span></a>on Windows</h3>
+<a id="on-windows" class="anchor" href="#on-windows" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>on Windows</h3>
 
 <p><strong>Requirements</strong></p>
 
@@ -123,18 +121,18 @@ $ sudo make install</pre></div>
 win_build<span class="pl-cce">\b</span>uild.bat</pre></div>
 
 <h2>
-<a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Start</h2>
+<a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Start</h2>
 
 <p>First, initialize the library by calling <code>apn_library_init()</code>. This function must be called at least once before any calls to other <code>libcapn</code> functions. Because <code>apn_library_init()</code> is not thread-safe, you must not call it while any other thread in the program is running. The reason is that
 <code>apn_library_init()</code> calls initialization functions of SSL library that are not thread-safe.</p>
 
 <h3>
-<a id="initialize-and-configure-context" class="anchor" href="#initialize-and-configure-context" aria-hidden="true"><span class="octicon octicon-link"></span></a>Initialize and configure context</h3>
+<a id="initialize-and-configure-context" class="anchor" href="#initialize-and-configure-context" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Initialize and configure context</h3>
 
 <p>Create a new apn <code>context</code> and specify the path to a certificate file and the path to a private key file using <code>apn_set_certificate()</code>.
 If the private key is password protected, pass it as well, otherwise pass <code>NULL</code>. The Certificate and the private key must be in PEM format.
 An alternative way is to use a .p12 file instead of a certificate and a private key. Use <code>apn_set_pkcs12_file()</code> to specify the path to a .p12 file .
-If a .p12 file is specified, certificate and private key arguments will be ignored.</p>
+If a .p12 file is specified, certificate and private key will be ignored.</p>
 
 <div class="highlight highlight-source-c"><pre><span class="pl-c1">apn_ctx_t</span> *ctx = apn_init();
 <span class="pl-k">if</span>(!ctx) {
@@ -157,8 +155,21 @@ transported to the device.</p>
 
 <div class="highlight highlight-source-c"><pre> <span class="pl-en">apn_set_mode</span>(ctx,  APN_MODE_SANDBOX);</pre></div>
 
+<p>To specify behavior call <code>apn_set_behavior()</code>. Function takes one or more bit flags as a parameter:</p>
+
+<div class="highlight highlight-source-c"><pre> <span class="pl-en">apn_set_behavior</span>(apn_ctx, APN_OPTION_RECONNECT | APN_OPTION_LOG_STDERR);</pre></div>
+
+<p>Available flags:</p>
+
+<ul>
+<li>
+<code>APN_OPTION_RECONNECT</code> -  Automatically establish new connection when connection is dropped. </li>
+<li>
+<code>APN_OPTION_LOG_STDERR</code> - Print log messages to standard error</li>
+</ul>
+
 <h4>
-<a id="logging" class="anchor" href="#logging" aria-hidden="true"><span class="octicon octicon-link"></span></a>Logging</h4>
+<a id="logging" class="anchor" href="#logging" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Logging</h4>
 
 <p>For logging specify log level and pointer to callback-function using <code>apn_set_log_level()</code> and <code>apn_set_log_callback()</code>:</p>
 
@@ -171,7 +182,7 @@ transported to the device.</p>
 </pre></div>
 
 <h4>
-<a id="connection" class="anchor" href="#connection" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connection</h4>
+<a id="connection" class="anchor" href="#connection" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Connection</h4>
 
 <p>To establishes connection to the APNs, calling <code>apn_connect()</code>:</p>
 
@@ -181,10 +192,10 @@ transported to the device.</p>
 }</pre></div>
 
 <h3>
-<a id="sending-notifications" class="anchor" href="#sending-notifications" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sending notifications</h3>
+<a id="sending-notifications" class="anchor" href="#sending-notifications" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sending notifications</h3>
 
 <h4>
-<a id="the-notification-payload" class="anchor" href="#the-notification-payload" aria-hidden="true"><span class="octicon octicon-link"></span></a>The notification payload</h4>
+<a id="the-notification-payload" class="anchor" href="#the-notification-payload" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The notification payload</h4>
 
 <p>Every remote notification includes a payload. The payload contains information about how the system should alert
 the user as well as any custom data you provide.</p>
@@ -198,7 +209,7 @@ custom properties using <code>apn_payload_add_custom_property_*()</code> functio
     <span class="pl-c">// error</span>
 }
 
-<span class="pl-en">apn_payload_set_badge</span>(payload, <span class="pl-c1">10</span>);
+<span class="pl-en">apn_payload_set_badge</span>(payload, <span class="pl-c1">10</span>);           
 <span class="pl-en">apn_payload_set_body</span>(payload, <span class="pl-s"><span class="pl-pds">"</span>Test Push Message<span class="pl-pds">"</span></span>);
 
 <span class="pl-c">// Custom property</span>
@@ -224,7 +235,7 @@ on the device. It is an error to use this priority for a push that contains only
 conserves power on the device receiving them.</p>
 
 <h4>
-<a id="tokens" class="anchor" href="#tokens" aria-hidden="true"><span class="octicon octicon-link"></span></a>Tokens</h4>
+<a id="tokens" class="anchor" href="#tokens" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Tokens</h4>
 
 <p>Next, create array of tokens and add the device tokens as either a hexadecimal string to array:</p>
 
@@ -241,31 +252,34 @@ is different from the development one. If you are using a production mode, you m
 </blockquote>
 
 <h4>
-<a id="send" class="anchor" href="#send" aria-hidden="true"><span class="octicon octicon-link"></span></a>Send</h4>
+<a id="send" class="anchor" href="#send" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Send</h4>
 
-<p>To send notification to devices call <code>apn_send()</code>, passing <code>context</code>, <code>payload</code> and array of <code>tokens</code>:</p>
+<p>To send notification to devices call <code>apn_send()</code>, passing <code>context</code>, <code>payload</code>, array of device <code>tokens</code> and pointer to a invalid tokens array. The array should be freed - call <code>apn_array_free()</code>:</p>
 
 <div class="highlight highlight-source-c"><pre>
-uint32 invalid_token_index;
+<span class="pl-c1">apn_array_t</span> *invalid_tokens = <span class="pl-c1">NULL</span>;
 
-<span class="pl-k">if</span>(APN_ERROR == apn_send(ctx, payload, tokens, &amp;invalid_token_index)) {
-    <span class="pl-k">if</span>(errno == APN_ERR_TOKEN_INVALID) {
-        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Invalid token: <span class="pl-c1">%s</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, (<span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span>) <span class="pl-c1">apn_array_item_at_index</span>(tokens, invalid_token_index));
-    } <span class="pl-k">else</span> {
-        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Could not sent push: <span class="pl-c1">%s</span> (errno: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, <span class="pl-c1">apn_error_string</span>(errno), errno);
+<span class="pl-k">if</span>(APN_ERROR == apn_send(ctx, payload, tokens, &amp;invalid_tokens))  {
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Could not sent push: <span class="pl-c1">%s</span> (errno: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, <span class="pl-c1">apn_error_string</span>(errno), errno)
+} <span class="pl-k">else</span> {
+    <span class="pl-k">if</span> (invalid_tokens) {
+        <span class="pl-c1">printf</span>, <span class="pl-s"><span class="pl-pds">"</span>Invalid tokens:<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>);
+        <span class="pl-c1">uint32_t</span> i = <span class="pl-c1">0</span>;
+        <span class="pl-k">for</span> (; i &lt; <span class="pl-c1">apn_array_count</span>(invalid_tokens); i++) {
+            <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>    <span class="pl-c1">%u</span>. <span class="pl-c1">%s</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, i, <span class="pl-c1">apn_array_item_at_index</span>(invalid_tokens, i));
+        }
+        <span class="pl-c1">apn_array_free</span>(invalid_tokens);
     }
 }</pre></div>
 
 <blockquote>
-<p>The APNs drops the connection if it receives an invalid token. The APNs drops the connection if it receives an invalid token.
-The function passes out an index of array for invalid token via pointer <code>invalid_token_index</code>. You'll need to reconnect and send notification to token(s)
+<p>The APNs drops the connection if it receives an invalid token. You'll need to reconnect and send notification to token(s)
 following it, again.</p>
 </blockquote>
 
-<p>You can use <code>apn_send2()</code> instead of <code>apn_send()</code>, this function automatically establishes new connection to APNs when connection is dropped.
-The function establishes new connection to APNs only when invalid token has been sent, otherwise new connection will not be established.</p>
+<p>If flag <code>APN_OPTION_RECONNECT</code> is specified, the <code>apn_send()</code> automatically establishes new connection to APNs when connection is dropped</p>
 
-<p>When you use this function you can take invalid token, just specify a pointer to callback-function using <code>apn_set_invalid_token_callback</code>:</p>
+<p>Advanced, you can take invalid token, just specify a pointer to callback-function using <code>apn_set_invalid_token_callback</code>:</p>
 
 <div class="highlight highlight-source-c"><pre><span class="pl-k">void</span> <span class="pl-en">invalid_token</span>(<span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span> token, <span class="pl-c1">uint32_t</span> index) {
     <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>======&gt; Invalid token: <span class="pl-c1">%s</span> (index: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, token, <span class="pl-c1">index</span>);
@@ -276,12 +290,12 @@ The function establishes new connection to APNs only when invalid token has been
 <span class="pl-c1">apn_ctx_t</span> *ctx = ...
 <span class="pl-en">apn_set_invalid_token_callback</span>(ctx, invalid_token);</pre></div>
 
-<p>Callback function has the following prototype:</p>
+<p>The callback function will be called for each invalid token. Function has the following prototype:</p>
 
 <div class="highlight highlight-source-c"><pre><span class="pl-k">void</span> (*invalid_token_callback)(<span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span> token, <span class="pl-c1">uint32_t</span> index)</pre></div>
 
 <h3>
-<a id="example" class="anchor" href="#example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h3>
+<a id="example" class="anchor" href="#example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example</h3>
 
 <div class="highlight highlight-source-c"><pre>#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>stdio.h<span class="pl-pds">&gt;</span></span>
 #<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>string.h<span class="pl-pds">&gt;</span></span>
@@ -315,6 +329,7 @@ The function establishes new connection to APNs only when invalid token has been
 
     <span class="pl-c1">apn_set_pkcs12_file</span>(ctx, <span class="pl-s"><span class="pl-pds">"</span>push_test.p12<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>12345678<span class="pl-pds">"</span></span>);
     <span class="pl-c1">apn_set_mode</span>(ctx,  APN_MODE_SANDBOX); <span class="pl-c">//APN_MODE_PRODUCTION or APN_MODE_SANDBOX</span>
+    <span class="pl-c1">apn_set_behavior</span>(ctx, APN_OPTION_RECONNECT);
     <span class="pl-c1">apn_set_log_level</span>(ctx, APN_LOG_LEVEL_INFO | APN_LOG_LEVEL_ERROR | APN_LOG_LEVEL_DEBUG);
     <span class="pl-c1">apn_set_log_callback</span>(ctx, __apn_logging);
     <span class="pl-c1">apn_set_invalid_token_callback</span>(ctx, __apn_invalid_token);
@@ -353,61 +368,57 @@ The function establishes new connection to APNs only when invalid token has been
         <span class="pl-k">return</span> -<span class="pl-c1">1</span>;
     }
 
-    <span class="pl-k">if</span>(APN_ERROR == <span class="pl-c1">apn_send2</span>(ctx, payload, tokens)) {
+    <span class="pl-c1">apn_array_t</span> *invalid_tokens = <span class="pl-c1">NULL</span>;
+    <span class="pl-k">int</span> ret = <span class="pl-c1">0</span>;
+    <span class="pl-k">if</span> (APN_ERROR == <span class="pl-c1">apn_send</span>(ctx, payload, tokens, &amp;invalid_tokens)) {
         <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Could not send push: <span class="pl-c1">%s</span> (errno: <span class="pl-c1">%d</span>)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, <span class="pl-c1">apn_error_string</span>(errno), errno);
-        <span class="pl-c1">apn_free</span>(ctx);
-        <span class="pl-c1">apn_payload_free</span>(payload);
-        <span class="pl-c1">apn_array_free</span>(tokens);
-        <span class="pl-c1">apn_library_free</span>();
-        <span class="pl-k">return</span> -<span class="pl-c1">1</span>;
+        ret = -<span class="pl-c1">1</span>;
+    } <span class="pl-k">else</span> {
+        <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Notification was successfully sent to <span class="pl-c1">%u</span> device(s)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>,
+            <span class="pl-c1">apn_array_count</span>(tokens) - ((invalid_tokens) ? <span class="pl-c1">apn_array_count</span>(invalid_tokens) : <span class="pl-c1">0</span>));
+        <span class="pl-k">if</span> (invalid_tokens) {
+            <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Invalid tokens:<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>);
+            <span class="pl-c1">uint32_t</span> i = <span class="pl-c1">0</span>;
+            <span class="pl-k">for</span> (; i &lt; <span class="pl-c1">apn_array_count</span>(invalid_tokens); i++) {
+                <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>    <span class="pl-c1">%u</span>. <span class="pl-c1">%s</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, i, <span class="pl-c1">apn_array_item_at_index</span>(invalid_tokens, i));
+            }
+            <span class="pl-c1">apn_array_free</span>(invalid_tokens);
+        }
     }
-
-    <span class="pl-c">// Uses apn_send</span>
-    <span class="pl-c">//if(APN_ERROR == apn_send(ctx, payload, tokens, &amp;invalid_token)) {</span>
-    <span class="pl-c">//    if(errno == APN_ERR_TOKEN_INVALID) {</span>
-    <span class="pl-c">//        printf("Invalid token: %s\n", invalid_token);</span>
-    <span class="pl-c">//    } else {</span>
-    <span class="pl-c">//        printf("Could not send push: %s (errno: %d)\n", apn_error_string(errno), errno);</span>
-    <span class="pl-c">//    }</span>
-    <span class="pl-c">//    apn_free(ctx);</span>
-    <span class="pl-c">//    apn_payload_free(payload);</span>
-    <span class="pl-c">//    apn_array_free(tokens);</span>
-    <span class="pl-c">//    apn_library_free();</span>
-    <span class="pl-c">//    return -1;</span>
-    <span class="pl-c">//}</span>
-
-    <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span>Success!<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>);
 
     <span class="pl-c1">apn_free</span>(ctx);
     <span class="pl-c1">apn_payload_free</span>(payload);
     <span class="pl-c1">apn_array_free</span>(tokens);
     <span class="pl-c1">apn_library_free</span>();
 
-    <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+    <span class="pl-k">return</span> ret;
 }
 </pre></div>
 
 <h2>
-<a id="apn-pusher" class="anchor" href="#apn-pusher" aria-hidden="true"><span class="octicon octicon-link"></span></a>apn-pusher</h2>
+<a id="apn-pusher" class="anchor" href="#apn-pusher" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>apn-pusher</h2>
 
-<p>apn-pusher - simple command line tool to send push notifications to iOS and OS X devices</p>
+<p>apn-pusher - simple command line tool to send push notifications to iOS and OS X devices:</p>
 
-<div class="highlight highlight-source-shell"><pre>apn-pusher -c ./test_push.p12 -p 12345678 -d -m <span class="pl-s"><span class="pl-pds">'</span>Test<span class="pl-pds">'</span></span> -t 1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A808832B</pre></div>
+<div class="highlight highlight-source-shell"><pre>apn-pusher -c ./test_push.p12 -p -d -m <span class="pl-s"><span class="pl-pds">'</span>Test<span class="pl-pds">'</span></span> -t 1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A808832B:1D2EE2B3A38689E0D43E6608FEDEFCA534BBAC6AD6930BFDA6F5CD72A808832A</pre></div>
+
+<div class="highlight highlight-source-shell"><pre>apn-pusher -c ./test_push.p12 -p -d -m <span class="pl-s"><span class="pl-pds">'</span>Test<span class="pl-pds">'</span></span> -T ./tokens.txt -v</pre></div>
 
 <p>Options:</p>
 
 <div class="highlight highlight-source-shell"><pre>Usage: apn-pusher [OPTION]
     -h Print this message and <span class="pl-c1">exit</span>
     -c Path to .p12 file (required)
-    -p Passphrase <span class="pl-k">for</span> <span class="pl-smi">.p12</span> file (required)
+    -p Passphrase <span class="pl-k">for</span> .p12 file. Will be asked from the tty
     -d Use sandbox mode
     -m Body of the alert to send <span class="pl-k">in</span> notification
     -a Indicates content available
     -b Badge number to <span class="pl-c1">set</span> with notification
     -s Name of a sound file <span class="pl-k">in</span> the app bundle
-    -l Name of an image file <span class="pl-k">in</span> the app bundle
+    -i Name of an image file <span class="pl-k">in</span> the app bundle
     -y Category name of notification
-    -t Device token(s). Separate multiple tokens with <span class="pl-s"><span class="pl-pds">'</span>:<span class="pl-pds">'</span></span> (required)
+    -t Tokens, separated with <span class="pl-s"><span class="pl-pds">'</span>:<span class="pl-pds">'</span></span> (required)
+    -T Path to file with tokens
     -v Make the operation more talkative</pre></div>
 
       <footer class="site-footer">
@@ -418,6 +429,6 @@ The function establishes new connection to APNs only when invalid token has been
 
     </section>
 
-
+  
   </body>
 </html>
