@@ -115,6 +115,12 @@ a {
   color: #159957; }
 .main-content p {
   margin-bottom: 1em; }
+
+  .main-content h2, .main-content h1 {
+      border-bottom: 1px solid #159957;
+      padding-bottom: 0.3em;
+  }
+
 .main-content code {
   padding: 2px 4px;
   font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;

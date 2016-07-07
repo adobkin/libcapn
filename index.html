@@ -29,7 +29,7 @@ With the library you can easily send push notifications to iOS and OS X (&gt;= 1
 
 <p><strong>Version 2.0 isn't compatible with 1.0</strong></p>
 
-<h2>
+<h1>
 <a id="table-of-contents" class="anchor" href="#table-of-contents" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Table of Contents</h2>
 
 
@@ -72,8 +72,8 @@ With the library you can easily send push notifications to iOS and OS X (&gt;= 1
 
 
 
-<h2>
-<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
+<h1>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h1>
 
 <h3>
 <a id="on-nix" class="anchor" href="#on-nix" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>on *nix</h3>
@@ -120,8 +120,8 @@ $ sudo make install</pre></div>
 <div class="highlight highlight-source-shell"><pre><span class="pl-c1">cd</span> C:<span class="pl-cce">\l</span>ibcapn
 win_build<span class="pl-cce">\b</span>uild.bat</pre></div>
 
-<h2>
-<a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Start</h2>
+<h1>
+<a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Start</h1>
 
 <p>First, initialize the library by calling <code>apn_library_init()</code>. This function must be called at least once before any calls to other <code>libcapn</code> functions. Because <code>apn_library_init()</code> is not thread-safe, you must not call it while any other thread in the program is running. The reason is that
 <code>apn_library_init()</code> calls initialization functions of SSL library that are not thread-safe.</p>
@@ -209,7 +209,7 @@ custom properties using <code>apn_payload_add_custom_property_*()</code> functio
     <span class="pl-c">// error</span>
 }
 
-<span class="pl-en">apn_payload_set_badge</span>(payload, <span class="pl-c1">10</span>);           
+<span class="pl-en">apn_payload_set_badge</span>(payload, <span class="pl-c1">10</span>);
 <span class="pl-en">apn_payload_set_body</span>(payload, <span class="pl-s"><span class="pl-pds">"</span>Test Push Message<span class="pl-pds">"</span></span>);
 
 <span class="pl-c">// Custom property</span>
@@ -294,8 +294,8 @@ following it, again.</p>
 
 <div class="highlight highlight-source-c"><pre><span class="pl-k">void</span> (*invalid_token_callback)(<span class="pl-k">const</span> <span class="pl-k">char</span> * <span class="pl-k">const</span> token, <span class="pl-c1">uint32_t</span> index)</pre></div>
 
-<h3>
-<a id="example" class="anchor" href="#example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example</h3>
+<h1>
+<a id="example" class="anchor" href="#example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Example</h1>
 
 <div class="highlight highlight-source-c"><pre>#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>stdio.h<span class="pl-pds">&gt;</span></span>
 #<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>string.h<span class="pl-pds">&gt;</span></span>
@@ -429,6 +429,6 @@ following it, again.</p>
 
     </section>
 
-  
+
   </body>
 </html>
