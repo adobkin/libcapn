@@ -248,11 +248,11 @@ void (*invalid_token_callback)(const char * const token, uint32_t index)
 ### Example
 
 ```c
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <assert.h>
-#include <capn/apn.h>
+# include <stdio.h>
+# include <string.h>
+# include <errno.h>
+# include <assert.h>
+# include <capn/apn.h>
 
 void __apn_logging(apn_log_levels level, const char * const message, uint32_t len) {
     printf("======> %s\n", message);
