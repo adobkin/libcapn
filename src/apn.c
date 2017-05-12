@@ -712,13 +712,14 @@ static uint8_t __apn_connect(const apn_ctx_ref ctx, struct __apn_appl_server ser
             APN_SET_ERROR(error, APN_ERR_COULD_NOT_CREATE_SOCKET | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_CREATE_SOCKET]);
             APN_RETURN_ERROR;
         }
+        ctx->sock = sock;
 
         if (connect(sock, (struct sockaddr *) &socket_address, sizeof (socket_address)) < 0) {
             APN_SET_ERROR(error, APN_ERR_COULD_NOT_INITIALIZE_CONNECTION | APN_ERR_CLASS_INTERNAL, __apn_errors[APN_ERR_COULD_NOT_INITIALIZE_CONNECTION]);
-            APN_RETURN_ERROR;
+            apn_close(ctx);
+	    APN_RETURN_ERROR;
         }
 
-        ctx->sock = sock;
         ssl_ctx = SSL_CTX_new(TLSv1_client_method());
 
         if (!SSL_CTX_use_certificate_file(ssl_ctx, ctx->certificate_file, SSL_FILETYPE_PEM)) {
