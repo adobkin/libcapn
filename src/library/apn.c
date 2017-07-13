@@ -600,6 +600,8 @@ static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server 
             free(error);
             return APN_ERROR;
         }
+	    
+        ctx->sock = sock;
 
 #ifndef _WIN32
         int sock_flags = fcntl(ctx->sock, F_GETFL, 0);
@@ -615,7 +617,7 @@ static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server 
             char ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) addrinfo->ai_addr)->sin_addr, ip, sizeof(ip));
             apn_log(ctx, APN_LOG_LEVEL_INFO, "Trying to connect to %s...", ip);
-            if (connect(sock, addrinfo->ai_addr, addrinfo->ai_addrlen) < 0) {
+            if (connect(ctx->sock, addrinfo->ai_addr, addrinfo->ai_addrlen) < 0) {
                 char *error = apn_error_string(errno);
                 apn_log(ctx, APN_LOG_LEVEL_ERROR, "Could not to connect to: %s (errno: %d)", error, errno);
                 free(error);
@@ -627,7 +629,7 @@ static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server 
         }
 
         freeaddrinfo(addrinfo);
-
+	    
         if (!connected) {
             errno = APN_ERR_UNABLE_TO_ESTABLISH_CONNECTION;
             apn_log(ctx, APN_LOG_LEVEL_ERROR, "Unable to establish connection");
@@ -637,7 +639,6 @@ static apn_return __apn_connect(apn_ctx_t *const ctx, struct __apn_apple_server 
 
         apn_log(ctx, APN_LOG_LEVEL_INFO, "Connection has been established");
         apn_log(ctx, APN_LOG_LEVEL_INFO, "Initializing SSL connection...");
-        ctx->sock = sock;
 
         return apn_ssl_connect(ctx);
     }
