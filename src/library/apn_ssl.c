@@ -400,7 +400,7 @@ void apn_ssl_close(apn_ctx_t *const ctx) {
 }
 
 static void __apn_ssl_info_callback(const SSL *ssl, int where, int ret) {
-    apn_ctx_t *ctx = SSL_CTX_get_ex_data(ssl->ctx, 0);
+    apn_ctx_t *ctx = SSL_CTX_get_ex_data(SSL_get_SSL_CTX(ssl), 0);
     if (!ctx) {
         return;
     }
@@ -549,7 +549,7 @@ static time_t __apn_asn1_tome_to_time_t(ASN1_TIME *asn1_time) {
 
 static uint32_t __apn_cert_mode(X509 *const cert) {
     uint32_t mode = APN_CERT_MODE_UNKNOWN;
-    STACK_OF(X509_EXTENSION) *extensions = cert->cert_info->extensions;
+    STACK_OF(X509_EXTENSION) *extensions = X509_get0_extensions(cert);
     if (extensions) {
         for (int i = 0; i < sk_X509_EXTENSION_num(extensions); i++) {
             X509_EXTENSION *extension = sk_X509_EXTENSION_value(extensions, i);
