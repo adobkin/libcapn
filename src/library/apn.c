@@ -24,6 +24,7 @@
 
 #include <errno.h>
 #include <assert.h>
+#include <sys/select.h>
 
 #include "apn_strings.h"
 #include "apn_tokens.h"
